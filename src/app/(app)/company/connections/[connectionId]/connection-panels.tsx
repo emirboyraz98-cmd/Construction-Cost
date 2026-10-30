@@ -143,7 +143,7 @@ export function AllocationButton({
             </DialogDescription>
           </DialogHeader>
           <FormError message={error} />
-          <ul className="grid gap-2">
+          <ul className="grid grid-cols-1 gap-2">
             {projects.map((p) => (
               <li key={p.id} className="flex items-center gap-3">
                 <label htmlFor={`alloc-${p.id}`} className="min-w-0 flex-1 truncate text-sm">
@@ -243,7 +243,7 @@ export function PaymentsPanel({
       {payments.length === 0 ? (
         <p className="text-sm text-muted-foreground">Ödeme planı girilmemiş.</p>
       ) : (
-        <ul className="grid gap-2 text-sm">
+        <ul className="grid grid-cols-1 gap-2 text-sm">
           {payments.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5">
               <span className="min-w-0">
@@ -477,7 +477,7 @@ export function InvoicesPanel({
       {invoices.length === 0 ? (
         <p className="text-sm text-muted-foreground">Bağlantıya fatura eklenmemiş.</p>
       ) : (
-        <ul className="grid gap-2 text-sm">
+        <ul className="grid grid-cols-1 gap-2 text-sm">
           {invoices.map((inv) => (
             <li key={inv.id} className="grid gap-1 rounded-lg border p-2.5">
               <span className="flex flex-wrap items-center justify-between gap-2">
@@ -664,7 +664,7 @@ export function AdvancesPanel({
       {linked.length === 0 ? (
         <p className="text-sm text-muted-foreground">Bağlı avans yok. Harcamalar ekranında “Avans” olarak girilen ödemeler buraya bağlanabilir.</p>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="grid grid-cols-1 gap-2">
           {linked.map((a) =>
             row(
               a,
@@ -680,7 +680,7 @@ export function AdvancesPanel({
       {canManage && linkable.length > 0 && (
         <>
           <p className="text-sm font-medium">Bağlanabilecek avanslar (aynı tedarikçi ve para birimi)</p>
-          <ul className="grid gap-2">
+          <ul className="grid grid-cols-1 gap-2">
             {linkable.map((a) =>
               row(
                 a,

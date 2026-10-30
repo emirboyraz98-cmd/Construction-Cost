@@ -95,7 +95,7 @@ export default async function SupplierPage({ params }: PageProps<"/company/suppl
                   <CardTitle>Bağlantılar ve taşeron sözleşmeleri</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="grid gap-1.5 text-sm">
+                  <ul className="grid grid-cols-1 gap-1.5 text-sm">
                     {connections.map((c) => (
                       <li key={c.id} className="flex flex-wrap items-center justify-between gap-2">
                         <Link href={`/company/connections/${c.id}`} className="hover:underline">

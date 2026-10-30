@@ -29,7 +29,7 @@ export default async function TransfersPage() {
             {rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">Henüz transfer yok.</p>
             ) : (
-              <ul className="grid gap-2 text-sm">
+              <ul className="grid grid-cols-1 gap-2 text-sm">
                 {rows.map((t) => (
                   <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5">
                     <span className="min-w-0">

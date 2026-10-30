@@ -123,7 +123,7 @@ export default async function ContractPage({ params }: PageProps<"/projects/[pro
             {c.billings.length === 0 ? (
               <p className="text-sm text-muted-foreground">Henüz hakediş yok.</p>
             ) : (
-              <ul className="grid gap-2 text-sm">
+              <ul className="grid grid-cols-1 gap-2 text-sm">
                 {[...c.billings].reverse().map((b) => (
                   <li key={b.id}>
                     <Link href={`${base}/billings/${b.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5 hover:bg-muted/50">

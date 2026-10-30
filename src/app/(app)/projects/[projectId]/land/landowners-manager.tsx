@@ -35,7 +35,7 @@ export function LandownersManager({ projectId, landowners, canEdit }: { projectI
       {landowners.length === 0 ? (
         <p className="text-sm text-muted-foreground">Arsa sahibi girilmemiş.</p>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="grid grid-cols-1 gap-2">
           {landowners.map((l) => (
             <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm">
               <span className="min-w-0">

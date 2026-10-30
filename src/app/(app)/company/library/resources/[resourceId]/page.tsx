@@ -124,7 +124,7 @@ export default async function ResourcePage({ params }: PageProps<"/company/libra
               <CardTitle>Teklif ve piyasa fiyatları</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="grid gap-1.5 text-sm">
+              <ul className="grid grid-cols-1 gap-1.5 text-sm">
                 {manual.map((p) => (
                   <li key={p.id} className="flex flex-wrap items-center justify-between gap-2">
                     <span>

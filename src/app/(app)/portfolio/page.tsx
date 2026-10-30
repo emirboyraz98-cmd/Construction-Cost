@@ -115,7 +115,7 @@ export default async function PortfolioPage() {
             <p className="mb-2 text-sm">
               {soon.length} kayıt · <strong className="tabular-nums">{formatMoney(soonTotal)}</strong>
             </p>
-            <ul className="grid gap-1.5 text-sm">
+            <ul className="grid grid-cols-1 gap-1.5 text-sm">
               {soon.slice(0, 6).map((row) => (
                 <li key={row.key} className="flex flex-wrap justify-between gap-2">
                   <Link href={row.href} className="min-w-0 truncate hover:underline">
@@ -146,7 +146,7 @@ export default async function PortfolioPage() {
             </CardAction>
           </CardHeader>
           <CardContent>
-            <ul className="grid gap-3 text-sm">
+            <ul className="grid grid-cols-1 gap-3 text-sm">
               {connectionAlerts.slice(0, 6).map((c) => (
                 <li key={c.id}>
                   <Link href={`/company/connections/${c.id}`} className="font-medium hover:underline">

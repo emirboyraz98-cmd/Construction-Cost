@@ -180,7 +180,7 @@ export function UserForm({
             {projects.length === 0 ? (
               <p className="text-sm text-muted-foreground">Henüz proje yok.</p>
             ) : (
-              <ul className="grid gap-2">
+              <ul className="grid grid-cols-1 gap-2">
                 {projects.map((project) => {
                   const role = values.permissions[project.id];
                   return (

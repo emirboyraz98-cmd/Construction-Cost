@@ -160,7 +160,7 @@ export default async function ConnectionPage({ params }: PageProps<"/company/con
             {draws.length === 0 ? (
               <p className="text-sm text-muted-foreground">Henüz çekiş yok.</p>
             ) : (
-              <ul className="grid gap-2 text-sm">
+              <ul className="grid grid-cols-1 gap-2 text-sm">
                 {draws.map((d) => (
                   <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5">
                     <span className="min-w-0">
@@ -346,7 +346,7 @@ export default async function ConnectionPage({ params }: PageProps<"/company/con
               <CardAction />
             </CardHeader>
             <CardContent>
-              <ul className="grid gap-1.5 text-sm">
+              <ul className="grid grid-cols-1 gap-1.5 text-sm">
                 {history.map((h) => {
                   const changes = (h.changes ?? {}) as { before?: Record<string, string>; after?: Record<string, string>; fromPool?: string; newAllocation?: string };
                   const item = itemName.get(h.entityId ?? "");

@@ -3,7 +3,7 @@
 İnşaat şirketi için maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı.
 Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 
-**Durum: Faz 3 – Bina ve bütçe.**
+**Durum: Faz 4 – Bütçe kontrolü.**
 
 - **Faz 0 (altyapı):** kullanıcı girişi ve roller, proje bazlı yetki, proje sekmeleri, yeni proje
   sihirbazı, portföy ve proje paneli, bloklar ve maliyet ağacı (İKY).
@@ -15,6 +15,9 @@ Kapsam ve yol haritası: [PLAN.md](PLAN.md).
   sözleşmeye bağlanması, projeler arası malzeme transferi, taşeron sözleşmeleri, hakediş ve kesintiler.
 - **Faz 3 (bina ve bütçe):** bağımsız bölümler, arsa sahipleri ve pay kontrolü, malzeme / fiyat
   kütüphanesi (faturalardan beslenen), reçeteler, üç seviyeli metraj, bütçe, toplam ve m² maliyeti.
+- **Faz 4 (bütçe kontrolü):** baz bütçe (dondurma), bütçe – gerçekleşen – tahmini tamamlanma
+  maliyeti (EAC) ve sapma, aşım / risk uyarıları, gerçekleşen katsayılar, bağlantı kapsaması ve
+  bağlantı kazancı, Excel çıktısı.
 
 Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
@@ -106,6 +109,7 @@ program yine tarayıcıdan kullanılır.
 | Bağımsız bölümler, arsa sahipleri | Proje → **Bağımsız bölümler**, **Arsa & sözleşme** | Düzenleme: yönetici, teknik ofis · görme: projedeki herkes |
 | Malzeme / fiyat kütüphanesi, reçeteler | Şirket geneli → **Kütüphane** | Yönetici, teknik ofis, muhasebe, satın alma |
 | Metraj ve bütçe | Proje → **Metraj**, **Bütçe** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, satın alma, dış muhasebeci |
+| Baz bütçe, tamamlanma yüzdesi, sapma | Proje → **Bütçe kontrolü** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, satın alma, dış muhasebeci |
 
 - **Onay akışı:** Şantiye şefinin ve satın almanın girdiği kayıtlar *Onay bekliyor* olarak düşer;
   muhasebe veya yönetici onaylar ya da nedenini yazarak reddeder. Reddedilen kaydı giren kişi
@@ -167,6 +171,27 @@ program yine tarayıcıdan kullanılır.
   - **İnşaat m² maliyeti** = yapım maliyeti (04–12) / toplam inşaat alanı.
   - **Müteahhit satılabilir m² maliyeti** = toplam maliyet / müteahhide kalan brüt m². Kat
     karşılığında arsa sahibinin bölümlerinin maliyeti de müteahhide aittir (PLAN 7.3).
+
+### Bütçe kontrolü: nasıl çalışır?
+
+- **Baz bütçe:** “Bütçeyi dondur” güncel bütçeyi o günün fiyat ve miktarlarıyla saklar. Sapma bu
+  referansa göre izlenir; güncel bütçe fiyat ve metraj değiştikçe değişmeye devam eder. Birden çok
+  baz bütçe saklanabilir (ör. ilk onay, revizyon). Baz bütçe yoksa güncel bütçe referans alınır.
+- **Tamamlanma:** Kalem için elle yüzde girilebilir (ör. “3. kat döşemesi bitti, %35”). Girilmezse
+  bütçe ve harcama birimi aynıysa miktardan hesaplanır (gerçekleşen miktar / bütçe miktarı).
+- **Tahmini tamamlanma maliyeti (EAC)** = gerçekleşen + güncel bütçe × (1 − tamamlanma).
+  Tamamlanma bilinmiyorsa EAC = gerçekleşen ile bütçeden büyük olanı.
+  **Sapma** = referans bütçe − EAC (eksi değer aşım demektir).
+- **Durumlar:** *Aşıldı* (gerçekleşen bütçeyi geçti), *Aşım bekleniyor* (EAC bütçeyi %5'ten fazla
+  geçiyor), *Bütçesiz* (bütçesi olmayan kalemde harcama var).
+- **Bağlantı kapsaması:** Bütçedeki malzeme ihtiyacı, projeye tahsis edilen bağlantı miktarıyla
+  karşılaştırılır (kütüphane malzemesi ve birim aynıysa). %100'ün altı “açık”, %110'un üstü “fazla”.
+- **Bağlantı kazancı** = (güncel fiyat − bağlantı fiyatı) × bağlantı miktarı. Güncel fiyat
+  kütüphaneden alınır (son fatura → teklif → piyasa); bağlantı fiyatı hesaba katılmaz.
+  Bağlantı sayfasında görünür.
+- **Gerçekleşen katsayı:** Metraj ekranı, bu projenin ve diğer projelerin onaylı harcamalarından
+  çıkan katsayıyı gösterir; “Gerçekleşen değeri kullan” ile yeni projenin katsayısına aktarılabilir.
+- Ekran **Excel** olarak indirilebilir.
 
 ### Telefona uygulama gibi ekleme
 

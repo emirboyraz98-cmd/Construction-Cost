@@ -192,6 +192,7 @@ async function main() {
       { resourceId: rSeramik.id, date: daysAgo(20), price: d(420), source: "QUOTE", supplierId: seramikci.id, note: "Teklif" },
       { resourceId: rDerz.id, date: daysAgo(20), price: d(32), source: "MARKET" },
       { resourceId: rUsta.id, date: daysAgo(15), price: d(260), source: "QUOTE", supplierId: taseron.id },
+      { resourceId: rBeton.id, date: daysAgo(10), price: d(3650), source: "MARKET", note: "Güncel piyasa araştırması" },
     ],
   });
   // Fatura → kütüphane eşleştirmeleri (son alım fiyatı)

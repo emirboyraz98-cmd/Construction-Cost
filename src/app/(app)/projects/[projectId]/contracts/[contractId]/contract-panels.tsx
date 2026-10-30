@@ -78,7 +78,7 @@ export function ContractAdvances({
       {linked.length === 0 ? (
         <p className="text-sm text-muted-foreground">Bağlı avans yok. Harcamalar ekranında “Avans” olarak girilen ödeme buraya bağlanır; ödenenler hakedişlerde mahsup edilir.</p>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="grid grid-cols-1 gap-2">
           {linked.map((a) =>
             row(
               a,
@@ -94,7 +94,7 @@ export function ContractAdvances({
       {canManage && linkable.length > 0 && (
         <>
           <p className="text-sm font-medium">Bağlanabilecek avanslar (bu taşerona, TL)</p>
-          <ul className="grid gap-2">
+          <ul className="grid grid-cols-1 gap-2">
             {linkable.map((a) =>
               row(
                 a,

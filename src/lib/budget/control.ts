@@ -41,16 +41,18 @@ export type ItemControl = {
  */
 export function itemControl(input: ItemControlInput): ItemControl {
   const reference = input.baseline ?? input.budget;
-  let percent: Decimal | null = null;
+  // Oran tam hassasiyetle kullanılır; yalnızca gösterilen yüzde 1 haneye yuvarlanır.
+  let raw: Decimal | null = null;
   let percentSource: ProgressSource = null;
   if (input.manualPercent) {
-    percent = input.manualPercent;
+    raw = input.manualPercent;
     percentSource = "manual";
   } else if (input.budgetQuantity?.gt(0) && input.actualQuantity) {
-    percent = input.actualQuantity.div(input.budgetQuantity).times(100).toDecimalPlaces(1, Decimal.ROUND_HALF_UP);
+    raw = input.actualQuantity.div(input.budgetQuantity).times(100);
     percentSource = "quantity";
   }
-  const ratio = percent ? Decimal.min(percent.div(100), 1) : null;
+  const percent = raw ? raw.toDecimalPlaces(1, Decimal.ROUND_HALF_UP) : null;
+  const ratio = raw ? Decimal.min(raw.div(100), 1) : null;
   const earned = ratio ? roundMoney(input.budget.times(ratio)) : zero();
   const eac = ratio ? roundMoney(input.actual.plus(input.budget.times(new Decimal(1).minus(ratio)))) : Decimal.max(input.actual, input.budget);
   const variance = reference.minus(eac);
@@ -126,10 +128,10 @@ export function coverage(
     const status = r.covered.isZero() ? "missing" : percent.lt(COVERAGE_LOW) ? "short" : percent.gt(COVERAGE_HIGH) ? "excess" : "ok";
     const message =
       status === "excess"
-        ? `${r.label}: ihtiyacın %${formatNumber(percent, 1)}'i bağlantılı; ${qty(r.covered.minus(r.need))} fazla.`
+        ? `${r.label}: kapsama %${formatNumber(percent, 1)}, ${qty(r.covered.minus(r.need))} fazla bağlantı.`
         : status === "ok"
-          ? `${r.label}: ihtiyacın %${formatNumber(percent, 1)}'i bağlantılı.`
-          : `${r.label}: ihtiyacın %${formatNumber(percent, 1)}'i bağlantılı, ${qty(open)} açık.`;
+          ? `${r.label}: kapsama %${formatNumber(percent, 1)}.`
+          : `${r.label}: kapsama %${formatNumber(percent, 1)}, ${qty(open)} açık.`;
     return { key, need: r.need, covered: r.covered, drawn: r.drawn, percent, open, status, message };
   });
 }

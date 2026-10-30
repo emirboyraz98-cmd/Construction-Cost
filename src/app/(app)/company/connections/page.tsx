@@ -81,7 +81,7 @@ export default async function ConnectionsPage({ searchParams }: PageProps<"/comp
                     </div>
                     <ConnectionStatusBadge status={c.status} />
                   </div>
-                  <ul className="grid gap-2 text-sm">
+                  <ul className="grid grid-cols-1 gap-2 text-sm">
                     {c.items.slice(0, 3).map((item) => {
                       const b = item.balance;
                       const pct = b.total.isZero() ? 0 : b.drawn.div(b.total).times(100).toNumber();

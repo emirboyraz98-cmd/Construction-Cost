@@ -245,7 +245,7 @@ export function SharedInvoiceForm({
               ]}
             />
           </FormField>
-          <ul className="grid gap-2">
+          <ul className="grid grid-cols-1 gap-2">
             {projects.map((project) => {
               const index = chosen.findIndex((p) => p.id === project.id);
               const part = index >= 0 && parts ? parts[index] : null;

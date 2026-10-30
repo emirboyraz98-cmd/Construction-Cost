@@ -218,7 +218,7 @@ export function BillingForm({
               <dd className="border-t pt-1.5 text-right text-base font-semibold">{formatMoney(preview.payableAmount)}</dd>
             </dl>
             {(preview.errors.length > 0 || preview.warnings.length > 0) && (
-              <ul className="grid gap-1 text-sm lg:col-span-2">
+              <ul className="grid grid-cols-1 gap-1 text-sm lg:col-span-2">
                 {preview.errors.map((e, i) => (
                   <li key={`e${i}`} className="text-destructive">
                     {e}
