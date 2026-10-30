@@ -14,7 +14,7 @@ import { findImportDuplicates, importExpenses, importLookups } from "@/server/ex
 import { ratesBetween } from "@/server/rates";
 
 const MAX_ROWS = 2000;
-const rowSchema = z.record(z.enum(IMPORT_FIELDS), z.string().max(500)).array().max(MAX_ROWS);
+const rowSchema = z.partialRecord(z.enum(IMPORT_FIELDS), z.string().max(500)).array().max(MAX_ROWS);
 
 function cellText(value: ExcelJS.CellValue): string {
   if (value == null) return "";
