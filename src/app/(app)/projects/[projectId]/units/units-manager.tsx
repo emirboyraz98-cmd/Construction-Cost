@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LayersIcon, PencilIcon, PlusIcon, Trash2Icon, UserIcon } from "lucide-react";
 import { FormError, FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
