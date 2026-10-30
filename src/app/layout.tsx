@@ -7,12 +7,13 @@ export const metadata: Metadata = {
     template: "%s · İnşaat Maliyet",
   },
   description: "İnşaat maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı",
+  appleWebApp: { capable: true, title: "İnşaat", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ffffff",
+  themeColor: "#1d4f91",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
