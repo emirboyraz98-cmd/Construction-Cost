@@ -1,0 +1,254 @@
+// Veri modeli — PLAN.md Bölüm 12 (Faz 0 tabloları).
+// Tablo ve alan adları İngilizce; açıklamalar Türkçe.
+// Para ve oran alanları her zaman Decimal (asla Float değil).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Kullanıcı rolleri (PLAN.md Bölüm 2).
+enum Role {
+  yonetici
+  teknik_ofis
+  santiye_sefi
+  muhasebe
+  satin_alma
+  satis
+  dis_muhasebeci
+}
+
+/// Proje tipi: konut (apartman), villa/müstakil, ticari, karma, çok bloklu site.
+enum ProjectType {
+  RESIDENTIAL
+  VILLA
+  COMMERCIAL
+  MIXED
+  SITE
+}
+
+/// Proje durumu: Fizibilite → Ruhsat → İnşaat → Satış → Tamamlandı → Arşiv.
+enum ProjectStatus {
+  FEASIBILITY
+  PERMIT
+  CONSTRUCTION
+  SALES
+  COMPLETED
+  ARCHIVED
+}
+
+/// Arsa modeli: kat karşılığı, satın alma veya karma.
+enum LandModel {
+  FLAT_FOR_LAND
+  PURCHASE
+  MIXED
+}
+
+/// Kullanıcı. `role` ana roldür; yönetici tüm projeleri görür, diğerleri yalnızca
+/// ProjectPermission ile yetkilendirildikleri projeleri.
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  role         Role
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions        Session[]
+  permissions     ProjectPermission[]
+  tabs            UserTab[]
+  auditLogs       AuditLog[]
+  createdProjects Project[]           @relation("ProjectCreatedBy")
+}
+
+/// Oturum. `id`, tarayıcıdaki çerez değerinin SHA-256 özetidir; düz token saklanmaz.
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Kullanıcı–proje–rol: kullanıcının hangi projeyi hangi rolle gördüğü.
+model ProjectPermission {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  role      Role
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+}
+
+/// Proje (PLAN.md Bölüm 5.2). Projeler silinmez; durum "Arşiv" yapılır.
+model Project {
+  id                  String        @id @default(cuid())
+  name                String
+  type                ProjectType
+  status              ProjectStatus @default(FEASIBILITY)
+  address             String?
+  /// Tapu ada numarası
+  landBlockNo         String?
+  /// Tapu parsel numarası
+  landParcelNo        String?
+  /// Arsa alanı (m²)
+  landArea            Decimal?      @db.Decimal(14, 2)
+  /// Emsal (KAKS)
+  floorAreaRatio      Decimal?      @db.Decimal(8, 4)
+  /// TAKS
+  groundCoverageRatio Decimal?      @db.Decimal(8, 4)
+  landModel           LandModel
+  startDate           DateTime?     @db.Date
+  durationMonths      Int?
+  createdById         String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  createdBy   User?               @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  blocks      Block[]
+  costItems   CostItem[]
+  permissions ProjectPermission[]
+  tabs        UserTab[]
+  auditLogs   AuditLog[]
+
+  @@index([status])
+}
+
+/// Blok (PLAN.md Bölüm 5.4). Villa projelerinde her villa bir bloktur.
+model Block {
+  id               String   @id @default(cuid())
+  projectId        String
+  name             String
+  floorCount       Int?
+  basementCount    Int?
+  /// Kat yüksekliği (m)
+  floorHeight      Decimal? @db.Decimal(6, 2)
+  /// Blok inşaat alanı (m²)
+  constructionArea Decimal? @db.Decimal(14, 2)
+  elevatorCount    Int?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+/// Varsayılan İKY (iş kırılım yapısı) şablonu — PLAN.md Bölüm 3.
+/// Yeni proje açılırken projeye CostItem olarak kopyalanır.
+model CostItemTemplate {
+  id          String   @id @default(cuid())
+  parentId    String?
+  code        String   @unique
+  name        String
+  unit        String?
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent    CostItemTemplate?  @relation("CostItemTemplateTree", fields: [parentId], references: [id], onDelete: NoAction)
+  children  CostItemTemplate[] @relation("CostItemTemplateTree")
+  costItems CostItem[]
+
+  @@index([parentId])
+}
+
+/// Projeye ait maliyet kalemi (proje bazlı İKY ağacı). Kalemler silinmez, pasifleştirilir.
+/// Sonraki fazlarda blok, temin şekli, miktar, birim fiyat vb. alanlar eklenecek.
+model CostItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  parentId    String?
+  /// Şablondan geldiyse şablon kalemi; kullanıcı eklediyse boş
+  templateId  String?
+  code        String
+  name        String
+  unit        String?
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project  Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent   CostItem?         @relation("CostItemTree", fields: [parentId], references: [id], onDelete: NoAction)
+  children CostItem[]        @relation("CostItemTree")
+  template CostItemTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, code])
+  @@index([projectId, parentId])
+}
+
+/// Kullanıcının açık proje sekmeleri ve sırası (PLAN.md Bölüm 5.1).
+model UserTab {
+  userId    String
+  projectId String
+  position  Int
+  openedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([userId, position])
+}
+
+/// Değişiklik geçmişi: kim, neyi, ne zaman değiştirdi.
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String?
+  projectId String?
+  /// ör. "create", "update", "deactivate", "activate", "login"
+  action    String
+  /// Etkilenen tablo, ör. "Project", "CostItem"
+  entity    String
+  entityId  String?
+  /// Alan bazında { alan: { old, new } } veya oluşturulan kaydın özeti
+  changes   Json?
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([entity, entityId])
+}
+
+/// Vergi, harç ve yapı denetim parametreleri (yıl / belediye / tür / değer).
+/// Oranlar koda gömülmez, buradan okunur. Faz 0'da boş gelir.
+model Parameter {
+  id           String   @id @default(cuid())
+  year         Int
+  /// Boş ise tüm belediyeler için geçerli
+  municipality String?
+  /// Parametre türü, ör. "yapi_ruhsati_harci"
+  kind         String
+  value        Decimal  @db.Decimal(18, 6)
+  /// ör. "%", "TL/m²"
+  unit         String?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([year, kind])
+}
