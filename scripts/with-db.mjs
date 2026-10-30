@@ -102,7 +102,15 @@ async function loadPostgresBinaries() {
   }
   try {
     const resolved = createRequire(embeddedEntry).resolve(packageName);
-    return await import(pathToFileURL(resolved).href);
+    const binaries = await import(pathToFileURL(resolved).href);
+    if (process.platform !== "win32") {
+      // Bazı ortamlarda paket açılırken çalıştırma izni kaybolabilir (embedded-postgres de böyle yapar).
+      for (const file of [binaries.initdb, binaries.pg_ctl, binaries.postgres]) {
+        const mode = fs.statSync(file).mode;
+        if ((mode & 0o555) !== 0o555) fs.chmodSync(file, mode | 0o555);
+      }
+    }
+    return binaries;
   } catch {
     fail(
       `Bu bilgisayar (${process.platform}-${process.arch}) için gömülü PostgreSQL bulunamadı. ` +
