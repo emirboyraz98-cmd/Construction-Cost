@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { hasCapability } from "@/lib/auth/roles";
 import { totalConstructionArea } from "@/lib/calc/zoning";
@@ -20,7 +21,7 @@ export default async function BlocksPage({ params }: PageProps<"/projects/[proje
   return (
     <>
       <PageHeader
-        title="Bloklar & bölümler"
+        title="Bloklar"
         description={`${project.blocks.length} blok · toplam ${formatNumber(total)} m² inşaat alanı`}
       />
       <BlocksManager
@@ -37,12 +38,11 @@ export default async function BlocksPage({ params }: PageProps<"/projects/[proje
         }))}
       />
       <Card className="mt-4 max-w-2xl py-4">
-        <CardContent className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Bağımsız bölümler</span>
-          <Badge variant="soon">Faz 3</Badge>
-          <span>
-            Kat kat bölüm listesi, net/brüt m², sahiplik (müteahhit / arsa sahibi) ve alan kontrolleri.
-          </span>
+        <CardContent className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span>Kat kat bölüm listesi, net / brüt m², sahiplik ve alan kontrolleri.</span>
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/projects/${projectId}/units`}>Bağımsız bölümler</Link>
+          </Button>
         </CardContent>
       </Card>
     </>

@@ -39,7 +39,16 @@ async function ensureCoefficients(projectId: string) {
     const template = await db.parametricCoefficient.findMany({ where: { projectId: null }, orderBy: { sortOrder: "asc" } });
     if (template.length) {
       await db.parametricCoefficient.createMany({
-        data: template.map(({ id: _id, projectId: _p, ...rest }) => ({ ...rest, projectId })),
+        data: template.map((t) => ({
+          projectId,
+          costItemCode: t.costItemCode,
+          name: t.name,
+          basis: t.basis,
+          coefficient: t.coefficient,
+          unit: t.unit,
+          note: t.note,
+          sortOrder: t.sortOrder,
+        })),
       });
     }
   }

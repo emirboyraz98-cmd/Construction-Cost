@@ -10,7 +10,7 @@ export type UnitRef = { blockId: string; grossArea: Decimal; netArea: Decimal; o
 /** Arsa sahibi payı ↔ işaretli bölümler arasında kabul edilen fark (yüzde puan). */
 export const SHARE_TOLERANCE = new Decimal("0.5");
 
-export type AreaCheck = { level: "danger" | "warning" | "info"; message: string };
+export type AreaCheck = { level: "danger" | "warning" | "info"; scope: "block" | "landowner"; message: string };
 
 export function areaChecks(
   blocks: readonly { id: string; name: string; constructionArea: Decimal | null }[],
@@ -23,17 +23,19 @@ export function areaChecks(
     if (own.length === 0) continue;
     const gross = own.reduce((s, u) => s.plus(u.grossArea), zero());
     const net = own.reduce((s, u) => s.plus(u.netArea), zero());
-    if (own.some((u) => u.netArea.gt(u.grossArea))) checks.push({ level: "danger", message: `${block.name}: net alanı brütten büyük bölüm var.` });
+    if (own.some((u) => u.netArea.gt(u.grossArea))) checks.push({ level: "danger", scope: "block", message: `${block.name}: net alanı brütten büyük bölüm var.` });
     if (!block.constructionArea || block.constructionArea.isZero()) {
-      checks.push({ level: "warning", message: `${block.name}: blok inşaat alanı girilmemiş; bölüm alanları karşılaştırılamıyor.` });
+      checks.push({ level: "warning", scope: "block", message: `${block.name}: blok inşaat alanı girilmemiş; bölüm alanları karşılaştırılamıyor.` });
     } else if (gross.gt(block.constructionArea)) {
       checks.push({
         level: "danger",
+        scope: "block",
         message: `${block.name}: bölümlerin brüt toplamı (${formatNumber(gross)} m²) blok inşaat alanını (${formatNumber(block.constructionArea)} m²) aşıyor.`,
       });
     } else {
       checks.push({
         level: "info",
+        scope: "block",
         message: `${block.name}: brüt ${formatNumber(gross)} m² / inşaat ${formatNumber(block.constructionArea)} m² (%${formatNumber(gross.div(block.constructionArea).times(100), 1)}), net ${formatNumber(net)} m².`,
       });
     }
@@ -41,7 +43,7 @@ export function areaChecks(
 
   const total = units.reduce((s, u) => s.plus(u.grossArea), zero());
   if (units.some((u) => u.owner === "LANDOWNER" && !u.landownerId)) {
-    checks.push({ level: "warning", message: "Arsa sahibine işaretlenip kişisi seçilmemiş bölüm var." });
+    checks.push({ level: "warning", scope: "landowner", message: "Arsa sahibine işaretlenip kişisi seçilmemiş bölüm var." });
   }
   if (total.gt(0)) {
     for (const owner of landowners) {
@@ -50,9 +52,9 @@ export function areaChecks(
       const diff = pct.minus(owner.sharePercent);
       const text = `${owner.name}: sözleşme %${formatNumber(owner.sharePercent, 2)}, işaretlenen bölümler %${formatNumber(pct, 2)} (${formatNumber(marked)} m²)`;
       if (diff.abs().gt(SHARE_TOLERANCE)) {
-        checks.push({ level: "danger", message: `${text}; fark ${formatNumber(diff.abs(), 2)} puan ${diff.isPositive() ? "fazla" : "eksik"}.` });
+        checks.push({ level: "danger", scope: "landowner", message: `${text}; fark ${formatNumber(diff.abs(), 2)} puan ${diff.isPositive() ? "fazla" : "eksik"}.` });
       } else {
-        checks.push({ level: "info", message: `${text}.` });
+        checks.push({ level: "info", scope: "landowner", message: `${text}.` });
       }
     }
   }
