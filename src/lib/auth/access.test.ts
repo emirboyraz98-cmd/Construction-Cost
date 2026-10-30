@@ -82,8 +82,8 @@ describe("harcama görünürlüğü ve düzeltme yetkisi", () => {
   });
 
   it("giren kişi onaylanmamış kaydını düzeltir; onaylananı yalnızca ofis düzeltir", () => {
-    const pending = { createdById: "u1", approvalStatus: "PENDING" as const };
-    const approved = { createdById: "u1", approvalStatus: "APPROVED" as const };
+    const pending = { createdById: "u1", approvalStatus: "PENDING" as const, kind: "EXPENSE" as const };
+    const approved = { createdById: "u1", approvalStatus: "APPROVED" as const, kind: "EXPENSE" as const };
     expect(canModifyExpense("santiye_sefi", "u1", pending)).toBe(true);
     expect(canModifyExpense("santiye_sefi", "u1", approved)).toBe(false);
     expect(canModifyExpense("santiye_sefi", "u9", pending)).toBe(false);

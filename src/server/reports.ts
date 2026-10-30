@@ -4,6 +4,7 @@ import type { ApprovalStatus } from "@/generated/prisma/enums";
 import { projectIdsWithCapability, projectRole } from "@/lib/auth/access";
 import { hasCapability } from "@/lib/auth/roles";
 import { compareCodes } from "@/lib/cost-tree/tree";
+import { COST_KINDS, PAYABLE_KINDS } from "@/lib/expenses/kinds";
 import { dueBucket, type DueBucket } from "@/lib/expenses/payables";
 import { ActionError, getAccess } from "./access";
 import { db } from "./db";
@@ -124,17 +125,17 @@ export async function projectExpenseReport(
 /** Portföy ve proje paneli: proje başına onaylı harcama (KDV hariç / dahil), bekleyen ve ödenmemiş. */
 export async function spendSummaries() {
   const { scope } = await getAccess();
-  const where = { ...projectIdsWithCapability(scope, "expense.viewAll"), deletedAt: null, kind: "EXPENSE" as const };
+  const where = { ...projectIdsWithCapability(scope, "expense.viewAll"), deletedAt: null };
   const [approved, pending, unpaid] = await Promise.all([
     db.expense.groupBy({
       by: ["projectId"],
-      where: { ...where, approvalStatus: "APPROVED" },
+      where: { ...where, kind: { in: [...COST_KINDS] }, approvalStatus: "APPROVED" },
       _sum: { netAmountTry: true, totalAmountTry: true },
     }),
-    db.expense.groupBy({ by: ["projectId"], where: { ...where, approvalStatus: "PENDING" }, _count: true }),
+    db.expense.groupBy({ by: ["projectId"], where: { ...where, kind: { notIn: ["PROGRESS", "TRANSFER"] }, approvalStatus: "PENDING" }, _count: true }),
     db.expense.groupBy({
       by: ["projectId"],
-      where: { ...where, approvalStatus: { not: "REJECTED" }, paymentStatus: "UNPAID" },
+      where: { ...where, kind: { in: [...PAYABLE_KINDS] }, approvalStatus: { not: "REJECTED" }, paymentStatus: "UNPAID" },
       _sum: { totalAmountTry: true },
     }),
   ]);

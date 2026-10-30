@@ -7,18 +7,18 @@ import { projectIdsWithCapability, projectRole } from "@/lib/auth/access";
 import { hasCapability } from "@/lib/auth/roles";
 import { descendantIds } from "@/lib/cost-tree/tree";
 import { canModifyExpense, expenseVisibility, initialApprovalStatus } from "@/lib/expenses/access";
+import { COST_KINDS, isManualKind, PAYABLE_KINDS } from "@/lib/expenses/kinds";
 import type { ExpenseFilters } from "@/lib/expenses/filters";
 import type { ResolvedImportRow } from "@/lib/expenses/import-rows";
 import { ratiosFromWeights, splitExpenseAmounts } from "@/lib/expenses/split";
-import { detectFileType, MAX_UPLOAD_BYTES } from "@/lib/files";
 import type { ExpenseData } from "@/lib/validation/expense";
 import { ActionError, getAccess } from "./access";
 import { diffFields, writeAudit } from "./audit";
 import { db, type Tx } from "./db";
-import { deleteStoredFile, saveFile } from "./storage";
+import { deleteStoredFile } from "./storage";
+import { removeOrphanFiles, storeFiles } from "./uploads";
 
 const PAGE_SIZE = 50;
-const MAX_FILES = 10;
 
 /** Kullanıcının bu projedeki rolü ve harcama görünürlüğü; erişim yoksa hata. */
 export async function expenseAccess(projectId: string) {
@@ -238,28 +238,6 @@ async function findDuplicates(supplierId: string | null, documentNo: string | nu
 // Kaydetme
 // ---------------------------------------------------------------------------
 
-type SavedFile = { key: string; fileName: string; mimeType: string; size: number };
-
-async function storeFiles(files: File[]): Promise<SavedFile[]> {
-  if (files.length > MAX_FILES) throw new ActionError(`En fazla ${MAX_FILES} belge eklenebilir.`);
-  const saved: SavedFile[] = [];
-  try {
-    for (const file of files) {
-      if (file.size === 0) continue;
-      if (file.size > MAX_UPLOAD_BYTES) throw new ActionError(`“${file.name}” çok büyük (en fazla 15 MB).`);
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      const mimeType = detectFileType(bytes);
-      if (!mimeType) throw new ActionError(`“${file.name}” desteklenmeyen dosya türü (fotoğraf veya PDF olmalı).`);
-      const key = await saveFile(bytes, mimeType);
-      saved.push({ key, fileName: file.name.slice(0, 200) || "belge", mimeType, size: bytes.byteLength });
-    }
-  } catch (error) {
-    await Promise.all(saved.map((file) => deleteStoredFile(file.key)));
-    throw error;
-  }
-  return saved;
-}
-
 async function validateReferences(tx: Tx, projectId: string, data: Pick<ExpenseData, "kind" | "costItemId" | "blockId" | "supplierId">) {
   if (data.costItemId) {
     const item = await tx.costItem.findFirst({ where: { id: data.costItemId, projectId }, select: { active: true } });
@@ -356,13 +334,6 @@ export async function createExpense(projectId: string, data: ExpenseData, files:
   }
 }
 
-/** Kaldırılan belgenin dosyasını, başka bir kayıt (bölünmüş fatura) kullanmıyorsa diskten siler. */
-async function removeOrphanFiles(keys: string[]) {
-  for (const key of new Set(keys)) {
-    if ((await db.document.count({ where: { storageKey: key } })) === 0) await deleteStoredFile(key);
-  }
-}
-
 export async function updateExpense(
   projectId: string,
   expenseId: string,
@@ -374,6 +345,9 @@ export async function updateExpense(
   const before = await db.expense.findFirst({ where: { id: expenseId, projectId, deletedAt: null } });
   if (!before) throw new ActionError("Harcama bulunamadı.");
   if (!canModifyExpense(role, user.id, before)) throw new ActionError("Bu kaydı değiştirme yetkiniz yok.");
+  if (!isManualKind(before.kind)) {
+    throw new ActionError("Bağlantı çekişi düzenlenemez; yanlışsa silip yeniden girin.");
+  }
 
   // Bölünmüş faturada yalnızca bu projeye ait alanlar (kalem, blok, açıklama) değişebilir.
   const columns = before.splitGroupId
@@ -481,7 +455,14 @@ export async function setApproval(
   if (decision === "REJECTED" && !note) throw new ActionError("Reddetme nedenini yazın; giren kişi görecek.");
   return db.$transaction(async (tx) => {
     const result = await tx.expense.updateMany({
-      where: { id: { in: expenseIds }, projectId, deletedAt: null, approvalStatus: { not: decision } },
+      // Hakediş ve transfer satırları kendi ekranlarında onaylanır.
+      where: {
+        id: { in: expenseIds },
+        projectId,
+        deletedAt: null,
+        approvalStatus: { not: decision },
+        kind: { in: ["EXPENSE", "ADVANCE", "DELIVERY"] },
+      },
       data: {
         approvalStatus: decision,
         approvalNote: note,
@@ -508,14 +489,17 @@ export async function setPaymentStatus(
   const { user, scope } = await getAccess();
   const rows = await db.expense.findMany({
     where: { id: { in: expenseIds }, deletedAt: null, ...projectIdsWithCapability(scope, "expense.manage") },
-    select: { id: true, projectId: true, splitGroupId: true },
+    select: { id: true, projectId: true, splitGroupId: true, kind: true },
   });
   if (rows.length !== new Set(expenseIds).size) throw new ActionError("Bazı kayıtlarda ödeme işaretleme yetkiniz yok.");
+  if (rows.some((row) => !PAYABLE_KINDS.includes(row.kind))) {
+    throw new ActionError("Çekiş, hakediş ve transfer satırlarının ödemesi bağlantı veya hakediş ekranından işaretlenir.");
+  }
   // Bölünmüş faturanın tüm satırları birlikte ödenir.
   const groups = rows.map((row) => row.splitGroupId).filter((id): id is string => Boolean(id));
   return db.$transaction(async (tx) => {
     const result = await tx.expense.updateMany({
-      where: { deletedAt: null, OR: [{ id: { in: expenseIds } }, { splitGroupId: { in: groups } }] },
+      where: { deletedAt: null, kind: { in: [...PAYABLE_KINDS] }, OR: [{ id: { in: expenseIds } }, { splitGroupId: { in: groups } }] },
       data: payment.paid
         ? { paymentStatus: "PAID", paidAt: payment.paidAt, ...(payment.method ? { paymentMethod: payment.method } : {}) }
         : { paymentStatus: "UNPAID", paidAt: null },
@@ -735,10 +719,13 @@ export async function projectExpenseOverview(projectId: string) {
   const base = { projectId, deletedAt: null, ...visibility };
   const [recent, approved, pending, unpaid] = await Promise.all([
     db.expense.findMany({ where: base, orderBy: [{ date: "desc" }, { createdAt: "desc" }], take: 5, select: expenseListSelect }),
-    db.expense.aggregate({ where: { ...base, kind: "EXPENSE", approvalStatus: "APPROVED" }, _sum: { netAmountTry: true, totalAmountTry: true } }),
+    db.expense.aggregate({
+      where: { ...base, kind: { in: [...COST_KINDS] }, approvalStatus: "APPROVED" },
+      _sum: { netAmountTry: true, totalAmountTry: true },
+    }),
     db.expense.count({ where: { ...base, approvalStatus: "PENDING" } }),
     db.expense.aggregate({
-      where: { ...base, paymentStatus: "UNPAID", approvalStatus: { not: "REJECTED" } },
+      where: { ...base, kind: { in: [...PAYABLE_KINDS] }, paymentStatus: "UNPAID", approvalStatus: { not: "REJECTED" } },
       _sum: { totalAmountTry: true },
     }),
   ]);

@@ -23,6 +23,12 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
     description: "Harcama girişi (mobil, tablo modu, Excel), onay ve ödeme durumu.",
   },
   {
+    key: "contracts",
+    label: "Taşeron & hakediş",
+    capability: "contract.view",
+    description: "Taşeron sözleşmeleri, birim fiyatlar, hakedişler ve kesintiler.",
+  },
+  {
     key: "cost-tree",
     label: "Bütçe / Maliyet ağacı",
     capability: "costTree.view",
@@ -91,9 +97,16 @@ export const COMPANY_MODULES: readonly (ModuleDef & { href: string })[] = [
     key: "connections",
     href: "/company/connections",
     label: "Bağlantılar",
-    phase: 2,
+    capability: "connection.view",
     description:
       "Malzeme bağlantıları: toplam / çekilen / kalan miktar, proje tahsisi, çekiş ve ödeme girişi, avans bakiyesi, uyarılar.",
+  },
+  {
+    key: "transfers",
+    href: "/company/transfers",
+    label: "Malzeme transferi",
+    capability: "transfer.create",
+    description: "Bir şantiyede artan malzemenin başka projeye gönderilmesi; maliyeti de aktarılır.",
   },
   {
     key: "suppliers",

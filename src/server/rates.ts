@@ -5,7 +5,7 @@ import { addDays } from "@/lib/expenses/payables";
 import { parseTcmbXml, tcmbUrl, type TcmbBulletin } from "@/lib/expenses/tcmb";
 import { ActionError, getAccess, requireGlobalCapability } from "./access";
 import { writeAudit } from "./audit";
-import { db } from "./db";
+import { db, type Tx } from "./db";
 
 export async function listRates(limit = 60) {
   await requireGlobalCapability("rates.manage");
@@ -24,6 +24,30 @@ export async function suggestedRate(date: Date, currency: Currency) {
     orderBy: { date: "desc" },
   });
   return rate ? { value: rate.buying.toString(), date: rate.date, source: rate.source } : null;
+}
+
+/**
+ * Sunucu tarafı hesaplar için kur (bağlantı çekişi, ödeme, fatura): `suggestedRate` ile aynı kural,
+ * yoksa hata. TL için 1.
+ */
+export async function requireRateOn(client: Tx | typeof db, date: Date, currency: Currency): Promise<Decimal> {
+  if (currency === "TRY") return new Decimal(1);
+  const rate = await client.exchangeRate.findFirst({
+    where: { currency, date: { lte: date, gte: addDays(date, -10) } },
+    orderBy: { date: "desc" },
+  });
+  if (!rate) {
+    throw new ActionError(`${currency} kuru bulunamadı (${date.toISOString().slice(0, 10)}). Ayarlar → Döviz kurları ekranından girin.`);
+  }
+  return new Decimal(rate.buying.toString());
+}
+
+/** Vadesi gelecekte olan dövizli ödemenin TL tahmini için en son kur. */
+export async function latestRate(client: Tx | typeof db, currency: Currency): Promise<Decimal> {
+  if (currency === "TRY") return new Decimal(1);
+  const rate = await client.exchangeRate.findFirst({ where: { currency }, orderBy: { date: "desc" } });
+  if (!rate) throw new ActionError(`${currency} kuru hiç girilmemiş. Ayarlar → Döviz kurları ekranından girin.`);
+  return new Decimal(rate.buying.toString());
 }
 
 /** İçe aktarmada satır satır kur bulmak için belirli aralıktaki kurlar. */

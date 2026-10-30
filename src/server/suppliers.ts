@@ -2,6 +2,7 @@ import "server-only";
 import Decimal from "decimal.js";
 import { projectIdsWithCapability } from "@/lib/auth/access";
 import { hasCapability } from "@/lib/auth/roles";
+import { PAYABLE_KINDS } from "@/lib/expenses/kinds";
 import type { SupplierData } from "@/lib/validation/supplier";
 import { normalizeForSearch } from "@/lib/utils";
 import { ActionError, getAccess, requireGlobalCapability } from "./access";
@@ -25,6 +26,7 @@ async function balances(supplierIds?: string[]): Promise<Map<string, SupplierBal
       ...projectIdsWithCapability(scope, "expense.viewAll"),
       deletedAt: null,
       approvalStatus: { not: "REJECTED" },
+      kind: { in: [...PAYABLE_KINDS] },
       supplierId: supplierIds ? { in: supplierIds } : { not: null },
     },
     _sum: { totalAmountTry: true },

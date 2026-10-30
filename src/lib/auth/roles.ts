@@ -45,7 +45,16 @@ export type Capability =
   | "supplier.manage"
   | "rates.manage"
   | "parameters.manage"
-  | "accountant.export";
+  | "accountant.export"
+  // Faz 2 – bağlantılar ve taşeron
+  | "connection.view"
+  | "connection.manage"
+  | "contract.view"
+  | "contract.viewAmounts"
+  | "contract.manage"
+  | "progress.prepare"
+  | "progress.approve"
+  | "transfer.create";
 
 const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "project.create": [Role.yonetici, Role.teknik_ofis],
@@ -87,6 +96,27 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "rates.manage": [Role.yonetici, Role.muhasebe],
   "parameters.manage": [Role.yonetici, Role.muhasebe],
   "accountant.export": [Role.yonetici, Role.muhasebe, Role.dis_muhasebeci],
+  /** Malzeme bağlantıları (şirket geneli): liste, fiyatlar, bakiyeler */
+  "connection.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  /** Bağlantı açma/düzenleme, tahsis, ödeme planı, fatura eşleştirme */
+  "connection.manage": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  /** Taşeron sözleşmeleri ve hakedişler (proje bazında); şantiye şefi miktarları görür */
+  "contract.view": [
+    Role.yonetici,
+    Role.teknik_ofis,
+    Role.santiye_sefi,
+    Role.muhasebe,
+    Role.satin_alma,
+    Role.dis_muhasebeci,
+  ],
+  /** Birim fiyat ve tutarlar (şantiye şefi fiyat bilgisini görmez, PLAN.md Bölüm 2) */
+  "contract.viewAmounts": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  "contract.manage": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma],
+  /** Hakediş hazırlama (kümülatif miktarlar) ve onaya gönderme */
+  "progress.prepare": [Role.yonetici, Role.teknik_ofis, Role.santiye_sefi, Role.muhasebe],
+  "progress.approve": [Role.yonetici, Role.muhasebe],
+  /** Projeler arası malzeme transferi (iki projede de gerekir) */
+  "transfer.create": [Role.yonetici, Role.muhasebe, Role.satin_alma],
 };
 
 export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {

@@ -20,13 +20,17 @@ describe("harcama görünürlüğü ve yetki", () => {
   });
 
   it("giren kişi onaylanmış kaydını değiştiremez; ofis her kaydı değiştirebilir", () => {
-    const own = { createdById: "u1", approvalStatus: "PENDING" as const };
+    const own = { createdById: "u1", approvalStatus: "PENDING" as const, kind: "EXPENSE" as const };
     expect(canModifyExpense("santiye_sefi", "u1", own)).toBe(true);
     expect(canModifyExpense("santiye_sefi", "u1", { ...own, approvalStatus: "REJECTED" })).toBe(true);
     expect(canModifyExpense("santiye_sefi", "u1", { ...own, approvalStatus: "APPROVED" })).toBe(false);
     expect(canModifyExpense("santiye_sefi", "u2", own)).toBe(false);
     expect(canModifyExpense("muhasebe", "u2", { ...own, approvalStatus: "APPROVED" })).toBe(true);
     expect(canModifyExpense("teknik_ofis", "u1", own)).toBe(false);
+    // hakediş ve transfer satırları kendi ekranlarından yönetilir
+    expect(canModifyExpense("yonetici", "u1", { ...own, kind: "PROGRESS" })).toBe(false);
+    expect(canModifyExpense("yonetici", "u1", { ...own, kind: "TRANSFER" })).toBe(false);
+    expect(canModifyExpense("santiye_sefi", "u1", { ...own, kind: "DELIVERY" })).toBe(true);
   });
 });
 

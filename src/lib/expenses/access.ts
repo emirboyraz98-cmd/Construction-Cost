@@ -1,5 +1,5 @@
 // Harcama kayıtlarına erişim kuralları (saf). Projeye erişim ayrıca proje kapsamıyla denetlenir.
-import type { ApprovalStatus, Role } from "@/generated/prisma/enums";
+import type { ApprovalStatus, ExpenseKind, Role } from "@/generated/prisma/enums";
 import { hasCapability } from "../auth/roles";
 
 /**
@@ -12,10 +12,15 @@ export function expenseVisibility(role: Role | null, userId: string): { createdB
   return null;
 }
 
-type ExpenseRef = { createdById: string; approvalStatus: ApprovalStatus };
+type ExpenseRef = { createdById: string; approvalStatus: ApprovalStatus; kind: ExpenseKind };
 
-/** Düzeltme/silme: ofis (yönetici, muhasebe) her kaydı; giren kişi onaylanmamış kendi kaydını. */
+/**
+ * Düzeltme/silme: ofis (yönetici, muhasebe) her kaydı; giren kişi onaylanmamış kendi kaydını.
+ * Hakediş ve transfer satırları kendi ekranlarından yönetilir (hakedişin onayı geri alınır,
+ * transfer silinir); burada değiştirilemez.
+ */
 export function canModifyExpense(role: Role | null, userId: string, expense: ExpenseRef): boolean {
+  if (expense.kind === "PROGRESS" || expense.kind === "TRANSFER") return false;
   if (hasCapability(role, "expense.manage")) return true;
   return (
     hasCapability(role, "expense.create") &&
