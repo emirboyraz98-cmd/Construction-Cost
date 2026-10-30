@@ -138,7 +138,7 @@ export function ContractForm({
           </FormField>
           <FormField id="supplyMethod" label="Temin şekli" className="sm:col-span-2">
             <NativeSelect id="supplyMethod" value={values.supplyMethod} onChange={(e) => set({ supplyMethod: e.target.value as SupplyMethod })}>
-              {Object.entries(SUPPLY_METHOD_LABELS).map(([value, label]) => (
+              {Object.entries(SUPPLY_METHOD_LABELS).filter(([value]) => value !== "OWN_TEAM").map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>

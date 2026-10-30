@@ -129,8 +129,12 @@ model Project {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  createdBy             User?                  @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy             User?                   @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   blocks                Block[]
+  units                 Unit[]
+  landowners            Landowner[]
+  budgetLines           BudgetLine[]
+  coefficients          ParametricCoefficient[]
   costItems             CostItem[]
   permissions           ProjectPermission[]
   tabs                  UserTab[]
@@ -140,8 +144,8 @@ model Project {
   connectionAllocations ConnectionAllocation[]
   contracts             SubcontractContract[]
   progressBillings      ProgressBilling[]
-  transfersOut          MaterialTransfer[]     @relation("TransferFrom")
-  transfersIn           MaterialTransfer[]     @relation("TransferTo")
+  transfersOut          MaterialTransfer[]      @relation("TransferFrom")
+  transfersIn           MaterialTransfer[]      @relation("TransferTo")
 
   @@index([status])
 }
@@ -162,8 +166,10 @@ model Block {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  expenses Expense[]
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  expenses    Expense[]
+  units       Unit[]
+  budgetLines BudgetLine[]
 
   @@unique([projectId, name])
   @@index([projectId])
@@ -211,6 +217,7 @@ model CostItem {
   parent        CostItem?         @relation("CostItemTree", fields: [parentId], references: [id], onDelete: NoAction)
   children      CostItem[]        @relation("CostItemTree")
   contractItems ContractItem[]
+  budgetLines   BudgetLine[]
   template      CostItemTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   expenses      Expense[]
 
@@ -307,9 +314,11 @@ model Supplier {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  expenses    Expense[]
-  connections Connection[]
-  contracts   SubcontractContract[]
+  expenses       Expense[]
+  connections    Connection[]
+  contracts      SubcontractContract[]
+  resources      Resource[]
+  resourcePrices ResourcePrice[]
 
   @@index([name])
   @@index([taxNumber])
@@ -427,6 +436,8 @@ model Expense {
   contractId        String?
   progressBillingId String?
   transferId        String?
+  /// Kütüphane malzemesi (fatura fiyatı kütüphaneye buradan yansır)
+  resourceId        String?
   /// Silinen kayıt (kayıt tutulur, listelerde görünmez)
   deletedAt         DateTime?
   createdAt         DateTime       @default(now())
@@ -444,6 +455,7 @@ model Expense {
   contract        SubcontractContract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
   progressBilling ProgressBilling?     @relation(fields: [progressBillingId], references: [id], onDelete: Restrict)
   transfer        MaterialTransfer?    @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  resource        Resource?            @relation(fields: [resourceId], references: [id], onDelete: SetNull)
   documents       Document[]
 
   @@index([projectId, date])
@@ -456,6 +468,7 @@ model Expense {
   @@index([connectionId])
   @@index([contractId])
   @@index([progressBillingId])
+  @@index([resourceId])
 }
 
 /// Belge (fiş/fatura fotoğrafı, PDF). Dosyanın kendisi depolama alanında (`uploads/`) durur.
@@ -570,11 +583,14 @@ model ConnectionItem {
   quantity     Decimal @db.Decimal(18, 4)
   unitPrice    Decimal @db.Decimal(18, 4)
   vatRate      Decimal @db.Decimal(5, 2)
+  /// Kütüphane malzemesi: aktif bağlantı fiyatı bütçede öncelikli fiyat olur (PLAN 9.6)
+  resourceId   String?
 
   connection   Connection              @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   allocations  ConnectionAllocation[]
   draws        Expense[]
   invoiceLines ConnectionInvoiceLine[]
+  resource     Resource?               @relation(fields: [resourceId], references: [id], onDelete: SetNull)
 
   @@index([connectionId])
 }
@@ -670,6 +686,7 @@ enum ContractStatus {
 enum SupplyMethod {
   TURNKEY
   LABOR_ONLY
+  OWN_TEAM
 }
 
 model SubcontractContract {
@@ -825,4 +842,235 @@ model MaterialTransfer {
 
   @@index([fromProjectId])
   @@index([toProjectId])
+}
+
+// ─── Faz 3: bağımsız bölümler ve arsa (PLAN.md 5.3, 5.5) ──────────────────────────
+
+enum UsageType {
+  RESIDENTIAL
+  SHOP
+  OFFICE
+  STORAGE
+}
+
+enum UnitOwner {
+  CONTRACTOR
+  LANDOWNER
+}
+
+/// Kat karşılığı arsa sahibi; pay oranı sözleşmedeki yüzde (ör. 45).
+model Landowner {
+  id             String   @id @default(cuid())
+  projectId      String
+  name           String
+  sharePercent   Decimal  @db.Decimal(7, 4)
+  /// Aylık kira yardımı (TL)
+  monthlyRentAid Decimal? @db.Decimal(18, 2)
+  phone          String?
+  email          String?
+  notes          String?
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  units   Unit[]
+
+  @@index([projectId])
+}
+
+/// Bağımsız bölüm. Kat: bodrum için eksi (−1), zemin 0.
+model Unit {
+  id              String    @id @default(cuid())
+  projectId       String
+  blockId         String
+  floor           Int
+  doorNo          String
+  usageType       UsageType @default(RESIDENTIAL)
+  layout          String?
+  netArea         Decimal   @db.Decimal(10, 2)
+  grossArea       Decimal   @db.Decimal(10, 2)
+  commonAreaShare Decimal?  @db.Decimal(10, 2)
+  facade          String?
+  view            String?
+  /// Balkon / teras / bahçe alanı (m²)
+  extraArea       Decimal?  @db.Decimal(10, 2)
+  owner           UnitOwner @default(CONTRACTOR)
+  landownerId     String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  block     Block      @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  landowner Landowner? @relation(fields: [landownerId], references: [id], onDelete: SetNull)
+
+  @@unique([blockId, doorNo])
+  @@index([projectId])
+}
+
+// ─── Faz 3: malzeme / kaynak kütüphanesi ve reçeteler (PLAN.md 4) ─────────────────
+
+enum ResourceType {
+  MATERIAL
+  LABOR
+  EQUIPMENT
+  SERVICE
+}
+
+/// Elle girilen fiyat kaynağı. Fatura fiyatları harcamalardan, bağlantı fiyatları bağlantılardan okunur.
+enum PriceSource {
+  QUOTE
+  MARKET
+}
+
+/// Kaynak (malzeme, işçilik, makine, hizmet) — şirket geneli.
+model Resource {
+  id                String       @id @default(cuid())
+  code              String       @unique
+  name              String
+  type              ResourceType @default(MATERIAL)
+  category          String?
+  unit              String
+  /// Fire oranı (%)
+  wastePercent      Decimal      @default(0) @db.Decimal(5, 2)
+  currency          Currency     @default(TRY)
+  spec              String?
+  defaultSupplierId String?
+  active            Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  defaultSupplier Supplier?        @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
+  prices          ResourcePrice[]
+  recipeLines     RecipeLine[]
+  expenses        Expense[]
+  connectionItems ConnectionItem[]
+  budgetLines     BudgetLine[]
+
+  @@index([name])
+}
+
+/// Teklif veya piyasa araştırması fiyatı (KDV hariç).
+model ResourcePrice {
+  id          String      @id @default(cuid())
+  resourceId  String
+  date        DateTime    @db.Date
+  price       Decimal     @db.Decimal(18, 4)
+  currency    Currency    @default(TRY)
+  source      PriceSource
+  supplierId  String?
+  note        String?
+  createdById String?
+  createdAt   DateTime    @default(now())
+
+  resource Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([resourceId, date])
+}
+
+/// Birim fiyat analizi: 1 birim iş için kaynak miktarları (ör. 1 m² seramik).
+model Recipe {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  unit        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lines       RecipeLine[]
+  budgetLines BudgetLine[]
+}
+
+model RecipeLine {
+  id         String  @id @default(cuid())
+  recipeId   String
+  resourceId String
+  quantity   Decimal @db.Decimal(18, 6)
+  sortOrder  Int     @default(0)
+
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+
+  @@index([recipeId])
+}
+
+// ─── Faz 3: metraj ve bütçe (PLAN.md 6, 7.1–7.3) ──────────────────────────────────
+
+enum QuantitySource {
+  PARAMETRIC
+  FORMULA
+  MANUAL
+}
+
+enum BudgetPriceSource {
+  RECIPE
+  RESOURCE
+  MANUAL
+}
+
+/// Parametrik katsayının tabanı.
+enum CoefficientBasis {
+  CONSTRUCTION_AREA
+  SELLABLE_GROSS
+  SELLABLE_NET
+  LAND_AREA
+  UNIT_COUNT
+}
+
+/// Parametrik metraj katsayısı. projectId boş: şablon (projede ilk kullanımda kopyalanır).
+model ParametricCoefficient {
+  id           String           @id @default(cuid())
+  projectId    String?
+  costItemCode String
+  name         String
+  basis        CoefficientBasis @default(CONSTRUCTION_AREA)
+  coefficient  Decimal          @db.Decimal(18, 6)
+  unit         String
+  note         String?
+  sortOrder    Int              @default(0)
+
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  budgetLines BudgetLine[]
+
+  @@index([projectId])
+}
+
+/// Bütçe satırı: maliyet kalemi (isteğe bağlı blok) için miktar × birim fiyat × (1 + fire).
+/// Reçete / kaynak fiyatlı satırların birim fiyatı kütüphaneden canlı hesaplanır; elle girilen fiyat saklanır.
+model BudgetLine {
+  id             String            @id @default(cuid())
+  projectId      String
+  costItemId     String
+  blockId        String?
+  description    String?
+  supplyMethod   SupplyMethod?
+  quantity       Decimal           @db.Decimal(18, 4)
+  quantitySource QuantitySource    @default(MANUAL)
+  formula        String?
+  coefficientId  String?
+  unit           String?
+  priceSource    BudgetPriceSource @default(MANUAL)
+  recipeId       String?
+  resourceId     String?
+  /// Elle girilen birim fiyat (KDV hariç, satırın para biriminde)
+  unitPrice      Decimal?          @db.Decimal(18, 4)
+  currency       Currency          @default(TRY)
+  wastePercent   Decimal           @default(0) @db.Decimal(5, 2)
+  priceNote      String?
+  sortOrder      Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costItem    CostItem               @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+  block       Block?                 @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  coefficient ParametricCoefficient? @relation(fields: [coefficientId], references: [id], onDelete: SetNull)
+  recipe      Recipe?                @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  resource    Resource?              @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, costItemId])
 }

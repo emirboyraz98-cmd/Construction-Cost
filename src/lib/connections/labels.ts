@@ -30,6 +30,7 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
 export const SUPPLY_METHOD_LABELS: Record<SupplyMethod, string> = {
   TURNKEY: "Malzemeli taşeron (anahtar teslim)",
   LABOR_ONLY: "Malzeme bizden + taşeron işçilik",
+  OWN_TEAM: "Tamamen bizden (kendi ekip)",
 };
 
 export const BILLING_STATUS_LABELS: Record<ProgressBillingStatus, string> = {

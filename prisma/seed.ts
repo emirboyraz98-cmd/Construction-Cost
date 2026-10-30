@@ -85,9 +85,28 @@ async function seedVatRates() {
   return rates.length;
 }
 
+/**
+ * Parametrik metraj katsayı şablonu (PLAN.md Bölüm 6). Değerler PLAN'daki aralıkların ortasıdır
+ * ve yalnızca başlangıç varsayımıdır; projede düzenlenir, gerçekleşen katsayılarla kalibre edilir.
+ */
+async function seedCoefficients() {
+  if ((await prisma.parametricCoefficient.count({ where: { projectId: null } })) > 0) return 0;
+  const rows = [
+    { costItemCode: "05.04.01", name: "Beton", basis: "CONSTRUCTION_AREA", coefficient: "0.42", unit: "m³", note: "PLAN 6: 0,35–0,50 m³ / m² inşaat alanı" },
+    { costItemCode: "05.05", name: "Demir", basis: "CONSTRUCTION_AREA", coefficient: "0.042", unit: "ton", note: "PLAN 6: 35–50 kg / m² inşaat alanı" },
+    { costItemCode: "05.06", name: "Kalıp", basis: "CONSTRUCTION_AREA", coefficient: "3", unit: "m²", note: "PLAN 6: 2,5–3,5 m² / m² inşaat alanı" },
+    { costItemCode: "08.01", name: "İç sıva", basis: "SELLABLE_NET", coefficient: "2.75", unit: "m²", note: "PLAN 6: 2,5–3,0 m² / m² net alan" },
+    { costItemCode: "08.08", name: "İç boya", basis: "SELLABLE_NET", coefficient: "2.75", unit: "m²", note: "PLAN 6: 2,5–3,0 m² / m² net alan" },
+  ] as const;
+  await prisma.parametricCoefficient.createMany({ data: rows.map((row, index) => ({ ...row, sortOrder: index })) });
+  return rows.length;
+}
+
 async function main() {
   const added = await seedCostTemplate();
   const vat = await seedVatRates();
+  const coefficients = await seedCoefficients();
+  if (coefficients > 0) console.log(`Parametrik katsayı şablonu eklendi (${coefficients} katsayı).`);
   if (vat > 0) console.log(`KDV oranları parametre tablosuna eklendi (${vat} oran).`);
   if (added > 0) console.log(`İKY şablonu: ${added} kalem eklendi.`);
 
