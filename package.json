@@ -18,7 +18,10 @@
     "db:seed": "node scripts/with-db.mjs -- tsx prisma/seed.ts",
     "db:studio": "node scripts/with-db.mjs -- prisma studio",
     "db:reset": "node scripts/with-db.mjs -- prisma migrate reset",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "baslat": "node scripts/launch.mjs",
+    "demo": "node scripts/launch.mjs --demo",
+    "guncelle": "node scripts/launch.mjs --update"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",

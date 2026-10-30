@@ -20,40 +20,34 @@ Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
 ---
 
-## Windows'ta kurulum ve çalıştırma
+## Bilgisayarda kurulum ve çalıştırma (Windows)
 
-Gerekenler: **Node.js 22.12 veya üstü** (Node 26 LTS uygundur) ve **Git**.
-PostgreSQL kurmanıza gerek yoktur; program kendi veritabanını proje klasörünün içinde çalıştırır.
+Program şimdilik bir bilgisayarda çalışır; aynı Wi-Fi'daki telefonlar da bağlanabilir.
+Veritabanı kurmanız gerekmez, program kendi veritabanını klasörün içinde çalıştırır.
 
-1. Komut istemini (PowerShell veya Terminal) **normal kullanıcı olarak** açın.
-2. Projeyi indirin ve klasöre girin. Klasör yolunda Türkçe karakter ve boşluk olmaması önerilir,
-   ör. `C:\projeler`:
+### 1. Bir kez yapılacaklar
 
-   ```bash
-   git clone https://github.com/emirboyraz98-cmd/Construction-Cost.git
-   ```
+1. **Node.js** (LTS sürümü, 22.12 veya üstü) ve **Git** kurun: nodejs.org ve git-scm.com.
+2. Türkçe karakter ve boşluk içermeyen bir klasörde (ör. `C:\projeler`) komut istemini açıp
+   programı indirin:
 
    ```bash
-   cd Construction-Cost
+   git clone -b claude/bold-hamilton-pfaqe3 https://github.com/emirboyraz98-cmd/Construction-Cost.git
    ```
 
-3. Bağımlılıkları yükleyin (ilk seferde internetten yaklaşık birkaç yüz MB indirir):
+   Geliştirme şu an bu dalda; PR `main`'e birleştirildikten sonra `-b ...` kısmı gerekmez.
 
-   ```bash
-   npm install
-   ```
+### 2. Çalıştırma: çift tıklama
 
-4. Programı başlatın:
+| Dosya | Ne yapar |
+|---|---|
+| **`baslat.bat`** | Programı açar. İlk seferde gerekli paketleri indirir ve programı derler (birkaç dakika). Hazır olunca tarayıcı kendiliğinden açılır. |
+| **`demo.bat`** | Örnek verili deneme. Ayrı bir **demo veritabanına** dolu bir proje yükler: bölümler, harcamalar, bağlantı, taşeron hakedişi, kütüphane, bütçe. Gerçek verilerinize dokunmaz. |
+| **`guncelle.bat`** | GitHub'dan son sürümü alır, paketleri günceller ve programı yeniden derler. Sonra `baslat.bat` ile açın. |
 
-   ```bash
-   npm run dev
-   ```
-
-   İlk çalıştırmada `.pgdata/` klasöründe veritabanı oluşturulur, tablolar ve varsayılan
-   maliyet ağacı şablonu yüklenir. “Ready” yazısını görünce tarayıcıda
-   **http://localhost:3000** adresini açın.
-
-5. Kapatmak için komut penceresinde **Ctrl + C** tuşlarına basın. Veritabanı da düzgünce kapanır.
+- Kapatmak için siyah pencerede **Ctrl + C**, sonra pencereyi kapatın. Veritabanı düzgünce kapanır.
+- `baslat.bat` ve `demo.bat` aynı anda açılmaz (ikisi de 3000 portunu kullanır).
+- Komut satırını tercih ederseniz: `npm run baslat`, `npm run demo`, `npm run guncelle`.
 
 ### Varsayılan giriş
 
@@ -65,25 +59,29 @@ Bu bir **test hesabıdır**. Giriş yaptıktan sonra sağ üstteki kullanıcı m
 **Hesabım / şifre değiştir** ile şifrenizi değiştirin. Diğer çalışanları
 **Ayarlar → Kullanıcılar** ekranından ekleyip rol ve proje yetkisi verin.
 
+Demoda ayrıca `muhasebe@demo.local`, `sef@demo.local`, `satinalma@demo.local` kullanıcıları
+vardır (şifre `Demo.2026`). Rolleri denemek için bunlarla giriş yapın: örneğin şantiye şefi
+fiyatları ve bütçeyi görmez.
+
 İlk yönetici hesabı veritabanında hiç kullanıcı yokken bir kez oluşturulur. Farklı bir
 e-posta/şifre ile başlamak isterseniz `.env.example` dosyasını `.env` adıyla kopyalayıp
 `SEED_ADMIN_*` değerlerini **ilk çalıştırmadan önce** değiştirin.
 
-### Telefondan deneme (aynı Wi-Fi ağında)
+### Telefondan kullanma (aynı Wi-Fi ağında)
 
-Geliştirme modu (`npm run dev`) güvenlik nedeniyle yalnızca bu bilgisayardan açılır.
-Telefondan denemek için uygulamayı derleyip üretim modunda başlatın:
+`baslat.bat` açıldığında pencerede “Aynı Wi-Fi'daki telefondan: http://192.168…:3000” gibi
+bir adres yazar; telefonda bu adresi açın. Windows Güvenlik Duvarı izin isterse
+“Özel ağlar” için izin verin. Telefona uygulama gibi eklemek için aşağıdaki bölüme bakın.
+Telefonun ana ekrana ekleme özelliği HTTPS ister. Yerel ağda bu özellik çalışmayabilir;
+program yine tarayıcıdan kullanılır.
 
-```bash
-npm run build
-```
+### Verileriniz nerede?
 
-```bash
-npm start
-```
-
-Sonra telefonda `http://<bilgisayarın-IP-adresi>:3000` adresini açın (IP adresini
-`ipconfig` komutu gösterir). Windows Güvenlik Duvarı izin isterse “Özel ağlar” için izin verin.
+- **`.pgdata`** klasörü: veritabanı (gerçek veriler ve ayrıca demo veritabanı).
+- **`uploads`** klasörü: fiş / fatura fotoğrafları ve PDF'ler.
+- **Yedek:** Program kapalıyken bu iki klasörü birlikte harici diske veya buluta kopyalayın.
+  Bu klasörleri silmek bütün verileri siler.
+- İleride sunucuya (online) geçildiğinde veriler bu klasörlerden taşınır.
 
 ---
 
@@ -182,7 +180,10 @@ Fiş fotoğrafı çekerken telefon kamerası doğrudan açılır; fotoğraflar y
 
 | Komut | Ne yapar |
 |---|---|
-| `npm run dev` | Geliştirme modunda başlatır (veritabanı, migration ve başlangıç verisi dahil) |
+| `npm run baslat` | `baslat.bat` ile aynı: gerekirse kurar, derler ve açar |
+| `npm run demo` | `demo.bat` ile aynı: ayrı demo veritabanında örnek verili deneme |
+| `npm run guncelle` | `guncelle.bat` ile aynı: son sürümü alır, kurar, derler |
+| `npm run dev` | (Geliştirici) Geliştirme modunda başlatır |
 | `npm run build` | Üretim için derler |
 | `npm start` | Derlenmiş uygulamayı başlatır (önce `npm run build`) |
 | `npm test` | Birim testlerini çalıştırır |
@@ -210,7 +211,9 @@ Fiş fotoğrafı çekerken telefon kamerası doğrudan açılır; fotoğraflar y
 | `Veritabanı çalışıyor görünüyor ama bağlanılamıyor` | Bilgisayarı yeniden başlatın veya `.pgdata\postmaster.pid` dosyasını silin |
 | `Veritabanı oluşturulamadı (initdb)` | Proje klasörünü Türkçe karakter/boşluk içermeyen bir yola taşıyın (ör. `C:\projeler`) |
 | `Bu bilgisayar için gömülü PostgreSQL bulunamadı` | ARM işlemcili Windows desteklenmiyor; `DATABASE_URL` ile ayrı PostgreSQL kullanın |
-| 3000 portu dolu | `npm run dev -- -p 3001` ile başka portta başlatın |
+| 3000 portu dolu (başka program veya açık bir `baslat`/`demo` penceresi) | Diğer pencereyi kapatın ya da `.env` dosyasına `PORT=3001` yazın |
+| `Node.js bulunamadı` | nodejs.org'dan LTS sürümünü kurun, bilgisayarı yeniden başlatıp tekrar deneyin |
+| `Node.js 22.12 veya üstü gerekli` | Eski Node.js sürümünü kaldırıp güncel LTS sürümünü kurun |
 
 ## Klasör yapısı
 
