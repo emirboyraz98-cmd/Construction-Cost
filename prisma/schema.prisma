@@ -135,6 +135,8 @@ model Project {
   landowners            Landowner[]
   budgetLines           BudgetLine[]
   coefficients          ParametricCoefficient[]
+  baselines             BudgetBaseline[]
+  progressEstimates     CostItemProgress[]
   costItems             CostItem[]
   permissions           ProjectPermission[]
   tabs                  UserTab[]
@@ -213,13 +215,15 @@ model CostItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  project       Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  parent        CostItem?         @relation("CostItemTree", fields: [parentId], references: [id], onDelete: NoAction)
-  children      CostItem[]        @relation("CostItemTree")
-  contractItems ContractItem[]
-  budgetLines   BudgetLine[]
-  template      CostItemTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  expenses      Expense[]
+  project           Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent            CostItem?            @relation("CostItemTree", fields: [parentId], references: [id], onDelete: NoAction)
+  children          CostItem[]           @relation("CostItemTree")
+  contractItems     ContractItem[]
+  budgetLines       BudgetLine[]
+  baselineLines     BudgetBaselineLine[]
+  progressEstimates CostItemProgress[]
+  template          CostItemTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  expenses          Expense[]
 
   @@unique([projectId, code])
   @@index([projectId, parentId])
@@ -1073,4 +1077,62 @@ model BudgetLine {
   resource    Resource?              @relation(fields: [resourceId], references: [id], onDelete: SetNull)
 
   @@index([projectId, costItemId])
+}
+
+// ─── Faz 4: bütçe kontrolü (PLAN.md 8.3, 9.6) ─────────────────────────────────────
+
+/**
+ * Bütçenin onaylanmış (dondurulmuş) hali; sapma bu referansa göre hesaplanır.
+ */
+model BudgetBaseline {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  note        String?
+  total       Decimal  @db.Decimal(18, 2)
+  createdById String
+  createdAt   DateTime @default(now())
+
+  project Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lines   BudgetBaselineLine[]
+
+  @@index([projectId, createdAt])
+}
+
+/**
+ * Baz bütçe anındaki satır değerleri (canlı fiyat ve miktarların o günkü karşılığı).
+ */
+model BudgetBaselineLine {
+  id           String   @id @default(cuid())
+  baselineId   String
+  costItemId   String
+  blockId      String?
+  description  String?
+  quantity     Decimal  @db.Decimal(18, 4)
+  unit         String?
+  unitPriceTry Decimal? @db.Decimal(18, 4)
+  amount       Decimal  @db.Decimal(18, 2)
+
+  baseline BudgetBaseline @relation(fields: [baselineId], references: [id], onDelete: Cascade)
+  costItem CostItem       @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+
+  @@index([baselineId])
+}
+
+/**
+ * Kalemin elle girilen tamamlanma yüzdesi (miktardan hesaplanamayan işler için).
+ */
+model CostItemProgress {
+  id          String   @id @default(cuid())
+  projectId   String
+  costItemId  String
+  percent     Decimal  @db.Decimal(5, 2)
+  note        String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costItem CostItem @relation(fields: [costItemId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, costItemId])
 }

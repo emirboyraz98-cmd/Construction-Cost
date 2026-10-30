@@ -57,11 +57,13 @@ async function priceCandidates(resourceIds: string[]) {
 export type PriceInfo = { candidate: PriceCandidate | null; priceTry: Decimal | null };
 
 /** Kaynak başına geçerli fiyat ve TL karşılığı. */
-export async function priceBook(resourceIds: string[]): Promise<Map<string, PriceInfo>> {
+export async function priceBook(resourceIds: string[], options: { excludeConnection?: boolean } = {}): Promise<Map<string, PriceInfo>> {
   const [candidates, rates] = await Promise.all([priceCandidates(resourceIds), latestRates()]);
   const book = new Map<string, PriceInfo>();
   for (const id of resourceIds) {
-    const candidate = effectivePrice(candidates.get(id) ?? []);
+    // Bağlantı kazancı için güncel piyasa fiyatı: bağlantı fiyatı hariç en öncelikli kaynak.
+    const list = (candidates.get(id) ?? []).filter((c) => !options.excludeConnection || c.kind !== "CONNECTION");
+    const candidate = effectivePrice(list);
     book.set(id, { candidate, priceTry: candidate ? toTry(candidate.price, candidate.currency, rates) : null });
   }
   return book;

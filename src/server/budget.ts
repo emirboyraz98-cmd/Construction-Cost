@@ -19,7 +19,7 @@ import { latestRates, priceBook, recipePrices } from "./library";
 const zero = () => new Decimal(0);
 const dec = (value: { toString(): string } | null | undefined) => new Decimal(value?.toString() ?? 0);
 
-async function loadMetrics(projectId: string): Promise<ProjectMetrics> {
+export async function loadMetrics(projectId: string): Promise<ProjectMetrics> {
   const [project, blocks, units] = await Promise.all([
     db.project.findUnique({ where: { id: projectId }, select: { landArea: true } }),
     db.block.findMany({ where: { projectId }, select: { constructionArea: true, floorCount: true, basementCount: true } }),
@@ -57,7 +57,7 @@ async function ensureCoefficients(projectId: string) {
 
 type LineRow = Awaited<ReturnType<typeof loadLines>>[number];
 
-function loadLines(projectId: string) {
+export function loadLines(projectId: string) {
   return db.budgetLine.findMany({
     where: { projectId },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -72,7 +72,7 @@ function loadLines(projectId: string) {
 }
 
 /** Satırın canlı miktarı, birim fiyatı (TL) ve tutarı; sorunlar uyarı olarak. */
-async function computeLines(lines: LineRow[], metrics: ProjectMetrics) {
+export async function computeLines(lines: LineRow[], metrics: ProjectMetrics) {
   const variables = formulaVariables(metrics);
   const [resources, recipes, rates] = await Promise.all([
     priceBook([...new Set(lines.map((l) => l.resourceId).filter((id): id is string => Boolean(id)))]),
