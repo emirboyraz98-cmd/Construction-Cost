@@ -29,27 +29,37 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
     description: "Taşeron sözleşmeleri, birim fiyatlar, hakedişler ve kesintiler.",
   },
   {
+    key: "budget",
+    label: "Bütçe",
+    capability: "budget.view",
+    description: "Kalem kalem miktar × birim fiyat, toplam maliyet ve m² maliyetleri.",
+  },
+  {
     key: "cost-tree",
-    label: "Bütçe / Maliyet ağacı",
+    label: "Maliyet ağacı",
     capability: "costTree.view",
     description: "Projenin İKY (iş kırılım yapısı) ağacı.",
   },
   {
     key: "blocks",
-    label: "Bloklar & bölümler",
-    description: "Bloklar; bağımsız bölümler Faz 3'te eklenecek.",
+    label: "Bloklar",
+    description: "Bloklar: kat adedi, bodrum, inşaat alanı.",
+  },
+  {
+    key: "units",
+    label: "Bağımsız bölümler",
+    description: "Kat kat bölümler, alanlar, sahiplik (müteahhit / arsa sahibi) ve alan kontrolleri.",
   },
   {
     key: "land",
     label: "Arsa & sözleşme",
-    phase: 3,
-    description: "Arsa sahipleri, paylar, kira yardımları, satın alma ödeme planı.",
+    description: "Arsa modeli, arsa sahipleri, pay oranları ve kira yardımları.",
   },
   {
     key: "quantities",
     label: "Metraj",
-    phase: 3,
-    description: "Parametrik katsayılar, formül girdileri, manuel veya Excel'den metraj.",
+    capability: "budget.view",
+    description: "Parametrik katsayılar, formül değişkenleri ve gerçekleşen katsayılar.",
   },
   {
     key: "pricing",
@@ -140,7 +150,7 @@ export const COMPANY_MODULES: readonly (ModuleDef & { href: string })[] = [
     key: "library",
     href: "/company/library",
     label: "Kütüphane",
-    phase: 3,
+    capability: "library.view",
     description: "Malzeme, işçilik ve makine kütüphanesi; fiyat geçmişi, bağlantı fiyatları, reçeteler.",
   },
   {

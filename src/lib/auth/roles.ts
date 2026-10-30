@@ -54,7 +54,13 @@ export type Capability =
   | "contract.manage"
   | "progress.prepare"
   | "progress.approve"
-  | "transfer.create";
+  | "transfer.create"
+  // Faz 3 – bina ve bütçe
+  | "units.edit"
+  | "library.view"
+  | "library.manage"
+  | "budget.view"
+  | "budget.edit";
 
 const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "project.create": [Role.yonetici, Role.teknik_ofis],
@@ -117,6 +123,14 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "progress.approve": [Role.yonetici, Role.muhasebe],
   /** Projeler arası malzeme transferi (iki projede de gerekir) */
   "transfer.create": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  /** Bağımsız bölümler ve arsa sahipleri */
+  "units.edit": [Role.yonetici, Role.teknik_ofis],
+  /** Malzeme / fiyat kütüphanesi ve reçeteler (şirket geneli) */
+  "library.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  "library.manage": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma],
+  /** Bütçe ve metraj (fiyat içerir; şantiye şefi ve satış görmez) */
+  "budget.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  "budget.edit": [Role.yonetici, Role.teknik_ofis],
 };
 
 export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {
