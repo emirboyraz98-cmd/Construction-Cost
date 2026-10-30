@@ -27,6 +27,7 @@ export type ConnectionItemRow = {
   id?: string;
   description: string;
   costItemCode: string | null;
+  resourceId: string | null;
   unit: string;
   quantity: string;
   unitPrice: string;
@@ -63,6 +64,7 @@ export type ConnectionFormValues = {
 type Options = {
   suppliers: { id: string; name: string; taxNumber: string | null }[];
   costItems: { code: string; name: string; unit: string | null }[];
+  resources: { id: string; code: string; name: string; unit: string }[];
   vatRates: string[];
 };
 
@@ -247,6 +249,16 @@ export function ConnectionForm({
                     }}
                     placeholder="Kalem seçin"
                     invalid={Boolean(e("costItemCode"))}
+                  />
+                </FormField>
+                <FormField id={`item-${index}-resource`} label="Kütüphane malzemesi" hint="İsteğe bağlı: bağlantı fiyatı bütçede öncelikli fiyat olur." className="sm:col-span-6">
+                  <Combobox
+                    id={`item-${index}-resource`}
+                    options={options.resources.map((r) => ({ value: r.id, label: `${r.name} (${r.unit})`, hint: r.code }))}
+                    value={item.resourceId}
+                    onChange={(resourceId) => setItem(index, { resourceId })}
+                    placeholder="Seçilmedi"
+                    clearable
                   />
                 </FormField>
                 <FormField id={`item-${index}-quantity`} label="Miktar" required error={e("quantity")}>

@@ -23,7 +23,7 @@ export default async function EditConnectionPage({ params }: PageProps<"/company
       <PageHeader title={`${c.no} düzenle`} description="Ödeme planı, tahsis ve faturalar bağlantı sayfasından yönetilir." />
       <ConnectionForm
         connectionId={c.id}
-        options={{ suppliers: options.suppliers, costItems: options.costItems, vatRates: vat.map((v) => v.value) }}
+        options={{ suppliers: options.suppliers, costItems: options.costItems, resources: options.resources, vatRates: vat.map((v) => v.value) }}
         documents={c.documents.map((d) => ({ id: d.id, fileName: d.fileName }))}
         initial={{
           no: c.no,
@@ -44,6 +44,7 @@ export default async function EditConnectionPage({ params }: PageProps<"/company
             id: item.id,
             description: item.description,
             costItemCode: item.costItemCode,
+            resourceId: item.resourceId,
             unit: item.unit,
             quantity: decimalToInput(item.quantity),
             unitPrice: decimalToInput(item.unitPrice),

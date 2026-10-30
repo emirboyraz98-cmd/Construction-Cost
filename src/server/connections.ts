@@ -224,12 +224,13 @@ export async function getConnection(connectionId: string) {
 /** Bağlantı formu ve tahsis için seçenekler. */
 export async function connectionFormOptions() {
   const { scope } = await requireGlobalCapability("connection.manage");
-  const [suppliers, templates, projects] = await Promise.all([
+  const [suppliers, templates, projects, resources] = await Promise.all([
     db.supplier.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, taxNumber: true } }),
     db.costItemTemplate.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" }, select: { code: true, name: true, unit: true } }),
     db.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true, status: true } }),
+    db.resource.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, code: true, name: true, unit: true } }),
   ]);
-  return { suppliers, costItems: templates, projects: projects.filter((p) => projectRole(scope, p.id) !== null) };
+  return { suppliers, costItems: templates, resources, projects: projects.filter((p) => projectRole(scope, p.id) !== null) };
 }
 
 // ---------------------------------------------------------------------------
@@ -289,6 +290,7 @@ export async function createConnection(data: ConnectionData, files: File[]) {
               sortOrder: index,
               description: item.description,
               costItemCode: item.costItemCode,
+              resourceId: item.resourceId,
               unit: item.unit,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
@@ -354,6 +356,7 @@ export async function updateConnection(connectionId: string, data: ConnectionDat
           sortOrder: index,
           description: item.description,
           costItemCode: item.costItemCode,
+          resourceId: item.resourceId,
           unit: item.unit,
           quantity: item.quantity,
           unitPrice: item.unitPrice,

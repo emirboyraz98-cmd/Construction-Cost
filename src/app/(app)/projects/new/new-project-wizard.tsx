@@ -208,7 +208,7 @@ export function NewProjectWizard({
           <CardHeader>
             <CardTitle>Arsa modeli</CardTitle>
             <CardDescription>
-              Arsa sahipleri, paylar ve ödeme planı ayrıntıları Faz 3&apos;teki “Arsa &amp; sözleşme” ekranında girilecek.
+              Arsa sahipleri ve payları proje açıldıktan sonra “Arsa &amp; sözleşme” ekranında girilir.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -223,7 +223,7 @@ export function NewProjectWizard({
             <CardHeader>
               <CardTitle>Bloklar</CardTitle>
               <CardDescription>
-                Her bina bir bloktur (villa projelerinde her villa). Bağımsız bölümler Faz 3&apos;te eklenecek.
+                Her bina bir bloktur (villa projelerinde her villa). Bağımsız bölümler proje açıldıktan sonra “Bağımsız bölümler” ekranında girilir.
               </CardDescription>
             </CardHeader>
             <CardContent>

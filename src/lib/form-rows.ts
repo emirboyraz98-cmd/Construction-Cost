@@ -5,6 +5,7 @@ export const emptyConnectionItem = (vatRate: string) => ({
   key: newKey(),
   description: "",
   costItemCode: null as string | null,
+  resourceId: null as string | null,
   unit: "",
   quantity: "",
   unitPrice: "",

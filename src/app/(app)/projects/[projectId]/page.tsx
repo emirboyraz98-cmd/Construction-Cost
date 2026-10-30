@@ -21,6 +21,7 @@ import { formatDateOnly, formatMoney, formatNumber } from "@/lib/format";
 import { LAND_MODEL_LABELS, PROJECT_TYPE_LABELS } from "@/lib/labels";
 import { AlertList, Meter } from "@/components/purchasing/shared";
 import { projectConnections } from "@/server/connections";
+import { budgetTotals } from "@/server/budget";
 import { listContracts } from "@/server/contracts";
 import { projectExpenseOverview } from "@/server/expenses";
 import { getProject, listProjectTeam } from "@/server/projects";
@@ -35,10 +36,12 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
   const canEdit = hasCapability(role, "project.edit");
   const canSeeTree = hasCapability(role, "costTree.view");
   const canEnter = hasCapability(role, "expense.create");
-  const [overview, connections, contracts] = await Promise.all([
+  const canSeeBudget = hasCapability(role, "budget.view");
+  const [overview, connections, contracts, budgets] = await Promise.all([
     projectExpenseOverview(projectId),
     projectConnections(projectId),
     hasCapability(role, "contract.view") ? listContracts(projectId) : null,
+    canSeeBudget ? budgetTotals([projectId]) : null,
   ]);
   const team = hasCapability(role, "project.viewTeam") ? await listProjectTeam(projectId) : null;
   const totalArea = totalConstructionArea(project.blocks);
@@ -75,7 +78,11 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
                 note={overview.pending ? `${overview.pending} kayıt onay bekliyor` : "Onaylı kayıtlar"}
               />
             )}
-            <PendingFigure label="Bütçe" phase={3} />
+            {budgets && (
+              <Link href={`/projects/${project.id}/budget`} className="min-w-0 hover:underline">
+                <SpendFigure label="Bütçe (KDV hariç)" value={budgets.get(projectId) ?? 0} note="Bütçe ekranı" />
+              </Link>
+            )}
             <PendingFigure label="Satış / tahsilat" phase={6} />
             {canSeeTree ? (
               <Link href={`/projects/${project.id}/cost-tree`} className="min-w-0 hover:underline">

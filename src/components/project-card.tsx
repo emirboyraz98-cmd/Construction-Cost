@@ -42,8 +42,16 @@ export function SpendFigure({ label, value, note }: { label: string; value: { to
   );
 }
 
-/** spend: undefined → harcamaları görme yetkisi yok; tutarlar gösterilmez. */
-export function ProjectCard({ project, spend }: { project: ProjectCardData; spend?: SpendSummary | null }) {
+/** spend / budget: undefined → görme yetkisi yok; tutarlar gösterilmez. */
+export function ProjectCard({
+  project,
+  spend,
+  budget,
+}: {
+  project: ProjectCardData;
+  spend?: SpendSummary | null;
+  budget?: { toString(): string } | null;
+}) {
   const area = totalConstructionArea(project.blocks);
   return (
     <Link
@@ -79,7 +87,7 @@ export function ProjectCard({ project, spend }: { project: ProjectCardData; spen
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3 border-t pt-3">
-            <PendingFigure label="Bütçe" phase={3} />
+            {budget !== undefined ? <SpendFigure label="Bütçe (KDV hariç)" value={budget ?? 0} /> : <div />}
             {spend !== undefined ? (
               <SpendFigure
                 label="Harcanan (KDV hariç)"

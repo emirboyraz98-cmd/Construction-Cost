@@ -10,7 +10,7 @@ import { getAccess } from "@/server/access";
 export const metadata: Metadata = { title: "Ayarlar" };
 
 const UPCOMING = [
-  { label: "Birimler ve maliyet ağacı şablonu", phase: 3, note: "Varsayılan İKY şablonunun düzenlenmesi" },
+  { label: "Birimler ve maliyet ağacı şablonu", phase: 8, note: "Varsayılan İKY şablonunun düzenlenmesi" },
 ];
 
 export default async function SettingsPage() {

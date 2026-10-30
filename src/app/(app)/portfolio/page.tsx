@@ -14,6 +14,7 @@ import { PROJECT_STATUS_ORDER } from "@/lib/labels";
 import { getAccess } from "@/server/access";
 import { listProjects } from "@/server/projects";
 import { AlertList } from "@/components/purchasing/shared";
+import { budgetTotals } from "@/server/budget";
 import { connectionAlertOverview } from "@/server/connections";
 import { listPayables, spendSummaries } from "@/server/reports";
 
@@ -28,6 +29,9 @@ export default async function PortfolioPage() {
     canSeeSpend ? listPayables() : null,
     connectionAlertOverview(),
   ]);
+  const budgetProjects = projects.filter((p) => hasCapability(projectRole(scope, p.id), "budget.view")).map((p) => p.id);
+  const budgets = await budgetTotals(budgetProjects);
+  const budgetTotal = [...budgets.values()].reduce((s, v) => s.plus(v), new Decimal(0));
   const canCreate = hasCapability(user.role, "project.create");
   const blockCount = projects.reduce((sum, project) => sum + project._count.blocks, 0);
   const area = totalConstructionArea(projects.flatMap((project) => project.blocks));
@@ -76,7 +80,11 @@ export default async function PortfolioPage() {
               {blockCount} · {formatNumber(area, 0)} m²
             </p>
           </div>
-          <PendingFigure label="Toplam bütçe" phase={3} />
+          {budgetProjects.length > 0 ? (
+            <SpendFigure label="Toplam bütçe (KDV hariç)" value={budgetTotal} note={`${[...budgets.values()].filter((v) => v.gt(0)).length} projede bütçe var`} />
+          ) : (
+            <div />
+          )}
           {canSeeSpend ? (
             <>
               <SpendFigure label="Toplam harcanan (KDV hariç)" value={totals.net} note="Onaylı kayıtlar" />
@@ -170,6 +178,7 @@ export default async function PortfolioPage() {
                   ? (spend?.summaries.get(project.id) ?? null)
                   : undefined
               }
+              budget={budgets.has(project.id) ? budgets.get(project.id) : undefined}
             />
           ))}
         </div>

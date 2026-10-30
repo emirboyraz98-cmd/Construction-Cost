@@ -21,7 +21,7 @@ export default async function NewConnectionPage() {
       <PageHeader title="Yeni malzeme bağlantısı" description="Tedarikçiyle önceden sabitlenen miktar ve fiyat (PLAN 9). Proje tahsisi kayıttan sonra yapılır." />
       <ConnectionForm
         connectionId={null}
-        options={{ suppliers: options.suppliers, costItems: options.costItems, vatRates }}
+        options={{ suppliers: options.suppliers, costItems: options.costItems, resources: options.resources, vatRates }}
         initial={{
           no: "",
           date: dateToDateInput(new Date()),

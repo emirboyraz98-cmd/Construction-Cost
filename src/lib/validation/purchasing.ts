@@ -28,6 +28,8 @@ export const connectionItemSchema = z.object({
   quantity: requiredDecimal("Miktar", { positive: true }),
   unitPrice: requiredDecimal("Birim fiyat", { min: 0 }),
   vatRate: requiredDecimal("KDV", { min: 0, max: 100 }),
+  /** Kütüphane malzemesi (isteğe bağlı): aktif bağlantı fiyatı bütçede öncelikli olur */
+  resourceId: z.string().nullable().default(null),
 });
 
 export const connectionPaymentSchema = z.object({
