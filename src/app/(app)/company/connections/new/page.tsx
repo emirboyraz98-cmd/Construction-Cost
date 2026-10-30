@@ -6,7 +6,8 @@ import { dateToDateInput } from "@/lib/format";
 import { getAccess } from "@/server/access";
 import { connectionFormOptions } from "@/server/connections";
 import { vatRateOptions } from "@/server/parameters";
-import { ConnectionForm, emptyItem } from "../connection-form";
+import { emptyConnectionItem } from "@/lib/form-rows";
+import { ConnectionForm } from "../connection-form";
 
 export const metadata: Metadata = { title: "Yeni bağlantı" };
 
@@ -35,7 +36,7 @@ export default async function NewConnectionPage() {
           transportIncluded: true,
           unloadingIncluded: false,
           notes: "",
-          items: [emptyItem(vatRates[0] ?? "20")],
+          items: [emptyConnectionItem(vatRates[0] ?? "20")],
           payments: [],
         }}
       />

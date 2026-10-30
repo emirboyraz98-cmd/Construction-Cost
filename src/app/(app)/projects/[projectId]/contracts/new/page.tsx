@@ -7,7 +7,8 @@ import { dateToDateInput } from "@/lib/format";
 import { getAccess } from "@/server/access";
 import { contractFormOptions } from "@/server/contracts";
 import { vatRateOptions } from "@/server/parameters";
-import { ContractForm, emptyContractItem } from "../contract-form";
+import { emptyContractItem } from "@/lib/form-rows";
+import { ContractForm } from "../contract-form";
 
 export const metadata: Metadata = { title: "Yeni taşeron sözleşmesi" };
 

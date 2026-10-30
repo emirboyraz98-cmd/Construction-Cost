@@ -3,13 +3,16 @@
 İnşaat şirketi için maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı.
 Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 
-**Durum: Faz 1 – Harcama girişi.**
+**Durum: Faz 2 – Satın alma: bağlantılar ve taşeron.**
 
 - **Faz 0 (altyapı):** kullanıcı girişi ve roller, proje bazlı yetki, proje sekmeleri, yeni proje
   sihirbazı, portföy ve proje paneli, bloklar ve maliyet ağacı (İKY).
 - **Faz 1 (harcama):** telefondan fotoğraflı hızlı giriş, ofiste tablo / Excel ile toplu giriş,
   onay akışı, tedarikçiler, döviz kurları (TCMB), vade listesi, harcama raporları,
   ortak faturanın projelere bölünmesi, avans kaydı ve muhasebeci paketi.
+- **Faz 2 (satın alma):** malzeme bağlantıları (kalemler, proje tahsisi / atanmamış havuz, çekişler,
+  bakiye, ödeme planı, avans bakiyesi, fatura eşleştirme, uyarılar), avansların bağlantıya /
+  sözleşmeye bağlanması, projeler arası malzeme transferi, taşeron sözleşmeleri, hakediş ve kesintiler.
 
 Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
@@ -94,6 +97,12 @@ Sonra telefonda `http://<bilgisayarın-IP-adresi>:3000` adresini açın (IP adre
 | Kalem / ay / tedarikçi / blok raporu | Proje → **Raporlar** | Yönetici, teknik ofis, muhasebe, satın alma, dış muhasebeci |
 | Dış muhasebeciye dönem paketi | Şirket geneli → **Muhasebeci paketi** | Muhasebe, yönetici, dış muhasebeci |
 | Döviz kurları, KDV oranları | **Ayarlar** | Muhasebe, yönetici |
+| Malzeme bağlantısı açma, tahsis, ödeme planı, fatura | Şirket geneli → **Bağlantılar** | Yönetici, muhasebe, satın alma |
+| “Malzeme geldi” (bağlantıdan çekiş) | Proje → **Harcamalar → Malzeme geldi** | Harcama girebilen herkes |
+| Taşeron sözleşmesi | Proje → **Taşeron & hakediş** | Yönetici, teknik ofis, muhasebe, satın alma |
+| Hakediş hazırlama (kümülatif metraj) | Sözleşme → **Hakediş hazırla** | Şantiye şefi, teknik ofis, muhasebe, yönetici |
+| Hakediş onayı | Hakediş sayfası | Muhasebe, yönetici |
+| Projeler arası malzeme transferi | Şirket geneli → **Malzeme transferi** | Yönetici, muhasebe, satın alma (iki projede de) |
 
 - **Onay akışı:** Şantiye şefinin ve satın almanın girdiği kayıtlar *Onay bekliyor* olarak düşer;
   muhasebe veya yönetici onaylar ya da nedenini yazarak reddeder. Reddedilen kaydı giren kişi
@@ -109,6 +118,26 @@ Sonra telefonda `http://<bilgisayarın-IP-adresi>:3000` adresini açın (IP adre
   parametreleri** ekranından yıl bazında değiştirilebilir. Başlangıç değerlerini muhasebecinizle teyit edin.
 - **Muhasebeci paketi:** Seçilen dönemin onaylı harcamaları Excel olarak (fatura, avans ve tedarikçi
   özeti sayfaları) ve fiş/fatura görselleri tek bir ZIP dosyasında iner.
+
+### Bağlantılar ve taşeron: nasıl çalışır?
+
+- **Bağlantı** (ör. 1.000 m³ hazır beton, 3.200 TL/m³): kalemler, ödeme planı ve sözleşme belgesi
+  girilir. **Tahsis** ile miktar projelere paylaştırılır; kalan kısım “atanmamış – şirket geneli”
+  havuzda bekler. Payı bir projeden diğerine aktarmak için tahsis yeniden düzenlenir; geçmişi tutulur.
+- **Çekiş:** Şantiye “Malzeme geldi” ile irsaliye ve fotoğrafı girer. Çekiş önce projenin payından,
+  yetmezse havuzdan düşer; bağlantıda kalmayan miktar girilemez. **Maliyet ödemede değil çekişte
+  oluşur** ve projeye bağlantı fiyatıyla yazılır. Şantiye şefi fiyatı görmez; ofis onaylar.
+- **Avans bakiyesi** = ödenen (ödeme planı + bağlı avanslar) − teslim alınan malzeme (KDV dahil).
+- **Fatura eşleştirme:** Bağlantıya eklenen tedarikçi faturası maliyete tekrar yazılmaz; birim fiyat
+  ve teslim alınan miktarla karşılaştırılır, fark varsa uyarı verir. Muhasebeci paketine girer.
+- **Uyarılar:** son çekiş / geçerlilik / sabit fiyat tarihi yaklaşan, kalanı %10'un altına düşen,
+  ödemesi geciken veya 7 gün içinde olan, çekilmemiş avansı olan ve faturası farklı bağlantılar.
+  Portföyde ve bağlantı listesinde görünür.
+- **Hakediş:** Kümülatif miktar girilir; bu dönem = kümülatif − önceki hakedişler. Brüt → KDV →
+  KDV tevkifatı, teminat, avans mahsubu, malzeme mahsubu ve diğer kesintiler → **net ödeme**.
+  Oranlar sözleşmeye girilir (programda sabit oran yoktur). Onaylanınca brüt (malzeme mahsubu
+  düşülerek) maliyete yazılır, net ödeme vade listesine girer. Son hakedişin onayı ödenmemişse geri alınabilir.
+- **Vade listesi** artık harcama/avanslarla birlikte bağlantı ödeme planını ve hakediş net ödemelerini de gösterir.
 
 ### Telefona uygulama gibi ekleme
 

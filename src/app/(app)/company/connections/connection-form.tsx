@@ -18,6 +18,7 @@ import { codeDepth } from "@/lib/cost-tree/tree";
 import { roundMoney } from "@/lib/expenses/amounts";
 import { CURRENCIES, CURRENCY_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/expenses/labels";
 import { toFormData } from "@/lib/form-data";
+import { emptyConnectionItem, emptyConnectionPayment } from "@/lib/form-rows";
 import { Decimal, formatMoney, parseDecimalInput } from "@/lib/format";
 import { createConnectionAction, updateConnectionAction } from "./actions";
 
@@ -64,18 +65,6 @@ type Options = {
   costItems: { code: string; name: string; unit: string | null }[];
   vatRates: string[];
 };
-
-const newKey = () => Math.random().toString(36).slice(2);
-export const emptyItem = (vatRate: string): ConnectionItemRow => ({
-  key: newKey(),
-  description: "",
-  costItemCode: null,
-  unit: "",
-  quantity: "",
-  unitPrice: "",
-  vatRate,
-});
-const emptyPayment = (): ConnectionPaymentRow => ({ key: newKey(), dueDate: "", amount: "", description: "", paymentMethod: null, instrumentNo: "" });
 
 const num = (text: string) => {
   const parsed = parseDecimalInput(text);
@@ -297,7 +286,7 @@ export function ConnectionForm({
             );
           })}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Button type="button" variant="outline" onClick={() => set({ items: [...values.items, emptyItem(options.vatRates[0] ?? "20")] })}>
+            <Button type="button" variant="outline" onClick={() => set({ items: [...values.items, emptyConnectionItem(options.vatRates[0] ?? "20")] })}>
               <PlusIcon />
               Kalem ekle
             </Button>
@@ -356,7 +345,7 @@ export function ConnectionForm({
               );
             })}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Button type="button" variant="outline" onClick={() => set({ payments: [...values.payments, emptyPayment()] })}>
+              <Button type="button" variant="outline" onClick={() => set({ payments: [...values.payments, emptyConnectionPayment()] })}>
                 <PlusIcon />
                 Ödeme ekle
               </Button>

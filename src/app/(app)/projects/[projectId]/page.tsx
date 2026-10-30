@@ -116,7 +116,7 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
               {overview.recent.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Henüz harcama girilmemiş.</p>
               ) : (
-                <ul className="grid gap-2 text-sm">
+                <ul className="grid grid-cols-1 gap-2 text-sm">
                   {overview.recent.map((e) => (
                     <li key={e.id} className="flex flex-wrap items-center justify-between gap-2">
                       <Link href={`/projects/${project.id}/expenses/${e.id}`} className="min-w-0 truncate hover:underline">
@@ -176,7 +176,7 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
               </CardAction>
             </CardHeader>
             <CardContent>
-              <ul className="grid gap-2 text-sm">
+              <ul className="grid grid-cols-1 gap-2 text-sm">
                 {contracts.rows.filter((c) => c.status === "ACTIVE").slice(0, 6).map((c) => (
                   <li key={c.id} className="grid gap-1">
                     <span className="flex flex-wrap justify-between gap-2">
@@ -298,7 +298,7 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
               {team.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Henüz projeye özel yetki verilmedi.</p>
               ) : (
-                <ul className="grid gap-2 text-sm">
+                <ul className="grid grid-cols-1 gap-2 text-sm">
                   {team.map((member) => (
                     <li key={member.user.id} className="flex flex-wrap justify-between gap-2">
                       <span className="font-medium">{member.user.name}</span>

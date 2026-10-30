@@ -17,6 +17,7 @@ import { codeDepth } from "@/lib/cost-tree/tree";
 import { roundMoney } from "@/lib/expenses/amounts";
 import { SUPPLIER_KIND_LABELS } from "@/lib/expenses/labels";
 import { toFormData } from "@/lib/form-data";
+import { emptyContractItem } from "@/lib/form-rows";
 import { Decimal, formatMoney, parseDecimalInput } from "@/lib/format";
 import type { SupplierKind } from "@/generated/prisma/enums";
 import { saveContractAction } from "./actions";
@@ -54,15 +55,6 @@ type Options = {
   costItems: { id: string; code: string; name: string; unit: string | null; isGroup: boolean }[];
   vatRates: string[];
 };
-
-export const emptyContractItem = (): ContractItemRow => ({
-  key: Math.random().toString(36).slice(2),
-  costItemId: null,
-  description: "",
-  unit: "",
-  quantity: "",
-  unitPrice: "",
-});
 
 const num = (text: string) => {
   const parsed = parseDecimalInput(text);
