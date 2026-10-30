@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { hasCapability } from "@/lib/auth/roles";
-import { PRICE_SOURCE_LABELS, RESOURCE_TYPE_LABELS } from "@/lib/budget/labels";
+import { PRICE_SOURCE_LABELS, RESOURCE_TYPE_LABELS, priceText } from "@/lib/budget/labels";
 import { dateToDateInput, decimalToInput, formatDateOnly, formatMoney, formatNumber } from "@/lib/format";
 import { getAccess } from "@/server/access";
 import { getResource, manualPrices } from "@/server/library";
 import { supplierOptions } from "@/server/suppliers";
-import { AddPriceButton, DeletePriceButton, EditResourceButton, priceText } from "../../library-panels";
+import { AddPriceButton, DeletePriceButton, EditResourceButton } from "../../library-panels";
 
 export const metadata: Metadata = { title: "Kaynak" };
 

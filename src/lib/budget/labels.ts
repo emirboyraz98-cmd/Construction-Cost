@@ -1,6 +1,7 @@
 // Faz 3 ekranlarındaki Türkçe etiketler.
 import type {
   BudgetPriceSource,
+  Currency,
   CoefficientBasis,
   PriceSource,
   QuantitySource,
@@ -8,6 +9,7 @@ import type {
   UnitOwner,
   UsageType,
 } from "@/generated/prisma/enums";
+import { formatNumber } from "../format";
 
 export const USAGE_TYPE_LABELS: Record<UsageType, string> = {
   RESIDENTIAL: "Konut",
@@ -54,5 +56,9 @@ export const COEFFICIENT_BASIS_LABELS: Record<CoefficientBasis, string> = {
   LAND_AREA: "m² arsa",
   UNIT_COUNT: "bağımsız bölüm",
 };
+
+/** "3.200 TL", "41,825 USD" (KDV hariç birim fiyat gösterimi). */
+export const priceText = (price: string, currency: Currency) =>
+  `${formatNumber(price, 4)} ${currency === "TRY" ? "TL" : currency}`;
 
 export const FLOOR_LABEL = (floor: number) => (floor < 0 ? `${-floor}. bodrum` : floor === 0 ? "Zemin" : `${floor}. kat`);

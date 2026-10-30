@@ -132,7 +132,10 @@ export function BudgetEditor({
   const set = (patch: Partial<LineForm>) => editing && setEditing({ ...editing, form: { ...editing.form, ...patch } });
   const linesByItem = new Map<string, BudgetLineView[]>();
   for (const l of lines) (linesByItem.get(l.costItemId) ?? linesByItem.set(l.costItemId, []).get(l.costItemId)!).push(l);
-  const visible = items.filter((i) => showAll || codeDepth(i.code) === 0 || Number(i.budget) !== 0 || Number(i.actual) !== 0);
+  // Satırı olan (tutarı henüz 0 olsa da) kalemler ve üst kalemleri her zaman görünür.
+  const lineCodes = lines.map((l) => items.find((i) => i.id === l.costItemId)?.code).filter((c): c is string => Boolean(c));
+  const hasLines = (code: string) => lineCodes.some((c) => c === code || c.startsWith(`${code}.`));
+  const visible = items.filter((i) => showAll || codeDepth(i.code) === 0 || Number(i.budget) !== 0 || Number(i.actual) !== 0 || hasLines(i.code));
   const open = (id: string | null, form: LineForm) => {
     reset();
     setEditing({ id, form });

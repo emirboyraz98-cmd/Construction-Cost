@@ -10,12 +10,12 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ResourceType } from "@/generated/prisma/enums";
 import { hasCapability } from "@/lib/auth/roles";
-import { PRICE_SOURCE_LABELS, RESOURCE_TYPE_LABELS } from "@/lib/budget/labels";
+import { PRICE_SOURCE_LABELS, RESOURCE_TYPE_LABELS, priceText } from "@/lib/budget/labels";
 import { formatDateOnly, formatMoney, formatNumber } from "@/lib/format";
 import { getAccess } from "@/server/access";
 import { listResources } from "@/server/library";
 import { supplierOptions } from "@/server/suppliers";
-import { LibraryTabs, NewResourceButton, priceText } from "./library-panels";
+import { LibraryTabs, NewResourceButton } from "./library-panels";
 
 export const metadata: Metadata = { title: "Kütüphane" };
 

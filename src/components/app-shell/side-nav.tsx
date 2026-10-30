@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import {
+  ArrowRightLeftIcon,
   BanknoteIcon,
   BarChart3Icon,
   BlocksIcon,
   BookOpenIcon,
+  DoorOpenIcon,
+  HardHatIcon,
   CalendarClockIcon,
   FileArchiveIcon,
   CalculatorIcon,
@@ -26,6 +29,7 @@ import {
   SplitIcon,
   TrendingUpIcon,
   TruckIcon,
+  WalletIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Role } from "@/generated/prisma/enums";
@@ -38,7 +42,10 @@ import type { ShellProject } from "./types";
 const PROJECT_ICONS: Record<string, LucideIcon> = {
   "": GaugeIcon,
   expenses: ReceiptTextIcon,
+  contracts: HardHatIcon,
+  budget: WalletIcon,
   "cost-tree": ListTreeIcon,
+  units: DoorOpenIcon,
   blocks: BlocksIcon,
   land: LandPlotIcon,
   quantities: RulerIcon,
@@ -54,6 +61,7 @@ const COMPANY_ICONS: Record<string, LucideIcon> = {
   portfolio: LayoutGridIcon,
   projects: FolderKanbanIcon,
   connections: HandshakeIcon,
+  transfers: ArrowRightLeftIcon,
   suppliers: TruckIcon,
   payables: CalendarClockIcon,
   "shared-invoice": SplitIcon,

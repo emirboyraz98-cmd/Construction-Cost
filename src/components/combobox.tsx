@@ -122,9 +122,9 @@ export function Combobox({
           </button>
         )}
       </div>
-      <PopoverContent className="w-(--radix-popover-trigger-width) min-w-64 p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+      {/* Açılınca odak arama kutusuna geçer (Radix'in kendi odak yönetimiyle; pencere içinde de çalışır). */}
+      <PopoverContent className="w-(--radix-popover-trigger-width) min-w-64 p-0">
         <input
-          autoFocus
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);

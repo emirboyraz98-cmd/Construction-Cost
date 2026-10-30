@@ -15,7 +15,6 @@ import { useAction } from "@/components/use-action";
 import type { Currency, PriceSource, ResourceType } from "@/generated/prisma/enums";
 import { PRICE_SOURCE_LABELS, RESOURCE_TYPE_LABELS } from "@/lib/budget/labels";
 import { CURRENCIES, CURRENCY_LABELS } from "@/lib/expenses/labels";
-import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { addPriceAction, deletePriceAction, saveResourceAction } from "./actions";
 
@@ -262,5 +261,3 @@ export function DeletePriceButton({ priceId }: { priceId: string }) {
     </Button>
   );
 }
-
-export const priceText = (price: string, currency: Currency) => `${formatNumber(price, 4)} ${CURRENCY_LABELS[currency]}`;
