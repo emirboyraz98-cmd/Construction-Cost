@@ -68,6 +68,8 @@ export default async function QuantitiesPage({ params }: PageProps<"/projects/[p
                 actualQuantity: c.actualQuantity.toString(),
                 actualCoefficient: c.actualCoefficient?.toString() ?? null,
                 inBudget: c.inBudget,
+                otherAverage: c.otherProjects?.average.toString() ?? null,
+                otherCount: c.otherProjects?.count ?? 0,
               }))}
             />
           </CardContent>

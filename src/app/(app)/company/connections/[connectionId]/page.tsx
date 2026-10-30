@@ -13,9 +13,10 @@ import { hasCapability } from "@/lib/auth/roles";
 import { PRICE_TYPE_LABELS } from "@/lib/connections/labels";
 import { CURRENCY_LABELS } from "@/lib/expenses/labels";
 import { dueBucket } from "@/lib/expenses/payables";
-import { dateToDateInput, formatDateOnly, formatDateTime, formatMoney, formatNumber } from "@/lib/format";
+import { dateToDateInput, Decimal, formatDateOnly, formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { getAccess } from "@/server/access";
 import { getConnection, linkableAdvances } from "@/server/connections";
+import { connectionGains } from "@/server/control";
 import { listProjectSummaries } from "@/server/projects";
 import { AdvancesPanel, AllocationButton, ConnectionActions, InvoicesPanel, PaymentsPanel } from "./connection-panels";
 
@@ -29,6 +30,8 @@ export default async function ConnectionPage({ params }: PageProps<"/company/con
   if (!detail) notFound();
   const { connection: c, draws, advances, history, projectName, canManage } = detail;
   const [projects, linkable] = canManage ? await Promise.all([listProjectSummaries(), linkableAdvances(c.id)]) : [[], []];
+  const gains = await connectionGains(c.id);
+  const totalGain = gains.reduce((sum, g) => (g.gain ? sum.plus(g.gain) : sum), new Decimal(0));
   const today = new Date();
   const cur = c.currency;
   const itemName = new Map(c.items.map((i) => [i.id, i]));
@@ -281,6 +284,32 @@ export default async function ConnectionPage({ params }: PageProps<"/company/con
             />
           </CardContent>
         </Card>
+
+        {gains.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Bağlantı kazancı</CardTitle>
+              <CardDescription>
+                (Güncel fiyat − bağlantı fiyatı) × bağlantı miktarı. Güncel fiyat kütüphaneden: son alım (fatura) → teklif → piyasa.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-2 text-sm">
+              {gains.map((g) => (
+                <div key={g.itemId} className="flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    {g.description}: bağlantı {g.connectionPriceTry ? formatMoney(g.connectionPriceTry) : "—"} · güncel {g.marketPriceTry ? formatMoney(g.marketPriceTry) : "—"} / {g.unit}
+                  </span>
+                  <span className={g.gain?.isNegative() ? "font-medium text-destructive tabular-nums" : "font-medium tabular-nums"}>
+                    {g.gain ? formatMoney(g.gain) : "Güncel fiyat yok"}
+                  </span>
+                </div>
+              ))}
+              {gains.length > 1 && (
+                <p className="border-t pt-2 text-right font-semibold tabular-nums">Toplam {formatMoney(totalGain)}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

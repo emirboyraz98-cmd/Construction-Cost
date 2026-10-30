@@ -22,6 +22,7 @@ import { LAND_MODEL_LABELS, PROJECT_TYPE_LABELS } from "@/lib/labels";
 import { AlertList, Meter } from "@/components/purchasing/shared";
 import { projectConnections } from "@/server/connections";
 import { budgetTotals } from "@/server/budget";
+import { controlSummaries } from "@/server/control";
 import { listContracts } from "@/server/contracts";
 import { projectExpenseOverview } from "@/server/expenses";
 import { getProject, listProjectTeam } from "@/server/projects";
@@ -43,6 +44,7 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
     hasCapability(role, "contract.view") ? listContracts(projectId) : null,
     canSeeBudget ? budgetTotals([projectId]) : null,
   ]);
+  const control = canSeeBudget ? (await controlSummaries([projectId])).get(projectId) : undefined;
   const team = hasCapability(role, "project.viewTeam") ? await listProjectTeam(projectId) : null;
   const totalArea = totalConstructionArea(project.blocks);
   const floorArea = permittedFloorArea(project.landArea, project.floorAreaRatio);
@@ -80,7 +82,15 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
             )}
             {budgets && (
               <Link href={`/projects/${project.id}/budget`} className="min-w-0 hover:underline">
-                <SpendFigure label="Bütçe (KDV hariç)" value={budgets.get(projectId) ?? 0} note="Bütçe ekranı" />
+                <SpendFigure
+                  label="Bütçe (KDV hariç)"
+                  value={budgets.get(projectId) ?? 0}
+                  note={
+                    control
+                      ? `EAC ${formatMoney(control.eac)} · ${control.variance.isNegative() ? "aşım" : "sapma"} ${formatMoney(control.variance)}`
+                      : "Bütçe ekranı"
+                  }
+                />
               </Link>
             )}
             <PendingFigure label="Satış / tahsilat" phase={6} />

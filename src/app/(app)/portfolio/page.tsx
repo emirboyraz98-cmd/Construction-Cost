@@ -15,6 +15,7 @@ import { getAccess } from "@/server/access";
 import { listProjects } from "@/server/projects";
 import { AlertList } from "@/components/purchasing/shared";
 import { budgetTotals } from "@/server/budget";
+import { controlSummaries } from "@/server/control";
 import { connectionAlertOverview } from "@/server/connections";
 import { listPayables, spendSummaries } from "@/server/reports";
 
@@ -30,7 +31,7 @@ export default async function PortfolioPage() {
     connectionAlertOverview(),
   ]);
   const budgetProjects = projects.filter((p) => hasCapability(projectRole(scope, p.id), "budget.view")).map((p) => p.id);
-  const budgets = await budgetTotals(budgetProjects);
+  const [budgets, controls] = await Promise.all([budgetTotals(budgetProjects), controlSummaries(budgetProjects)]);
   const budgetTotal = [...budgets.values()].reduce((s, v) => s.plus(v), new Decimal(0));
   const canCreate = hasCapability(user.role, "project.create");
   const blockCount = projects.reduce((sum, project) => sum + project._count.blocks, 0);
@@ -179,6 +180,7 @@ export default async function PortfolioPage() {
                   : undefined
               }
               budget={budgets.has(project.id) ? budgets.get(project.id) : undefined}
+              control={controls.get(project.id) ?? null}
             />
           ))}
         </div>

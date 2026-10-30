@@ -47,10 +47,13 @@ export function ProjectCard({
   project,
   spend,
   budget,
+  control,
 }: {
   project: ProjectCardData;
   spend?: SpendSummary | null;
   budget?: { toString(): string } | null;
+  /** Bütçe kontrolü özeti (EAC, sapma, ilerleme) */
+  control?: { eac: { toString(): string }; variance: { toString(): string }; progress: { toString(): string } | null } | null;
 }) {
   const area = totalConstructionArea(project.blocks);
   return (
@@ -96,6 +99,16 @@ export function ProjectCard({
               />
             ) : (
               <div />
+            )}
+            {control && (
+              <>
+                <SpendFigure label="Tahmini tamamlanma (EAC)" value={control.eac} note={control.progress ? `%${formatNumber(control.progress, 1)} tamamlandı` : undefined} />
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Sapma</p>
+                  <p className={Number(control.variance.toString()) < 0 ? "font-medium text-destructive tabular-nums" : "font-medium tabular-nums"}>{formatMoney(control.variance)}</p>
+                  <p className="text-[11px] text-muted-foreground">{Number(control.variance.toString()) < 0 ? "Aşım bekleniyor" : "Bütçe içinde"}</p>
+                </div>
+              </>
             )}
           </div>
         </CardContent>

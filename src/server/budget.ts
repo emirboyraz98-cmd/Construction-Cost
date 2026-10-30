@@ -1,6 +1,7 @@
 import "server-only";
 import Decimal from "decimal.js";
 import type { BudgetPriceSource, CoefficientBasis, Currency, QuantitySource, SupplyMethod } from "@/generated/prisma/enums";
+import { projectRole } from "@/lib/auth/access";
 import { hasCapability } from "@/lib/auth/roles";
 import { lineAmount, squareMeterCosts, summarizeBudget } from "@/lib/budget/budget";
 import { evaluateFormula } from "@/lib/budget/formula";
@@ -254,8 +255,37 @@ export async function deleteBudgetLine(projectId: string, lineId: string) {
 // Metraj ekranı: katsayılar, gerçekleşen katsayılar, formül değişkenleri
 // ---------------------------------------------------------------------------
 
+/**
+ * Diğer projelerde gerçekleşen katsayılar (PLAN 6: "gerçekleşen katsayı sonraki projelerde önerilir").
+ * Kullanıcının bütçesini görebildiği projelerde, aynı kalem kodu ve birimdeki onaylı miktarlardan.
+ */
+async function otherProjectCoefficients(projectId: string, scope: Parameters<typeof projectRole>[0], coefficients: { costItemCode: string; unit: string; basis: CoefficientBasis }[]) {
+  const projects = await db.project.findMany({ where: { id: { not: projectId } }, select: { id: true } });
+  const visible = projects.filter((p) => hasCapability(projectRole(scope, p.id), "budget.view"));
+  const values = new Map<string, Decimal[]>();
+  const norm = (u: string | null) => (u ?? "").trim().toLocaleLowerCase("tr-TR");
+  for (const p of visible) {
+    const rows = await db.expense.findMany({
+      where: { projectId: p.id, deletedAt: null, approvalStatus: "APPROVED", kind: { in: [...COST_KINDS] }, quantity: { not: null }, costItem: { code: { in: coefficients.map((c) => c.costItemCode) } } },
+      select: { quantity: true, unit: true, costItem: { select: { code: true } } },
+    });
+    if (rows.length === 0) continue;
+    const metrics = await loadMetrics(p.id);
+    for (const c of coefficients) {
+      const qty = rows.filter((r) => r.costItem?.code === c.costItemCode && norm(r.unit) === norm(c.unit)).reduce((sum, r) => sum.plus(dec(r.quantity)), zero());
+      const value = qty.gt(0) ? actualCoefficient(qty, c.basis, metrics) : null;
+      const key = `${c.costItemCode}|${norm(c.unit)}|${c.basis}`;
+      if (value) values.set(key, [...(values.get(key) ?? []), value]);
+    }
+  }
+  return (c: { costItemCode: string; unit: string; basis: CoefficientBasis }) => {
+    const list = values.get(`${c.costItemCode}|${norm(c.unit)}|${c.basis}`) ?? [];
+    return list.length ? { count: list.length, average: list.reduce((a, b) => a.plus(b), zero()).div(list.length).toDecimalPlaces(6, Decimal.ROUND_HALF_UP) } : null;
+  };
+}
+
 export async function getQuantities(projectId: string) {
-  const { role } = await requireProjectAccess(projectId);
+  const { role, scope } = await requireProjectAccess(projectId);
   if (!hasCapability(role, "budget.view")) throw new ActionError("Bu projenin metrajını görme yetkiniz yok.");
   const [metrics, coefficients, costItems] = await Promise.all([
     loadMetrics(projectId),
@@ -269,6 +299,7 @@ export async function getQuantities(projectId: string) {
     select: { quantity: true, unit: true, costItem: { select: { code: true } } },
   });
   const linked = await db.budgetLine.findMany({ where: { projectId, coefficientId: { in: coefficients.map((c) => c.id) } }, select: { coefficientId: true } });
+  const others = await otherProjectCoefficients(projectId, scope, coefficients);
   const norm = (u: string | null) => (u ?? "").trim().toLocaleLowerCase("tr-TR");
   return {
     canEdit: hasCapability(role, "budget.edit"),
@@ -286,6 +317,7 @@ export async function getQuantities(projectId: string) {
         actualQuantity: actualQty,
         actualCoefficient: actualQty.gt(0) ? actualCoefficient(actualQty, c.basis, metrics) : null,
         inBudget: linked.some((l) => l.coefficientId === c.id),
+        otherProjects: others(c),
       };
     }),
   };

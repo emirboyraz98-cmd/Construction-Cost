@@ -35,6 +35,12 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
     description: "Kalem kalem miktar × birim fiyat, toplam maliyet ve m² maliyetleri.",
   },
   {
+    key: "control",
+    label: "Bütçe kontrolü",
+    capability: "budget.view",
+    description: "Baz bütçe, gerçekleşen, ilerleme, tahmini tamamlanma maliyeti (EAC), sapma, bağlantı kapsaması ve kazancı.",
+  },
+  {
     key: "cost-tree",
     label: "Maliyet ağacı",
     capability: "costTree.view",

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import {
+  ActivityIcon,
   ArrowRightLeftIcon,
   BanknoteIcon,
   BarChart3Icon,
@@ -44,6 +45,7 @@ const PROJECT_ICONS: Record<string, LucideIcon> = {
   expenses: ReceiptTextIcon,
   contracts: HardHatIcon,
   budget: WalletIcon,
+  control: ActivityIcon,
   "cost-tree": ListTreeIcon,
   units: DoorOpenIcon,
   blocks: BlocksIcon,

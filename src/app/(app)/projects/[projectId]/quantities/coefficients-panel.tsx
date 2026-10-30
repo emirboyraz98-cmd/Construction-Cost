@@ -29,12 +29,15 @@ export type CoefficientView = {
   actualQuantity: string;
   actualCoefficient: string | null;
   inBudget: boolean;
+  /** Diğer projelerde gerçekleşen katsayı ortalaması */
+  otherAverage: string | null;
+  otherCount: number;
 };
 
 type Form = { costItemCode: string; name: string; basis: CoefficientBasis; coefficient: string; unit: string; note: string };
 
 export function CoefficientsPanel({ projectId, coefficients, canEdit }: { projectId: string; coefficients: CoefficientView[]; canEdit: boolean }) {
-  const [editing, setEditing] = useState<{ id: string | null; form: Form } | null>(null);
+  const [editing, setEditing] = useState<{ id: string | null; form: Form; suggestion?: string | null } | null>(null);
   const [message, setMessage] = useState<string>();
   const { run, error, fieldErrors, pending, reset } = useAction();
   const missing = coefficients.filter((c) => !c.inBudget && c.costItemName);
@@ -107,6 +110,11 @@ export function CoefficientsPanel({ projectId, coefficients, canEdit }: { projec
                   ) : (
                     "—"
                   )}
+                  {c.otherAverage && (
+                    <span className="block text-xs text-sky-800">
+                      Diğer {c.otherCount} projede ort. {formatNumber(c.otherAverage, 4)}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="pr-4 text-right">
                   {canEdit && (
@@ -117,7 +125,7 @@ export function CoefficientsPanel({ projectId, coefficients, canEdit }: { projec
                         aria-label="Düzenle"
                         onClick={() => {
                           reset();
-                          setEditing({ id: c.id, form: { costItemCode: c.costItemCode, name: c.name, basis: c.basis, coefficient: formatNumber(c.coefficient, 6), unit: c.unit, note: c.note ?? "" } });
+                          setEditing({ id: c.id, form: { costItemCode: c.costItemCode, name: c.name, basis: c.basis, coefficient: formatNumber(c.coefficient, 6), unit: c.unit, note: c.note ?? "" }, suggestion: c.otherAverage ?? c.actualCoefficient });
                         }}
                       >
                         <PencilIcon />
@@ -147,7 +155,19 @@ export function CoefficientsPanel({ projectId, coefficients, canEdit }: { projec
               <FormField id="c-name" label="Ad" required error={fieldErrors.name}>
                 <Input id="c-name" value={editing.form.name} onChange={(e) => set({ name: e.target.value })} />
               </FormField>
-              <FormField id="c-coef" label="Katsayı" required error={fieldErrors.coefficient}>
+              <FormField
+                id="c-coef"
+                label="Katsayı"
+                required
+                error={fieldErrors.coefficient}
+                hint={
+                  editing.suggestion ? (
+                    <button type="button" className="text-sky-800 underline" onClick={() => set({ coefficient: formatNumber(editing.suggestion!, 6) })}>
+                      Gerçekleşen değeri kullan: {formatNumber(editing.suggestion, 4)}
+                    </button>
+                  ) : undefined
+                }
+              >
                 <Input id="c-coef" inputMode="decimal" value={editing.form.coefficient} onChange={(e) => set({ coefficient: e.target.value })} />
               </FormField>
               <FormField id="c-unit" label="Birim" required error={fieldErrors.unit}>

@@ -49,7 +49,9 @@ export default async function BudgetPage({ params }: PageProps<"/projects/[proje
               note={metrics.contractorGross.gt(0) ? `Toplam / ${formatNumber(metrics.contractorGross)} m² müteahhit brüt` : "Bağımsız bölüm girilmemiş"}
               tone={metrics.contractorGross.isZero() ? "warn" : undefined}
             />
-            <Figure label="Gerçekleşen (onaylı, KDV hariç)" value={formatMoney(budget.actualTotal)} note="Sapma analizi Faz 4'te" />
+            <Link href={`/projects/${projectId}/control`} className="min-w-0 hover:underline">
+              <Figure label="Gerçekleşen (onaylı, KDV hariç)" value={formatMoney(budget.actualTotal)} note="Sapma ve EAC: Bütçe kontrolü →" />
+            </Link>
           </CardContent>
         </Card>
 

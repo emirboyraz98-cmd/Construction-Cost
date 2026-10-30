@@ -57,7 +57,7 @@ export default async function ReportsPage({ params, searchParams }: PageProps<"/
     <>
       <PageHeader
         title="Harcama raporları"
-        description="Tutarlar TL, KDV hariç (matrah). Bütçe ile karşılaştırma (sapma) Faz 4'te."
+        description="Tutarlar TL, KDV hariç (matrah). Bütçe ile karşılaştırma, sapma ve EAC için Bütçe kontrolü ekranına bakın."
         actions={
           <Button asChild variant="outline">
             <a href={`/api/projects/${projectId}/expenses/export?${exportParams.toString()}`}>
