@@ -1,25 +1,42 @@
 import { projectRole } from "@/lib/auth/access";
+import { hasCapability } from "@/lib/auth/roles";
 import { expenseVisibility } from "@/lib/expenses/access";
 import { getAccess } from "@/server/access";
 import { db } from "@/server/db";
 import { getSessionUser } from "@/server/session";
 import { readStoredFile } from "@/server/storage";
 
-/** Belge dosyası: yalnızca harcamayı görebilen kullanıcıya. */
+/**
+ * Belge dosyası: yalnızca bağlı kaydı görebilen kullanıcıya. Harcama → harcama görünürlüğü;
+ * bağlantı ve bağlantı faturası → bağlantı görme yetkisi; sözleşme → fiyatları görebilen;
+ * hakediş → sözleşmeyi görebilen.
+ */
 export async function GET(request: Request, { params }: RouteContext<"/api/documents/[documentId]">) {
   if (!(await getSessionUser())) return new Response("Oturum açın.", { status: 401 });
   const { user, scope } = await getAccess();
   const { documentId } = await params;
   const document = await db.document.findUnique({
     where: { id: documentId },
-    include: { expense: { select: { projectId: true, createdById: true, deletedAt: true } } },
+    include: {
+      expense: { select: { projectId: true, createdById: true, deletedAt: true } },
+      contract: { select: { projectId: true } },
+      progressBilling: { select: { projectId: true } },
+    },
   });
-  const expense = document?.expense;
-  const visibility = expense ? expenseVisibility(projectRole(scope, expense.projectId), user.id) : null;
-  if (!document || !expense || expense.deletedAt || !visibility) return new Response("Bulunamadı.", { status: 404 });
-  if (visibility.createdById && visibility.createdById !== expense.createdById) {
-    return new Response("Bulunamadı.", { status: 404 });
+  if (!document) return new Response("Bulunamadı.", { status: 404 });
+  let allowed = false;
+  const expense = document.expense;
+  if (expense) {
+    const visibility = expenseVisibility(projectRole(scope, expense.projectId), user.id);
+    allowed = !expense.deletedAt && !!visibility && (!visibility.createdById || visibility.createdById === expense.createdById);
+  } else if (document.connectionId || document.connectionInvoiceId) {
+    allowed = hasCapability(user.role, "connection.view");
+  } else if (document.contract) {
+    allowed = hasCapability(projectRole(scope, document.contract.projectId), "contract.viewAmounts");
+  } else if (document.progressBilling) {
+    allowed = hasCapability(projectRole(scope, document.progressBilling.projectId), "contract.view");
   }
+  if (!allowed) return new Response("Bulunamadı.", { status: 404 });
   let file: Buffer;
   try {
     file = await readStoredFile(document.storageKey);

@@ -34,7 +34,7 @@ export default async function PayablesPage({ searchParams }: PageProps<"/company
 
   return (
     <>
-      <PageHeader title="Vade listesi" description="Tüm projelerde ödenmemiş harcamalar (reddedilenler hariç), vadeye göre." />
+      <PageHeader title="Vade listesi" description="Ödenmemiş harcama ve avanslar, bağlantı ödeme planı ve onaylı hakedişlerin net ödemesi; vadeye göre. Proje seçilince şirket geneli bağlantı ödemeleri gizlenir." />
       <form className="mb-4 flex flex-wrap items-end gap-3">
         <div className="flex gap-1 rounded-lg bg-muted p-1 text-sm">
           {(Object.keys(VIEWS) as (keyof typeof VIEWS)[]).map((key) => (
@@ -73,19 +73,18 @@ export default async function PayablesPage({ searchParams }: PageProps<"/company
         <PayablesTable
           today={dateToDateInput(new Date())}
           rows={rows.map((r) => ({
-            id: r.id,
-            projectId: r.projectId,
-            project: r.project.name,
-            date: r.date.toISOString(),
+            key: r.key,
+            project: r.project,
             dueDate: r.dueDate?.toISOString() ?? null,
             bucket: r.bucket,
-            supplier: r.supplier?.name ?? null,
-            costItem: r.costItem ? `${r.costItem.code} ${r.costItem.name}` : null,
-            documentType: r.documentType,
+            supplier: r.supplier,
+            label: r.label,
+            documentLabel: r.documentLabel,
             documentNo: r.documentNo,
-            total: r.totalAmountTry.toString(),
-            pendingApproval: r.approvalStatus === "PENDING",
+            total: r.totalTry.toString(),
+            pendingApproval: r.pendingApproval,
             canMarkPaid: r.canMarkPaid,
+            href: r.href,
           }))}
         />
       )}

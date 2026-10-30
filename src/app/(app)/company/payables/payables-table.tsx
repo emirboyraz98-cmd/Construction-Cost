@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { WalletIcon } from "lucide-react";
-import { setPaidAction } from "@/app/(app)/projects/[projectId]/expenses/actions";
+import { markPayablesPaidAction } from "./actions";
 import { FormError, FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,25 +20,23 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DUE_BUCKET_LABELS, type DueBucket } from "@/lib/expenses/payables";
-import { DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/expenses/labels";
-import type { DocumentType } from "@/generated/prisma/enums";
+import { PAYMENT_METHOD_LABELS } from "@/lib/expenses/labels";
 import { Decimal, formatDateOnly, formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type PayableRow = {
-  id: string;
-  projectId: string;
+  key: string;
   project: string;
-  date: string;
   dueDate: string | null;
   bucket: DueBucket;
   supplier: string | null;
-  costItem: string | null;
-  documentType: DocumentType;
+  label: string;
+  documentLabel: string;
   documentNo: string | null;
   total: string;
   pendingApproval: boolean;
   canMarkPaid: boolean;
+  href: string;
 };
 
 const ORDER: DueBucket[] = ["overdue", "thisWeek", "later", "noDueDate"];
@@ -50,7 +48,7 @@ export function PayablesTable({ rows, today }: { rows: PayableRow[]; today: stri
   const [method, setMethod] = useState("BANK_TRANSFER");
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
-  const selectedTotal = rows.filter((r) => selected.has(r.id)).reduce((s, r) => s.plus(r.total), new Decimal(0));
+  const selectedTotal = rows.filter((r) => selected.has(r.key)).reduce((s, r) => s.plus(r.total), new Decimal(0));
 
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -93,17 +91,17 @@ export function PayablesTable({ rows, today }: { rows: PayableRow[]; today: stri
               </TableHeader>
               <TableBody>
                 {group.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.key}>
                     <TableCell className="pl-4">
                       {row.canMarkPaid && (
                         <Checkbox
                           aria-label="Seç"
-                          checked={selected.has(row.id)}
+                          checked={selected.has(row.key)}
                           onCheckedChange={(on) =>
                             setSelected((current) => {
                               const next = new Set(current);
-                              if (on === true) next.add(row.id);
-                              else next.delete(row.id);
+                              if (on === true) next.add(row.key);
+                              else next.delete(row.key);
                               return next;
                             })
                           }
@@ -113,16 +111,16 @@ export function PayablesTable({ rows, today }: { rows: PayableRow[]; today: stri
                     <TableCell className="whitespace-nowrap">{row.dueDate ? formatDateOnly(row.dueDate) : "—"}</TableCell>
                     <TableCell className="max-w-48 truncate">{row.supplier ?? "—"}</TableCell>
                     <TableCell className="max-w-64 truncate">
-                      <Link href={`/projects/${row.projectId}/expenses/${row.id}`} className="hover:underline">
+                      <Link href={row.href} className="hover:underline">
                         {row.project}
                       </Link>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {row.costItem ?? "Avans"}
+                        {row.label}
                         {row.pendingApproval && " · onay bekliyor"}
                       </span>
                     </TableCell>
                     <TableCell>
-                      {DOCUMENT_TYPE_LABELS[row.documentType]}
+                      {row.documentLabel}
                       {row.documentNo && <span className="block text-xs text-muted-foreground">{row.documentNo}</span>}
                     </TableCell>
                     <TableCell className="pr-4 text-right tabular-nums">{formatMoney(row.total)}</TableCell>
@@ -139,7 +137,7 @@ export function PayablesTable({ rows, today }: { rows: PayableRow[]; today: stri
           <DialogHeader>
             <DialogTitle>Ödendi olarak işaretle</DialogTitle>
             <DialogDescription>
-              {selected.size} kayıt · {formatMoney(selectedTotal)}. Projelere bölünmüş faturaların tüm satırları birlikte işaretlenir.
+              {selected.size} kayıt · {formatMoney(selectedTotal)}. Projelere bölünmüş faturaların tüm satırları birlikte işaretlenir; dövizli bağlantı ödemeleri ödeme günündeki kurla TL&apos;ye çevrilir.
             </DialogDescription>
           </DialogHeader>
           <FormError message={error} />
@@ -166,7 +164,7 @@ export function PayablesTable({ rows, today }: { rows: PayableRow[]; today: stri
               onClick={() =>
                 startTransition(async () => {
                   setError(undefined);
-                  const result = await setPaidAction([...selected], { paid: true, paidAt, method });
+                  const result = await markPayablesPaidAction({ keys: [...selected], paidAt, method });
                   if (!result.ok) setError(result.error);
                   else {
                     setSelected(new Set());

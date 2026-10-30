@@ -42,7 +42,7 @@ export default async function PortfolioPage() {
     { net: new Decimal(0), pending: 0, unpaid: new Decimal(0) },
   );
   const soon = (payables ?? []).filter((r) => r.bucket === "overdue" || r.bucket === "thisWeek");
-  const soonTotal = soon.reduce((s, r) => s.plus(r.totalAmountTry.toString()), new Decimal(0));
+  const soonTotal = soon.reduce((s, r) => s.plus(r.totalTry), new Decimal(0));
 
   return (
     <>
@@ -105,14 +105,14 @@ export default async function PortfolioPage() {
             </p>
             <ul className="grid gap-1.5 text-sm">
               {soon.slice(0, 6).map((row) => (
-                <li key={row.id} className="flex flex-wrap justify-between gap-2">
-                  <Link href={`/projects/${row.projectId}/expenses/${row.id}`} className="min-w-0 truncate hover:underline">
+                <li key={row.key} className="flex flex-wrap justify-between gap-2">
+                  <Link href={row.href} className="min-w-0 truncate hover:underline">
                     <span className={row.bucket === "overdue" ? "text-destructive" : ""}>
                       {row.dueDate ? formatDateOnly(row.dueDate) : "—"}
                     </span>{" "}
-                    · {row.supplier?.name ?? "Tedarikçi yok"} · {row.project.name}
+                    · {row.supplier ?? "Tedarikçi yok"} · {row.project}
                   </Link>
-                  <span className="tabular-nums">{formatMoney(row.totalAmountTry)}</span>
+                  <span className="tabular-nums">{formatMoney(row.totalTry)}</span>
                 </li>
               ))}
             </ul>

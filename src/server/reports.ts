@@ -5,6 +5,7 @@ import { projectIdsWithCapability, projectRole } from "@/lib/auth/access";
 import { hasCapability } from "@/lib/auth/roles";
 import { compareCodes } from "@/lib/cost-tree/tree";
 import { COST_KINDS, PAYABLE_KINDS } from "@/lib/expenses/kinds";
+import { DOCUMENT_TYPE_LABELS } from "@/lib/expenses/labels";
 import { dueBucket, type DueBucket } from "@/lib/expenses/payables";
 import { ActionError, getAccess } from "./access";
 import { db } from "./db";
@@ -153,41 +154,136 @@ export async function spendSummaries() {
   return { summaries: result, visibleProjects: projectIdsWithCapability(scope, "expense.viewAll") };
 }
 
-/** Vade listesi: tüm (yetkili) projelerdeki ödenmemiş kayıtlar, vadeye göre gruplanmış. */
-export async function listPayables(options: { projectId?: string | null; bucket?: DueBucket | null } = {}) {
-  const { scope } = await getAccess();
-  const rows = await db.expense.findMany({
-    where: {
-      ...projectIdsWithCapability(scope, "expense.viewAll"),
-      ...(options.projectId ? { projectId: options.projectId } : {}),
-      deletedAt: null,
-      paymentStatus: "UNPAID",
-      approvalStatus: { not: "REJECTED" },
-    },
-    orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { date: "asc" }],
-    take: 1000,
-    select: {
-      id: true,
-      projectId: true,
-      date: true,
-      dueDate: true,
-      kind: true,
-      documentType: true,
-      documentNo: true,
-      description: true,
-      totalAmountTry: true,
-      approvalStatus: true,
-      splitGroupId: true,
-      project: { select: { name: true } },
-      supplier: { select: { id: true, name: true } },
-      costItem: { select: { code: true, name: true } },
-    },
-  });
+export type PayableSource = "expense" | "connection" | "billing";
+
+export type PayableItem = {
+  key: string;
+  source: PayableSource;
+  id: string;
+  projectId: string | null;
+  project: string;
+  date: Date;
+  dueDate: Date | null;
+  bucket: DueBucket;
+  supplier: string | null;
+  label: string;
+  documentLabel: string;
+  documentNo: string | null;
+  totalTry: Decimal;
+  pendingApproval: boolean;
+  canMarkPaid: boolean;
+  href: string;
+};
+
+/**
+ * Vade listesi: ödenmemiş harcama ve avanslar, bağlantı ödeme planı satırları ve onaylı
+ * hakedişlerin net ödemesi; vadeye göre gruplanır. Bağlantı ödemeleri şirket geneli olduğundan
+ * proje filtresinde görünmez.
+ */
+export async function listPayables(options: { projectId?: string | null; bucket?: DueBucket | null } = {}): Promise<PayableItem[]> {
+  const { user, scope } = await getAccess();
+  const seeConnections = hasCapability(user.role, "connection.view") && !options.projectId;
+  const projectFilter = {
+    ...projectIdsWithCapability(scope, "expense.viewAll"),
+    ...(options.projectId ? { projectId: options.projectId } : {}),
+  };
+  const [expenses, payments, billings] = await Promise.all([
+    db.expense.findMany({
+      where: {
+        ...projectFilter,
+        deletedAt: null,
+        kind: { in: [...PAYABLE_KINDS] },
+        paymentStatus: "UNPAID",
+        approvalStatus: { not: "REJECTED" },
+      },
+      orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { date: "asc" }],
+      take: 1000,
+      select: {
+        id: true,
+        projectId: true,
+        date: true,
+        dueDate: true,
+        kind: true,
+        documentType: true,
+        documentNo: true,
+        totalAmountTry: true,
+        approvalStatus: true,
+        project: { select: { name: true } },
+        supplier: { select: { name: true } },
+        costItem: { select: { code: true, name: true } },
+      },
+    }),
+    seeConnections
+      ? db.connectionPayment.findMany({
+          where: { paymentStatus: "UNPAID", connection: { status: { not: "CANCELLED" } } },
+          orderBy: { dueDate: "asc" },
+          take: 500,
+          include: { connection: { select: { id: true, no: true, createdAt: true, supplier: { select: { name: true } } } } },
+        })
+      : [],
+    db.progressBilling.findMany({
+      where: { ...projectFilter, status: "APPROVED", paymentStatus: "UNPAID" },
+      orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { date: "asc" }],
+      take: 500,
+      include: { project: { select: { name: true } }, contract: { select: { no: true, title: true, supplier: { select: { name: true } } } } },
+    }),
+  ]);
   const today = new Date();
-  const withBucket = rows.map((row) => ({
-    ...row,
-    bucket: dueBucket(row.dueDate, today),
-    canMarkPaid: hasCapability(projectRole(scope, row.projectId), "expense.manage"),
-  }));
-  return options.bucket ? withBucket.filter((row) => row.bucket === options.bucket) : withBucket;
+  const items: PayableItem[] = [
+    ...expenses.map((row) => ({
+      key: `expense:${row.id}`,
+      source: "expense" as const,
+      id: row.id,
+      projectId: row.projectId,
+      project: row.project.name,
+      date: row.date,
+      dueDate: row.dueDate,
+      bucket: dueBucket(row.dueDate, today),
+      supplier: row.supplier?.name ?? null,
+      label: row.costItem ? `${row.costItem.code} ${row.costItem.name}` : "Avans",
+      documentLabel: DOCUMENT_TYPE_LABELS[row.documentType],
+      documentNo: row.documentNo,
+      totalTry: dec(row.totalAmountTry),
+      pendingApproval: row.approvalStatus === "PENDING",
+      canMarkPaid: hasCapability(projectRole(scope, row.projectId), "expense.manage"),
+      href: `/projects/${row.projectId}/expenses/${row.id}`,
+    })),
+    ...payments.map((p) => ({
+      key: `connection:${p.id}`,
+      source: "connection" as const,
+      id: p.id,
+      projectId: null,
+      project: "Şirket geneli",
+      date: p.connection.createdAt,
+      dueDate: p.dueDate,
+      bucket: dueBucket(p.dueDate, today),
+      supplier: p.connection.supplier.name,
+      label: `Bağlantı ${p.connection.no}${p.description ? ` · ${p.description}` : ""}`,
+      documentLabel: "Bağlantı ödemesi",
+      documentNo: p.instrumentNo,
+      totalTry: dec(p.amountTry),
+      pendingApproval: false,
+      canMarkPaid: hasCapability(user.role, "connection.manage"),
+      href: `/company/connections/${p.connection.id}`,
+    })),
+    ...billings.map((b) => ({
+      key: `billing:${b.id}`,
+      source: "billing" as const,
+      id: b.id,
+      projectId: b.projectId,
+      project: b.project.name,
+      date: b.date,
+      dueDate: b.dueDate,
+      bucket: dueBucket(b.dueDate, today),
+      supplier: b.contract.supplier.name,
+      label: `${b.contract.title} – ${b.seq}. hakediş`,
+      documentLabel: "Hakediş (net)",
+      documentNo: `${b.contract.no}/${b.seq}`,
+      totalTry: dec(b.payableAmount),
+      pendingApproval: false,
+      canMarkPaid: hasCapability(projectRole(scope, b.projectId), "expense.manage"),
+      href: `/projects/${b.projectId}/contracts/${b.contractId}/billings/${b.id}`,
+    })),
+  ].sort((a, b) => (a.dueDate?.getTime() ?? Infinity) - (b.dueDate?.getTime() ?? Infinity) || a.date.getTime() - b.date.getTime());
+  return options.bucket ? items.filter((row) => row.bucket === options.bucket) : items;
 }
