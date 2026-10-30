@@ -23,6 +23,18 @@ export const CURRENCY_LABELS: Record<Currency, string> = {
 export const EXPENSE_KIND_LABELS: Record<ExpenseKind, string> = {
   EXPENSE: "Harcama",
   ADVANCE: "Avans (bağlantı / taşeron)",
+  DELIVERY: "Bağlantı çekişi",
+  PROGRESS: "Taşeron hakedişi",
+  TRANSFER: "Malzeme transferi",
+};
+
+/** Listelerde kalem adı yerine kısa etiket (kalemi olmayan kayıtlar için). */
+export const EXPENSE_KIND_SHORT: Record<ExpenseKind, string> = {
+  EXPENSE: "Harcama",
+  ADVANCE: "Avans",
+  DELIVERY: "Çekiş",
+  PROGRESS: "Hakediş",
+  TRANSFER: "Transfer",
 };
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
