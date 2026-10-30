@@ -53,7 +53,7 @@ export function PayablesTable({ rows, today }: { rows: PayableRow[]; today: stri
   const selectedTotal = rows.filter((r) => selected.has(r.id)).reduce((s, r) => s.plus(r.total), new Decimal(0));
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {selected.size > 0 && (
         <div className="sticky top-14 z-20 flex flex-wrap items-center gap-2 rounded-lg border bg-background p-2 shadow-sm md:top-12">
           <span className="px-1 text-sm">

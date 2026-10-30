@@ -113,7 +113,7 @@ export default async function ReportsPage({ params, searchParams }: PageProps<"/
           <CardContent className="py-6 text-center text-sm text-muted-foreground">Seçilen dönemde harcama yok.</CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <Card className="gap-2 py-0 xl:col-span-2">
             <CardHeader className="pt-5">
               <CardTitle>Maliyet kalemlerine göre</CardTitle>

@@ -52,7 +52,7 @@ export default async function SupplierPage({ params }: PageProps<"/company/suppl
         {!supplier.active && <Badge variant="outline" className="mt-2">Pasif</Badge>}
       </PageHeader>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <Card>
           <CardContent>
             <InfoList

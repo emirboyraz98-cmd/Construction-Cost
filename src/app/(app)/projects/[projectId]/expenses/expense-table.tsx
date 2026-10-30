@@ -106,7 +106,7 @@ export function ExpenseTable({
   );
 
   return (
-    <div className="grid gap-3">
+    <div className="grid grid-cols-1 gap-3">
       {message && <p className="text-sm text-emerald-700">{message}</p>}
       <FormError message={error} />
       {selectable && selected.size > 0 && (
@@ -211,13 +211,13 @@ export function ExpenseTable({
         </Table>
       </Card>
 
-      <ul className="grid gap-2 md:hidden">
+      <ul className="grid grid-cols-1 gap-2 md:hidden">
         {rows.map((row) => (
           <li key={row.id} className="flex items-start gap-2 rounded-lg border bg-card p-3">
             {selectable && (
               <Checkbox className="mt-1" aria-label="Seç" checked={selected.has(row.id)} onCheckedChange={(on) => toggle(row.id, on === true)} />
             )}
-            <Link href={`/projects/${projectId}/expenses/${row.id}`} className="grid min-w-0 flex-1 gap-1">
+            <Link href={`/projects/${projectId}/expenses/${row.id}`} className="grid min-w-0 flex-1 grid-cols-1 gap-1">
               <span className="flex items-start justify-between gap-2">
                 <span className="truncate font-medium">{row.costItem ?? "Avans"}</span>
                 <span className="shrink-0 text-right font-semibold">{amount(row)}</span>

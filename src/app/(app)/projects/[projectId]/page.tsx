@@ -58,17 +58,15 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
         <StatusBadge status={project.status} className="mt-2" />
       </PageHeader>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <Card className="py-4">
           <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {overview && !overview.ownOnly ? (
+            {overview && !overview.ownOnly && (
               <SpendFigure
                 label="Harcanan (KDV hariç)"
                 value={overview.net}
                 note={overview.pending ? `${overview.pending} kayıt onay bekliyor` : "Onaylı kayıtlar"}
               />
-            ) : (
-              <div />
             )}
             <PendingFigure label="Bütçe" phase={3} />
             <PendingFigure label="Satış / tahsilat" phase={6} />
