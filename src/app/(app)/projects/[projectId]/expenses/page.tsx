@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DownloadIcon, FilterIcon, PlusIcon, SheetIcon } from "lucide-react";
+import { DownloadIcon, FilterIcon, PackageCheckIcon, PlusIcon, SheetIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,7 +56,7 @@ export default async function ExpensesPage({ params, searchParams }: PageProps<"
         title={viewAll ? "Harcamalar" : "Son girişlerim"}
         description={
           viewAll
-            ? `${project.name} · tüm harcama ve avans kayıtları`
+            ? `${project.name} · harcama, avans, bağlantı çekişi, hakediş ve transfer kayıtları`
             : "Bu projede sizin girdiğiniz harcamalar. Ofis onayladıkça durumları değişir."
         }
         actions={
@@ -66,6 +66,14 @@ export default async function ExpensesPage({ params, searchParams }: PageProps<"
                 <Link href={`/projects/${projectId}/expenses/new`}>
                   <PlusIcon />
                   Harcama gir
+                </Link>
+              </Button>
+            )}
+            {canCreate && (
+              <Button asChild variant="outline" size="lg" className="md:h-9">
+                <Link href={`/projects/${projectId}/expenses/delivery`}>
+                  <PackageCheckIcon />
+                  Malzeme geldi
                 </Link>
               </Button>
             )}

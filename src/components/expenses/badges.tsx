@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import type { ApprovalStatus, PaymentStatus } from "@/generated/prisma/enums";
-import { APPROVAL_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/expenses/labels";
+import type { ApprovalStatus, ExpenseKind, PaymentStatus } from "@/generated/prisma/enums";
+import { isPayableKind } from "@/lib/expenses/kinds";
+import { APPROVAL_STATUS_LABELS, EXPENSE_KIND_SHORT, PAYMENT_STATUS_LABELS } from "@/lib/expenses/labels";
 import { cn } from "@/lib/utils";
 
 const APPROVAL_STYLES: Record<ApprovalStatus, string> = {
@@ -27,6 +28,16 @@ export function PaymentBadge({ status, overdue, className }: { status: PaymentSt
       )}
     >
       {status === "UNPAID" && overdue ? "Vadesi geçti" : PAYMENT_STATUS_LABELS[status]}
+    </Badge>
+  );
+}
+
+/** Ödemesi izlenen türlerde ödeme durumu; çekiş / hakediş / transferde türün adı. */
+export function PaymentOrKindBadge({ kind, status, overdue }: { kind: ExpenseKind; status: PaymentStatus; overdue?: boolean }) {
+  if (isPayableKind(kind)) return <PaymentBadge status={status} overdue={overdue} />;
+  return (
+    <Badge variant="outline" className="border-violet-300 bg-violet-50 text-violet-800">
+      {EXPENSE_KIND_SHORT[kind]}
     </Badge>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { CheckIcon, PaperclipIcon, WalletIcon, XIcon } from "lucide-react";
-import { ApprovalBadge, PaymentBadge } from "@/components/expenses/badges";
+import { ApprovalBadge, PaymentOrKindBadge } from "@/components/expenses/badges";
 import { FormError, FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -200,7 +200,7 @@ export function ExpenseTable({
                   <ApprovalBadge status={row.approvalStatus} />
                 </TableCell>
                 <TableCell className="pr-4">
-                  <PaymentBadge status={row.paymentStatus} overdue={row.overdue} />
+                  <PaymentOrKindBadge kind={row.kind} status={row.paymentStatus} overdue={row.overdue} />
                   {row.paymentStatus === "UNPAID" && row.dueDate && (
                     <span className="block text-xs text-muted-foreground">Vade {formatDateOnly(row.dueDate)}</span>
                   )}
@@ -219,7 +219,7 @@ export function ExpenseTable({
             )}
             <Link href={`/projects/${projectId}/expenses/${row.id}`} className="grid min-w-0 flex-1 grid-cols-1 gap-1">
               <span className="flex items-start justify-between gap-2">
-                <span className="truncate font-medium">{row.costItem ?? "Avans"}</span>
+                <span className="truncate font-medium">{row.costItem ?? (row.kind === "ADVANCE" ? "Avans" : "—")}</span>
                 <span className="shrink-0 text-right font-semibold">{amount(row)}</span>
               </span>
               <span className="truncate text-xs text-muted-foreground">
@@ -228,7 +228,7 @@ export function ExpenseTable({
               </span>
               <span className="flex flex-wrap gap-1">
                 <ApprovalBadge status={row.approvalStatus} />
-                <PaymentBadge status={row.paymentStatus} overdue={row.overdue} />
+                <PaymentOrKindBadge kind={row.kind} status={row.paymentStatus} overdue={row.overdue} />
               </span>
             </Link>
           </li>

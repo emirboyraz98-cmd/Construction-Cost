@@ -31,6 +31,8 @@ export function ExpenseActions({
   canManage,
   canCopy,
   isSplit,
+  editable = true,
+  payable = true,
   today,
 }: {
   projectId: string;
@@ -42,6 +44,10 @@ export function ExpenseActions({
   canManage: boolean;
   canCopy: boolean;
   isSplit: boolean;
+  /** Elle girilen tür (harcama / avans); çekiş düzenlenmez, silinip yeniden girilir */
+  editable?: boolean;
+  /** Ödeme durumu izlenen tür */
+  payable?: boolean;
   today: string;
 }) {
   const router = useRouter();
@@ -80,7 +86,7 @@ export function ExpenseActions({
             Reddet
           </Button>
         )}
-        {canManage && (
+        {canManage && payable && (
           <Button
             variant="outline"
             onClick={() =>
@@ -94,7 +100,7 @@ export function ExpenseActions({
             {paymentStatus === "PAID" ? "Ödenmedi olarak işaretle" : "Ödendi işaretle"}
           </Button>
         )}
-        {canModify && (
+        {canModify && editable && (
           <Button asChild variant="outline">
             <Link href={`/projects/${projectId}/expenses/${expenseId}/edit`}>
               <PencilIcon />
@@ -102,7 +108,7 @@ export function ExpenseActions({
             </Link>
           </Button>
         )}
-        {canCopy && !isSplit && (
+        {canCopy && !isSplit && editable && (
           <Button asChild variant="outline">
             <Link href={`/projects/${projectId}/expenses/new?copy=${expenseId}`}>
               <CopyIcon />

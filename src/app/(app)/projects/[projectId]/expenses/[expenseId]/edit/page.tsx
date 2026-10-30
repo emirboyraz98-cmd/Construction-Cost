@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import { valuesFromExpense } from "@/components/expenses/form-values";
 import { Card, CardContent } from "@/components/ui/card";
+import { isManualKind } from "@/lib/expenses/kinds";
 import { entryOptions, getExpense } from "@/server/expenses";
 import { vatRateOptions } from "@/server/parameters";
 import { supplierOptions } from "@/server/suppliers";
@@ -14,13 +15,15 @@ export default async function EditExpensePage({ params }: PageProps<"/projects/[
   const { projectId, expenseId } = await params;
   const detail = await getExpense(projectId, expenseId);
   if (!detail) notFound();
-  if (!detail.canModify) {
+  if (!detail.canModify || !isManualKind(detail.expense.kind)) {
     return (
       <>
         <PageHeader title="Harcamayı düzenle" />
         <Card className="max-w-xl">
           <CardContent className="text-sm text-muted-foreground">
-            Bu kaydı değiştiremezsiniz (onaylanmış kayıtları yalnızca muhasebe / yönetici düzeltebilir).
+            {isManualKind(detail.expense.kind)
+              ? "Bu kaydı değiştiremezsiniz (onaylanmış kayıtları yalnızca muhasebe / yönetici düzeltebilir)."
+              : "Bağlantı çekişi, hakediş ve transfer satırları burada düzenlenmez; kendi ekranlarından yönetilir."}
           </CardContent>
         </Card>
       </>

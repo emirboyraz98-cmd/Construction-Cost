@@ -150,6 +150,10 @@ export async function getExpense(projectId: string, expenseId: string) {
       approvedBy: { select: { name: true } },
       documents: { orderBy: { createdAt: "asc" } },
       import: { select: { fileName: true, createdAt: true } },
+      connection: { select: { id: true, no: true } },
+      contract: { select: { id: true, no: true, title: true } },
+      progressBilling: { select: { id: true, seq: true, contractId: true } },
+      transfer: { select: { id: true, fromProject: { select: { name: true } }, toProject: { select: { name: true } } } },
     },
   });
   if (!expense) return null;

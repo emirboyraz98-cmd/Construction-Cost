@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeftIcon, FileTextIcon } from "lucide-react";
-import { ApprovalBadge, PaymentBadge } from "@/components/expenses/badges";
+import { ApprovalBadge, PaymentOrKindBadge } from "@/components/expenses/badges";
 import { InfoList } from "@/components/info-list";
 import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,6 +16,7 @@ import {
   EXPENSE_KIND_LABELS,
   PAYMENT_METHOD_LABELS,
 } from "@/lib/expenses/labels";
+import { isManualKind, isPayableKind } from "@/lib/expenses/kinds";
 import { dueBucket } from "@/lib/expenses/payables";
 import { dateToDateInput, Decimal, formatDateOnly, formatDateTime, formatMoney, formatNumber } from "@/lib/format";
 import { getExpense } from "@/server/expenses";
@@ -32,6 +33,8 @@ export default async function ExpenseDetailPage({ params }: PageProps<"/projects
   const { expense, siblings } = detail;
   const foreign = expense.currency !== "TRY";
   const overdue = expense.paymentStatus === "UNPAID" && dueBucket(expense.dueDate, new Date()) === "overdue";
+  // Bağlantı çekişinin tutarı bağlantı fiyatından gelir; fiyatı görmeyen rol (şantiye şefi) yalnızca miktarı görür.
+  const hidePrice = expense.kind === "DELIVERY" && !hasCapability(detail.role, "connection.view") && !hasCapability(detail.role, "expense.viewAll");
 
   return (
     <>
@@ -42,14 +45,14 @@ export default async function ExpenseDetailPage({ params }: PageProps<"/projects
         </Link>
       </Button>
       <PageHeader
-        title={formatMoney(expense.totalAmountTry)}
+        title={hidePrice ? `${formatNumber(expense.quantity, 4)} ${expense.unit ?? ""} · ${expense.description ?? ""}` : formatMoney(expense.totalAmountTry)}
         description={
           expense.costItem ? `${expense.costItem.code} ${expense.costItem.name}` : EXPENSE_KIND_LABELS[expense.kind]
         }
       >
         <div className="mt-2 flex flex-wrap gap-1.5">
           <ApprovalBadge status={expense.approvalStatus} />
-          <PaymentBadge status={expense.paymentStatus} overdue={overdue} />
+          <PaymentOrKindBadge kind={expense.kind} status={expense.paymentStatus} overdue={overdue} />
           {expense.kind === "ADVANCE" && <Badge variant="secondary">Avans</Badge>}
           {expense.splitGroupId && <Badge variant="secondary">Ortak fatura</Badge>}
         </div>
@@ -65,7 +68,54 @@ export default async function ExpenseDetailPage({ params }: PageProps<"/projects
           </Alert>
         )}
 
+        {expense.connection && (
+          <Alert>
+            <AlertTitle>{expense.kind === "DELIVERY" ? "Bağlantı çekişi" : "Bağlantıya bağlı avans"}</AlertTitle>
+            <AlertDescription>
+              {hasCapability(detail.role, "connection.view") ? (
+                <Link href={`/company/connections/${expense.connection.id}`} className="underline">
+                  {expense.connection.no}
+                </Link>
+              ) : (
+                expense.connection.no
+              )}
+              {expense.kind === "DELIVERY" && " · Tutar bağlantı fiyatından hesaplandı; ödemesi bağlantının ödeme planında izlenir. Yanlışsa silip yeniden girin."}
+            </AlertDescription>
+          </Alert>
+        )}
+        {expense.progressBilling && (
+          <Alert>
+            <AlertTitle>Taşeron hakedişi</AlertTitle>
+            <AlertDescription>
+              <Link href={`/projects/${projectId}/contracts/${expense.progressBilling.contractId}/billings/${expense.progressBilling.id}`} className="underline">
+                {expense.contract?.no} {expense.contract?.title} – {expense.progressBilling.seq}. hakediş
+              </Link>
+              {" "}· Brüt − malzeme mahsubu maliyete yazıldı; net ödeme hakediş kaydında izlenir.
+            </AlertDescription>
+          </Alert>
+        )}
+        {expense.contract && !expense.progressBilling && (
+          <Alert>
+            <AlertTitle>Taşeron sözleşmesine bağlı avans</AlertTitle>
+            <AlertDescription>
+              <Link href={`/projects/${projectId}/contracts/${expense.contract.id}`} className="underline">
+                {expense.contract.no} {expense.contract.title}
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
+        {expense.transfer && (
+          <Alert>
+            <AlertTitle>Malzeme transferi</AlertTitle>
+            <AlertDescription>
+              {expense.transfer.fromProject.name} → {expense.transfer.toProject.name}. Transfer ekranından silinir.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <ExpenseActions
+          editable={isManualKind(expense.kind)}
+          payable={isPayableKind(expense.kind)}
           projectId={projectId}
           expenseId={expense.id}
           approvalStatus={expense.approvalStatus}
@@ -78,6 +128,7 @@ export default async function ExpenseDetailPage({ params }: PageProps<"/projects
           today={dateToDateInput(new Date())}
         />
 
+        {!hidePrice && (
         <Card>
           <CardHeader>
             <CardTitle>Tutar</CardTitle>
@@ -108,6 +159,7 @@ export default async function ExpenseDetailPage({ params }: PageProps<"/projects
             />
           </CardContent>
         </Card>
+        )}
 
         <Card>
           <CardHeader>
