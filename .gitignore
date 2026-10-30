@@ -1,0 +1,32 @@
+# Bağımlılıklar
+node_modules/
+.pnpm-store/
+
+# Derleme çıktıları
+.next/
+out/
+dist/
+build/
+coverage/
+
+# Ortam değişkenleri ve gizli bilgiler
+.env
+.env.*
+!.env.example
+
+# Yerel veritabanı ve yüklenen dosyalar
+.pgdata/
+*.db
+*.db-journal
+uploads/
+
+# Günlükler
+*.log
+npm-debug.log*
+
+# Editör / işletim sistemi
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
