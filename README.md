@@ -3,7 +3,7 @@
 İnşaat şirketi için maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı.
 Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 
-**Durum: Faz 2 – Satın alma: bağlantılar ve taşeron.**
+**Durum: Faz 3 – Bina ve bütçe.**
 
 - **Faz 0 (altyapı):** kullanıcı girişi ve roller, proje bazlı yetki, proje sekmeleri, yeni proje
   sihirbazı, portföy ve proje paneli, bloklar ve maliyet ağacı (İKY).
@@ -13,6 +13,8 @@ Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 - **Faz 2 (satın alma):** malzeme bağlantıları (kalemler, proje tahsisi / atanmamış havuz, çekişler,
   bakiye, ödeme planı, avans bakiyesi, fatura eşleştirme, uyarılar), avansların bağlantıya /
   sözleşmeye bağlanması, projeler arası malzeme transferi, taşeron sözleşmeleri, hakediş ve kesintiler.
+- **Faz 3 (bina ve bütçe):** bağımsız bölümler, arsa sahipleri ve pay kontrolü, malzeme / fiyat
+  kütüphanesi (faturalardan beslenen), reçeteler, üç seviyeli metraj, bütçe, toplam ve m² maliyeti.
 
 Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
@@ -103,6 +105,9 @@ Sonra telefonda `http://<bilgisayarın-IP-adresi>:3000` adresini açın (IP adre
 | Hakediş hazırlama (kümülatif metraj) | Sözleşme → **Hakediş hazırla** | Şantiye şefi, teknik ofis, muhasebe, yönetici |
 | Hakediş onayı | Hakediş sayfası | Muhasebe, yönetici |
 | Projeler arası malzeme transferi | Şirket geneli → **Malzeme transferi** | Yönetici, muhasebe, satın alma (iki projede de) |
+| Bağımsız bölümler, arsa sahipleri | Proje → **Bağımsız bölümler**, **Arsa & sözleşme** | Düzenleme: yönetici, teknik ofis · görme: projedeki herkes |
+| Malzeme / fiyat kütüphanesi, reçeteler | Şirket geneli → **Kütüphane** | Yönetici, teknik ofis, muhasebe, satın alma |
+| Metraj ve bütçe | Proje → **Metraj**, **Bütçe** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, satın alma, dış muhasebeci |
 
 - **Onay akışı:** Şantiye şefinin ve satın almanın girdiği kayıtlar *Onay bekliyor* olarak düşer;
   muhasebe veya yönetici onaylar ya da nedenini yazarak reddeder. Reddedilen kaydı giren kişi
@@ -138,6 +143,32 @@ Sonra telefonda `http://<bilgisayarın-IP-adresi>:3000` adresini açın (IP adre
   Oranlar sözleşmeye girilir (programda sabit oran yoktur). Onaylanınca brüt (malzeme mahsubu
   düşülerek) maliyete yazılır, net ödeme vade listesine girer. Son hakedişin onayı ödenmemişse geri alınabilir.
 - **Vade listesi** artık harcama/avanslarla birlikte bağlantı ödeme planını ve hakediş net ödemelerini de gösterir.
+
+### Bina ve bütçe: nasıl çalışır?
+
+- **Bağımsız bölümler:** Her blokta “Kat kat üret” ile aynı tipteki bölümler bir seferde açılır,
+  sonra tek tek düzenlenir. Arsa sahibine verilecek bölümler seçilip toplu işaretlenir. Program,
+  sözleşmedeki pay ile işaretlenen bölümlerin brüt m² oranını karşılaştırır (0,5 puandan fazla fark
+  kırmızı uyarı) ve blokların bölüm alanlarını blok inşaat alanıyla kıyaslar.
+- **Kütüphane:** Malzeme, işçilik, makine ve hizmetler. Bütçede kullanılan fiyatın önceliği:
+  **geçerli bağlantı fiyatı → son alım (fatura) → teklif → piyasa araştırması**.
+  - Bağlantı kalemine kütüphane malzemesi seçilirse aktif bağlantı fiyatı öncelikli olur.
+  - **Faturalardan fiyat:** birim fiyatı girilmiş fatura satırları malzemeyle eşleştirilir; aynı
+    açıklamalı satırlar sonraki sefer otomatik önerilir (“Öğrenilenleri uygula”).
+  - Dövizli fiyatlar son kayıtlı kurla TL'ye çevrilir.
+- **Reçete:** 1 birim iş için kaynak miktarları (ör. 1 m² seramik = seramik + yapıştırıcı + derz +
+  ustalık). Fire kaynağın kendi oranından eklenir. Fiyat değişince reçete ve onu kullanan bütçe
+  satırları kendiliğinden güncellenir.
+- **Metraj:** Her bütçe satırında miktar üç yoldan biriyle girilir: **parametrik** (alan ×
+  katsayı), **formül** (ör. `net_alan * 0,9`) veya **manuel**. Parametrik katsayıların başlangıç
+  değerleri PLAN 6'daki aralıkların ortasıdır (beton 0,42 m³/m², demir 42 kg/m², kalıp 3 m²/m²,
+  iç sıva ve boya 2,75 m²/m² net) — yalnızca başlangıç varsayımıdır, projeye göre düzenleyin.
+  Metraj ekranı, onaylı harcama miktarlarından **gerçekleşen katsayıyı** da gösterir.
+- **Bütçe:** Kalem maliyeti = miktar × birim fiyat × (1 + fire). Bloğa ait olmayan satırlar bloklara
+  inşaat alanı oranında dağıtılır.
+  - **İnşaat m² maliyeti** = yapım maliyeti (04–12) / toplam inşaat alanı.
+  - **Müteahhit satılabilir m² maliyeti** = toplam maliyet / müteahhide kalan brüt m². Kat
+    karşılığında arsa sahibinin bölümlerinin maliyeti de müteahhide aittir (PLAN 7.3).
 
 ### Telefona uygulama gibi ekleme
 
@@ -198,8 +229,10 @@ Fiş fotoğrafı çekerken telefon kamerası doğrudan açılır; fotoğraflar y
    │  └─ (app)/               Oturum gerektiren ekranlar
    │     ├─ portfolio/        Portföy paneli
    │     ├─ projects/         Proje listesi, yeni proje sihirbazı
-   │     │  └─ [projectId]/   Proje paneli, maliyet ağacı, bloklar, harcamalar, raporlar
-   │     ├─ company/          Tedarikçiler, vade listesi, ortak fatura, muhasebeci paketi
+   │     │  └─ [projectId]/   Proje paneli, harcamalar, taşeron, bütçe, metraj, maliyet ağacı,
+   │     │                    bloklar, bağımsız bölümler, arsa, raporlar
+   │     ├─ company/          Bağlantılar, transfer, tedarikçiler, vade listesi, ortak fatura,
+   │     │                    muhasebeci paketi, kütüphane
    │     └─ settings/         Kullanıcılar, döviz kurları, vergi/oran parametreleri, hesabım
    │  └─ api/                 Belge görüntüleme, Excel ve ZIP indirme
    ├─ components/             Arayüz bileşenleri (ui/ = shadcn/ui)
