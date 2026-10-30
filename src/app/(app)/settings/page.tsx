@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRightIcon, KeyRoundIcon, UsersIcon } from "lucide-react";
+import { ChevronRightIcon, CoinsIcon, KeyRoundIcon, PercentIcon, UsersIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,8 +10,6 @@ import { getAccess } from "@/server/access";
 export const metadata: Metadata = { title: "Ayarlar" };
 
 const UPCOMING = [
-  { label: "Harç, vergi ve yapı denetim parametreleri", phase: 3, note: "Yıl / belediye bazında oranlar" },
-  { label: "Döviz kurları", phase: 1, note: "TCMB günlük kurları ve elle giriş" },
   { label: "Birimler ve maliyet ağacı şablonu", phase: 3, note: "Varsayılan İKY şablonunun düzenlenmesi" },
 ];
 
@@ -20,6 +18,12 @@ export default async function SettingsPage() {
   const links = [
     ...(hasCapability(user.role, "users.manage")
       ? [{ href: "/settings/users", icon: UsersIcon, label: "Kullanıcılar", note: "Kullanıcı ekle / pasifleştir, rol ve proje yetkileri" }]
+      : []),
+    ...(hasCapability(user.role, "rates.manage")
+      ? [{ href: "/settings/rates", icon: CoinsIcon, label: "Döviz kurları", note: "TCMB'den getir veya elle gir" }]
+      : []),
+    ...(hasCapability(user.role, "parameters.manage")
+      ? [{ href: "/settings/parameters", icon: PercentIcon, label: "Vergi, harç ve oran parametreleri", note: "KDV oranları; yıl / belediye bazında oranlar" }]
       : []),
     { href: "/settings/account", icon: KeyRoundIcon, label: "Hesabım", note: "Şifre değiştir" },
   ];
