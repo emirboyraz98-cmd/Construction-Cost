@@ -85,7 +85,7 @@ export async function getSupplier(supplierId: string) {
   const supplier = await db.supplier.findUnique({ where: { id: supplierId } });
   if (!supplier) return null;
   const canSeeAccount = hasCapability(user.role, "expense.viewAll");
-  if (!canSeeAccount) return { supplier, balance: null, expenses: [] };
+  if (!canSeeAccount) return { supplier, balance: null, expenses: [], connections: [], contracts: [] };
   const [sums, expenses] = await Promise.all([
     balances([supplierId]),
     db.expense.findMany({
@@ -109,7 +109,17 @@ export async function getSupplier(supplierId: string) {
       },
     }),
   ]);
-  return { supplier, balance: sums.get(supplierId) ?? null, expenses };
+  const [connections, contracts] = await Promise.all([
+    hasCapability(user.role, "connection.view")
+      ? db.connection.findMany({ where: { supplierId }, orderBy: { date: "desc" }, select: { id: true, no: true, date: true, status: true, currency: true } })
+      : [],
+    db.subcontractContract.findMany({
+      where: { supplierId, ...projectIdsWithCapability(scope, "contract.view") },
+      orderBy: { date: "desc" },
+      select: { id: true, projectId: true, no: true, title: true, status: true, project: { select: { name: true } } },
+    }),
+  ]);
+  return { supplier, balance: sums.get(supplierId) ?? null, expenses, connections, contracts };
 }
 
 async function assertUniqueTaxNumber(taxNumber: string | null, exceptId?: string) {

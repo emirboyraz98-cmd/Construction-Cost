@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeftIcon, PencilIcon } from "lucide-react";
-import { ApprovalBadge, PaymentBadge } from "@/components/expenses/badges";
+import { ApprovalBadge, PaymentOrKindBadge } from "@/components/expenses/badges";
 import { InfoList } from "@/components/info-list";
+import { ConnectionStatusBadge, ContractStatusBadge } from "@/components/purchasing/shared";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { hasCapability } from "@/lib/auth/roles";
-import { DOCUMENT_TYPE_LABELS, SUPPLIER_KIND_LABELS } from "@/lib/expenses/labels";
+import { DOCUMENT_TYPE_LABELS, EXPENSE_KIND_LABELS, SUPPLIER_KIND_LABELS } from "@/lib/expenses/labels";
 import { dueBucket } from "@/lib/expenses/payables";
 import { formatDateOnly, formatMoney } from "@/lib/format";
 import { getAccess } from "@/server/access";
@@ -24,7 +25,7 @@ export default async function SupplierPage({ params }: PageProps<"/company/suppl
   const { supplierId } = await params;
   const data = await getSupplier(supplierId);
   if (!data) notFound();
-  const { supplier, balance, expenses } = data;
+  const { supplier, balance, expenses, connections, contracts } = data;
   const today = new Date();
 
   return (
@@ -88,6 +89,33 @@ export default async function SupplierPage({ params }: PageProps<"/company/suppl
                 ))}
               </CardContent>
             </Card>
+            {(connections.length > 0 || contracts.length > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bağlantılar ve taşeron sözleşmeleri</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="grid gap-1.5 text-sm">
+                    {connections.map((c) => (
+                      <li key={c.id} className="flex flex-wrap items-center justify-between gap-2">
+                        <Link href={`/company/connections/${c.id}`} className="hover:underline">
+                          Bağlantı {c.no} · {formatDateOnly(c.date)}
+                        </Link>
+                        <ConnectionStatusBadge status={c.status} />
+                      </li>
+                    ))}
+                    {contracts.map((c) => (
+                      <li key={c.id} className="flex flex-wrap items-center justify-between gap-2">
+                        <Link href={`/projects/${c.projectId}/contracts/${c.id}`} className="hover:underline">
+                          Sözleşme {c.no} {c.title} · {c.project.name}
+                        </Link>
+                        <ContractStatusBadge status={c.status} />
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
             <Card className="py-0">
               <CardHeader className="pt-5">
                 <CardTitle>Hareketler</CardTitle>
@@ -113,7 +141,8 @@ export default async function SupplierPage({ params }: PageProps<"/company/suppl
                       </TableCell>
                       <TableCell>{e.project.name}</TableCell>
                       <TableCell className="max-w-56 truncate">
-                        {e.kind === "ADVANCE" ? "Avans" : e.costItem ? `${e.costItem.code} ${e.costItem.name}` : "—"}
+                        {e.costItem ? `${e.costItem.code} ${e.costItem.name}` : e.kind === "ADVANCE" ? "Avans" : "—"}
+                        {e.kind !== "EXPENSE" && <span className="block text-xs text-muted-foreground">{EXPENSE_KIND_LABELS[e.kind]}</span>}
                       </TableCell>
                       <TableCell>
                         {DOCUMENT_TYPE_LABELS[e.documentType]}
@@ -123,7 +152,7 @@ export default async function SupplierPage({ params }: PageProps<"/company/suppl
                       <TableCell className="pr-4">
                         <span className="flex flex-wrap gap-1">
                           <ApprovalBadge status={e.approvalStatus} />
-                          <PaymentBadge status={e.paymentStatus} overdue={e.paymentStatus === "UNPAID" && dueBucket(e.dueDate, today) === "overdue"} />
+                          <PaymentOrKindBadge kind={e.kind} status={e.paymentStatus} overdue={e.paymentStatus === "UNPAID" && dueBucket(e.dueDate, today) === "overdue"} />
                         </span>
                       </TableCell>
                     </TableRow>

@@ -19,6 +19,9 @@ import {
 } from "@/lib/calc/zoning";
 import { formatDateOnly, formatMoney, formatNumber } from "@/lib/format";
 import { LAND_MODEL_LABELS, PROJECT_TYPE_LABELS } from "@/lib/labels";
+import { AlertList, Meter } from "@/components/purchasing/shared";
+import { projectConnections } from "@/server/connections";
+import { listContracts } from "@/server/contracts";
 import { projectExpenseOverview } from "@/server/expenses";
 import { getProject, listProjectTeam } from "@/server/projects";
 
@@ -32,7 +35,11 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
   const canEdit = hasCapability(role, "project.edit");
   const canSeeTree = hasCapability(role, "costTree.view");
   const canEnter = hasCapability(role, "expense.create");
-  const overview = await projectExpenseOverview(projectId);
+  const [overview, connections, contracts] = await Promise.all([
+    projectExpenseOverview(projectId),
+    projectConnections(projectId),
+    hasCapability(role, "contract.view") ? listContracts(projectId) : null,
+  ]);
   const team = hasCapability(role, "project.viewTeam") ? await listProjectTeam(projectId) : null;
   const totalArea = totalConstructionArea(project.blocks);
   const floorArea = permittedFloorArea(project.landArea, project.floorAreaRatio);
@@ -124,6 +131,67 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
                   ))}
                 </ul>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {connections && connections.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Projeye bağlı bağlantılar</CardTitle>
+              <CardDescription>Bu projeye tahsis edilen ve çekilen malzeme</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {connections.map((c) => (
+                <div key={c.id} className="grid gap-1.5 text-sm">
+                  <Link href={`/company/connections/${c.id}`} className="font-medium hover:underline">
+                    {c.no} · {c.supplier}
+                  </Link>
+                  {c.items.map((item) => (
+                    <div key={item.id} className="grid gap-1">
+                      <span className="flex flex-wrap justify-between gap-2 text-xs">
+                        <span>{item.description}</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {formatNumber(item.drawn, 2)} / {formatNumber(item.allocated, 2)} {item.unit} · kalan {formatNumber(item.remaining, 2)}
+                        </span>
+                      </span>
+                      <Meter value={item.allocated.isZero() ? 0 : item.drawn.div(item.allocated).times(100).toNumber()} />
+                    </div>
+                  ))}
+                  <AlertList alerts={c.alerts} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {contracts && contracts.rows.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Taşeronlar</CardTitle>
+              <CardAction>
+                <Button asChild size="sm" variant="ghost">
+                  <Link href={`/projects/${project.id}/contracts`}>Tümü</Link>
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <ul className="grid gap-2 text-sm">
+                {contracts.rows.filter((c) => c.status === "ACTIVE").slice(0, 6).map((c) => (
+                  <li key={c.id} className="grid gap-1">
+                    <span className="flex flex-wrap justify-between gap-2">
+                      <Link href={`/projects/${project.id}/contracts/${c.id}`} className="min-w-0 truncate hover:underline">
+                        {c.title} · {c.supplier.name}
+                      </Link>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        %{formatNumber(c.percent, 1)}
+                        {c.openBilling && ` · ${c.openBilling.seq}. hakediş bekliyor`}
+                      </span>
+                    </span>
+                    <Meter value={c.percent.toNumber()} />
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         )}

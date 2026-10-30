@@ -13,6 +13,8 @@ import { Decimal, formatDateOnly, formatMoney, formatNumber } from "@/lib/format
 import { PROJECT_STATUS_ORDER } from "@/lib/labels";
 import { getAccess } from "@/server/access";
 import { listProjects } from "@/server/projects";
+import { AlertList } from "@/components/purchasing/shared";
+import { connectionAlertOverview } from "@/server/connections";
 import { listPayables, spendSummaries } from "@/server/reports";
 
 export const metadata: Metadata = { title: "Portföy" };
@@ -20,10 +22,11 @@ export const metadata: Metadata = { title: "Portföy" };
 export default async function PortfolioPage() {
   const { user, scope } = await getAccess();
   const canSeeSpend = hasCapability(user.role, "expense.viewAll");
-  const [projects, spend, payables] = await Promise.all([
+  const [projects, spend, payables, connectionAlerts] = await Promise.all([
     listProjects({ statuses: PROJECT_STATUS_ORDER.filter((status) => status !== "ARCHIVED") }),
     canSeeSpend ? spendSummaries() : null,
     canSeeSpend ? listPayables() : null,
+    connectionAlertOverview(),
   ]);
   const canCreate = hasCapability(user.role, "project.create");
   const blockCount = projects.reduce((sum, project) => sum + project._count.blocks, 0);
@@ -119,6 +122,31 @@ export default async function PortfolioPage() {
             {soon.some((r) => r.bucket === "overdue") && (
               <p className="mt-2 text-xs text-destructive">Kırmızı tarihler: {DUE_BUCKET_LABELS.overdue.toLocaleLowerCase("tr-TR")}.</p>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {connectionAlerts && connectionAlerts.length > 0 && (
+        <Card className="mb-6 gap-2">
+          <CardHeader>
+            <CardTitle>Bağlantı uyarıları</CardTitle>
+            <CardAction>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/company/connections">Bağlantılar</Link>
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-3 text-sm">
+              {connectionAlerts.slice(0, 6).map((c) => (
+                <li key={c.id}>
+                  <Link href={`/company/connections/${c.id}`} className="font-medium hover:underline">
+                    {c.no} · {c.supplier}
+                  </Link>
+                  <AlertList alerts={c.alerts} className="mt-1" />
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       )}
