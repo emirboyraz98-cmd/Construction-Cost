@@ -26,7 +26,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
 };
 
 /** Projeye özel yetki verilirken seçilebilen roller (yönetici zaten tüm projeleri görür). */
-export const PROJECT_ROLES = ROLES.filter((role) => role !== Role.yonetici);
+export const PROJECT_ROLES: readonly Role[] = ROLES.filter((role) => role !== Role.yonetici);
 
 export type Capability =
   | "project.create"

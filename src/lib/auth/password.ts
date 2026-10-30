@@ -2,10 +2,10 @@
 // Biçim: scrypt$N$r$p$tuz(base64)$özet(base64)
 import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
+export { MIN_PASSWORD_LENGTH } from "./password-rules";
+
 const PARAMS = { N: 16384, r: 8, p: 1 } as const;
 const KEY_LENGTH = 64;
-
-export const MIN_PASSWORD_LENGTH = 8;
 
 function derive(password: string, salt: Buffer, options: ScryptOptions): Promise<Buffer> {
   return new Promise((resolve, reject) => {
