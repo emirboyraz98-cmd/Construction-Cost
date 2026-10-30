@@ -727,3 +727,28 @@ export async function findImportDuplicates(rows: { supplierId: string | null; do
   const keys = new Set(existing.map((e) => `${e.supplierId}|${e.documentNo}`));
   return new Set(rows.flatMap((row, index) => (keys.has(`${row.supplierId}|${row.documentNo}`) ? [index] : [])));
 }
+
+/** Proje paneli: son harcamalar (görünürlüğe göre) ve özet tutarlar. */
+export async function projectExpenseOverview(projectId: string) {
+  const { role, visibility } = await expenseAccess(projectId);
+  if (!visibility) return null;
+  const base = { projectId, deletedAt: null, ...visibility };
+  const [recent, approved, pending, unpaid] = await Promise.all([
+    db.expense.findMany({ where: base, orderBy: [{ date: "desc" }, { createdAt: "desc" }], take: 5, select: expenseListSelect }),
+    db.expense.aggregate({ where: { ...base, kind: "EXPENSE", approvalStatus: "APPROVED" }, _sum: { netAmountTry: true, totalAmountTry: true } }),
+    db.expense.count({ where: { ...base, approvalStatus: "PENDING" } }),
+    db.expense.aggregate({
+      where: { ...base, paymentStatus: "UNPAID", approvalStatus: { not: "REJECTED" } },
+      _sum: { totalAmountTry: true },
+    }),
+  ]);
+  return {
+    role,
+    ownOnly: Boolean(visibility.createdById),
+    recent,
+    net: approved._sum.netAmountTry ?? new Decimal(0),
+    total: approved._sum.totalAmountTry ?? new Decimal(0),
+    pending,
+    unpaid: unpaid._sum.totalAmountTry ?? new Decimal(0),
+  };
+}

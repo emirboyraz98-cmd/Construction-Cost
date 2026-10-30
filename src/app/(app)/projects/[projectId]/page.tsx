@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ListTreeIcon, PencilIcon } from "lucide-react";
+import { ListTreeIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { InfoList } from "@/components/info-list";
 import { PageHeader } from "@/components/page-header";
-import { PendingFigure } from "@/components/project-card";
+import { ApprovalBadge } from "@/components/expenses/badges";
+import { PendingFigure, SpendFigure } from "@/components/project-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +17,9 @@ import {
   permittedFootprint,
   totalConstructionArea,
 } from "@/lib/calc/zoning";
-import { formatDateOnly, formatNumber } from "@/lib/format";
+import { formatDateOnly, formatMoney, formatNumber } from "@/lib/format";
 import { LAND_MODEL_LABELS, PROJECT_TYPE_LABELS } from "@/lib/labels";
+import { projectExpenseOverview } from "@/server/expenses";
 import { getProject, listProjectTeam } from "@/server/projects";
 
 export const metadata: Metadata = { title: "Proje paneli" };
@@ -29,6 +31,8 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
 
   const canEdit = hasCapability(role, "project.edit");
   const canSeeTree = hasCapability(role, "costTree.view");
+  const canEnter = hasCapability(role, "expense.create");
+  const overview = await projectExpenseOverview(projectId);
   const team = hasCapability(role, "project.viewTeam") ? await listProjectTeam(projectId) : null;
   const totalArea = totalConstructionArea(project.blocks);
   const floorArea = permittedFloorArea(project.landArea, project.floorAreaRatio);
@@ -57,7 +61,15 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
       <div className="grid gap-4">
         <Card className="py-4">
           <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <PendingFigure label="Harcanan" phase={1} />
+            {overview && !overview.ownOnly ? (
+              <SpendFigure
+                label="Harcanan (KDV hariç)"
+                value={overview.net}
+                note={overview.pending ? `${overview.pending} kayıt onay bekliyor` : "Onaylı kayıtlar"}
+              />
+            ) : (
+              <div />
+            )}
             <PendingFigure label="Bütçe" phase={3} />
             <PendingFigure label="Satış / tahsilat" phase={6} />
             {canSeeTree ? (
@@ -73,6 +85,50 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
             )}
           </CardContent>
         </Card>
+
+        {overview && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{overview.ownOnly ? "Son girişlerim" : "Son harcamalar"}</CardTitle>
+              {!overview.ownOnly && (
+                <CardDescription>Ödenmemiş (KDV dahil): {formatMoney(overview.unpaid)}</CardDescription>
+              )}
+              <CardAction className="flex gap-2">
+                {canEnter && (
+                  <Button asChild size="sm">
+                    <Link href={`/projects/${project.id}/expenses/new`}>
+                      <PlusIcon />
+                      Harcama gir
+                    </Link>
+                  </Button>
+                )}
+                <Button asChild size="sm" variant="ghost">
+                  <Link href={`/projects/${project.id}/expenses`}>Tümü</Link>
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              {overview.recent.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Henüz harcama girilmemiş.</p>
+              ) : (
+                <ul className="grid gap-2 text-sm">
+                  {overview.recent.map((e) => (
+                    <li key={e.id} className="flex flex-wrap items-center justify-between gap-2">
+                      <Link href={`/projects/${project.id}/expenses/${e.id}`} className="min-w-0 truncate hover:underline">
+                        {formatDateOnly(e.date)} · {e.costItem ? `${e.costItem.code} ${e.costItem.name}` : "Avans"}
+                        {e.supplier && <span className="text-muted-foreground"> · {e.supplier.name}</span>}
+                      </Link>
+                      <span className="flex items-center gap-2">
+                        <ApprovalBadge status={e.approvalStatus} />
+                        <span className="tabular-nums">{formatMoney(e.totalAmountTry)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

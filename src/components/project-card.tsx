@@ -30,7 +30,20 @@ export function PendingFigure({ label, phase }: { label: string; phase: number }
   );
 }
 
-export function ProjectCard({ project }: { project: ProjectCardData }) {
+export type SpendSummary = { net: { toString(): string }; pending: number; unpaid: { toString(): string } };
+
+export function SpendFigure({ label, value, note }: { label: string; value: { toString(): string } | number; note?: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="font-medium tabular-nums">{formatMoney(value)}</p>
+      {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
+    </div>
+  );
+}
+
+/** spend: undefined → harcamaları görme yetkisi yok; tutarlar gösterilmez. */
+export function ProjectCard({ project, spend }: { project: ProjectCardData; spend?: SpendSummary | null }) {
   const area = totalConstructionArea(project.blocks);
   return (
     <Link
@@ -67,7 +80,15 @@ export function ProjectCard({ project }: { project: ProjectCardData }) {
           </div>
           <div className="grid grid-cols-2 gap-3 border-t pt-3">
             <PendingFigure label="Bütçe" phase={3} />
-            <PendingFigure label="Harcanan" phase={1} />
+            {spend !== undefined ? (
+              <SpendFigure
+                label="Harcanan (KDV hariç)"
+                value={spend?.net ?? 0}
+                note={spend?.pending ? `${spend.pending} kayıt onay bekliyor` : undefined}
+              />
+            ) : (
+              <div />
+            )}
           </div>
         </CardContent>
       </Card>
