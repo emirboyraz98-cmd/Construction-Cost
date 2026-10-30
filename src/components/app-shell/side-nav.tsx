@@ -7,6 +7,8 @@ import {
   BarChart3Icon,
   BlocksIcon,
   BookOpenIcon,
+  CalendarClockIcon,
+  FileArchiveIcon,
   CalculatorIcon,
   FileSignatureIcon,
   FolderKanbanIcon,
@@ -21,6 +23,7 @@ import {
   RulerIcon,
   SettingsIcon,
   ShuffleIcon,
+  SplitIcon,
   TrendingUpIcon,
   TruckIcon,
 } from "lucide-react";
@@ -52,6 +55,9 @@ const COMPANY_ICONS: Record<string, LucideIcon> = {
   projects: FolderKanbanIcon,
   connections: HandshakeIcon,
   suppliers: TruckIcon,
+  payables: CalendarClockIcon,
+  "shared-invoice": SplitIcon,
+  accountant: FileArchiveIcon,
   library: BookOpenIcon,
   reports: TrendingUpIcon,
   settings: SettingsIcon,
@@ -102,10 +108,12 @@ function NavLink({
 export function SideNav({
   projects,
   projectRoles,
+  userRole,
   onNavigate,
 }: {
   projects: ShellProject[];
   projectRoles: Record<string, Role>;
+  userRole: Role;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
@@ -163,7 +171,9 @@ export function SideNav({
           Şirket geneli
         </h2>
         <nav className="grid grid-cols-1 gap-0.5" aria-label="Şirket geneli">
-          {COMPANY_MODULES.map((module) => (
+          {COMPANY_MODULES.filter(
+            (module) => !module.capability || hasCapability(userRole, module.capability),
+          ).map((module) => (
             <NavLink
               key={module.key}
               href={module.href}

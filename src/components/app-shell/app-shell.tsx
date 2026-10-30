@@ -68,7 +68,7 @@ export function AppShell({
 
       <div className="flex flex-1">
         <aside className="sticky top-12 hidden h-[calc(100dvh-3rem)] w-60 shrink-0 overflow-y-auto border-r bg-sidebar md:block">
-          <SideNav projects={projects} projectRoles={projectRoles} />
+          <SideNav projects={projects} projectRoles={projectRoles} userRole={user.role} />
         </aside>
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetContent side="left" className="bg-sidebar p-0 pt-10">
@@ -77,6 +77,7 @@ export function AppShell({
             <SideNav
               projects={projects}
               projectRoles={projectRoles}
+              userRole={user.role}
               onNavigate={() => setMenuOpen(false)}
             />
           </SheetContent>

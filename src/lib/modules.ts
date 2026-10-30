@@ -20,9 +20,7 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
   {
     key: "expenses",
     label: "Harcamalar",
-    phase: 1,
-    description:
-      "Mobil hızlı giriş (fiş/fatura fotoğrafı), ofis tablo modu, onay akışı, Excel'den fatura aktarımı, vade listesi ve muhasebeci Excel paketi.",
+    description: "Harcama girişi (mobil, tablo modu, Excel), onay ve ödeme durumu.",
   },
   {
     key: "cost-tree",
@@ -81,9 +79,8 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
   {
     key: "reports",
     label: "Raporlar",
-    phase: 1,
-    description:
-      "PDF/Excel raporlar: harcama (Faz 1), bütçe ve sapma, fiyat listesi, satış/tahsilat, fizibilite.",
+    capability: "expense.viewAll",
+    description: "Ay, maliyet kalemi, tedarikçi ve blok bazında harcama raporları.",
   },
 ];
 
@@ -102,9 +99,29 @@ export const COMPANY_MODULES: readonly (ModuleDef & { href: string })[] = [
     key: "suppliers",
     href: "/company/suppliers",
     label: "Tedarikçiler",
-    phase: 1,
-    description:
-      "Tedarikçi ve taşeronlar: iletişim, teklifler, sözleşmeler, hakedişler, cari hesap ve vade listesi.",
+    capability: "supplier.view",
+    description: "Tedarikçi ve taşeronlar, cari özetleri.",
+  },
+  {
+    key: "payables",
+    href: "/company/payables",
+    label: "Vade listesi",
+    capability: "expense.viewAll",
+    description: "Tüm projelerde ödenmemiş harcamalar; bu hafta ödenecekler.",
+  },
+  {
+    key: "shared-invoice",
+    href: "/company/shared-invoice",
+    label: "Ortak fatura",
+    capability: "expense.manage",
+    description: "Birden fazla projeyi ilgilendiren faturayı projelere bölerek girme.",
+  },
+  {
+    key: "accountant",
+    href: "/company/accountant",
+    label: "Muhasebeci paketi",
+    capability: "accountant.export",
+    description: "Dönemlik fatura listesi, tedarikçi özetleri ve belge görselleri (ZIP).",
   },
   {
     key: "library",

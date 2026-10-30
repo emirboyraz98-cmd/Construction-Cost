@@ -65,6 +65,5 @@ export function filtersToSearchParams(filters: Partial<ExpenseFilters>): URLSear
 }
 
 export function hasActiveFilters(filters: ExpenseFilters): boolean {
-  const { page: _page, ...rest } = filters;
-  return Object.values(rest).some((value) => value !== null && value !== false);
+  return Object.entries(filters).some(([key, value]) => key !== "page" && value !== null && value !== false);
 }
