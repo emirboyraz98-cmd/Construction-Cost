@@ -54,3 +54,16 @@ export function filterVisibleProjects<T extends { id: string }>(
 ): T[] {
   return projects.filter((project) => canSeeProject(scope, project.id));
 }
+
+/**
+ * Şirket geneli listelerde (tedarikçi carisi, vade listesi, muhasebeci paketi) kullanılacak
+ * proje filtresi: yalnızca kullanıcının o yeteneğe sahip olduğu projeler.
+ */
+export function projectIdsWithCapability(
+  scope: AccessScope,
+  capability: Capability,
+): { projectId?: { in: string[] } } {
+  if (scope.all) return hasCapability(scope.userRole, capability) ? {} : { projectId: { in: [] } };
+  const ids = [...scope.grants].filter(([, role]) => hasCapability(role, capability)).map(([id]) => id);
+  return { projectId: { in: ids } };
+}

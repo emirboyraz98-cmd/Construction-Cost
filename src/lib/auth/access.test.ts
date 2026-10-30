@@ -4,6 +4,7 @@ import {
   canInProject,
   canSeeProject,
   filterVisibleProjects,
+  projectIdsWithCapability,
   projectRole,
   projectWhere,
   resolveAccessScope,
@@ -93,5 +94,23 @@ describe("harcama görünürlüğü ve düzeltme yetkisi", () => {
   it("şantiyeden girilen harcama onay bekler, ofisin girdiği onaylı başlar", () => {
     expect(initialApprovalStatus("santiye_sefi")).toBe("PENDING");
     expect(initialApprovalStatus("muhasebe")).toBe("APPROVED");
+  });
+});
+
+describe("şirket geneli harcama listelerinin proje filtresi", () => {
+  it("yalnızca kullanıcının o projede yetkisi olan projeler girer", () => {
+    const scope = resolveAccessScope({ id: "u5", role: "muhasebe", active: true }, [
+      { projectId: "kadikoy", role: "muhasebe" },
+      { projectId: "camlik", role: "santiye_sefi" },
+    ]);
+    expect(projectIdsWithCapability(scope, "expense.viewAll")).toEqual({ projectId: { in: ["kadikoy"] } });
+    expect(projectIdsWithCapability(scope, "expense.create")).toEqual({
+      projectId: { in: ["kadikoy", "camlik"] },
+    });
+  });
+
+  it("yönetici için filtre yok", () => {
+    const scope = resolveAccessScope({ id: "a", role: "yonetici", active: true }, []);
+    expect(projectIdsWithCapability(scope, "accountant.export")).toEqual({});
   });
 });

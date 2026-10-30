@@ -429,7 +429,8 @@ model Document {
   fileName     String
   mimeType     String
   size         Int
-  storageKey   String   @unique
+  /// Depolamadaki dosya. Projelere bölünmüş faturada aynı dosya her satıra bağlanır.
+  storageKey   String
   uploadedById String?
   createdAt    DateTime @default(now())
 
@@ -437,6 +438,7 @@ model Document {
   uploadedBy User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
   @@index([expenseId])
+  @@index([storageKey])
 }
 
 /// Excel / tablo modundan toplu giriş; hangi kayıtların birlikte aktarıldığı izlenir.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { estimatedEndDate, permittedFloorArea, totalConstructionArea } from "./calc/zoning";
 import { hashPassword, verifyPassword } from "./auth/password";
+import { detectFileType } from "./files";
 import { dateInputToDate, decimalToInput, formatNumber, parseDecimalInput } from "./format";
 
 function parsed(input: string) {
@@ -69,5 +70,14 @@ describe("şifre özetleme", () => {
     expect(await verifyPassword("Gizli-Şifre-123", hash)).toBe(true);
     expect(await verifyPassword("yanlis", hash)).toBe(false);
     expect(await verifyPassword("Gizli-Şifre-123", "bozuk")).toBe(false);
+  });
+});
+
+describe("yüklenen dosya türü", () => {
+  it("JPEG, PNG ve PDF'i tanır; HTML'i reddeder", () => {
+    expect(detectFileType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]))).toBe("image/jpeg");
+    expect(detectFileType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]))).toBe("image/png");
+    expect(detectFileType(new TextEncoder().encode("%PDF-1.7\n"))).toBe("application/pdf");
+    expect(detectFileType(new TextEncoder().encode("<html><script>"))).toBeNull();
   });
 });

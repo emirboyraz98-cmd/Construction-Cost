@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate": "node scripts/with-db.mjs -- prisma migrate dev && prisma generate",
+    "db:migrate": "node scripts/with-db.mjs --generate -- prisma migrate dev",
     "db:seed": "node scripts/with-db.mjs -- tsx prisma/seed.ts",
     "db:studio": "node scripts/with-db.mjs -- prisma studio",
     "db:reset": "node scripts/with-db.mjs -- prisma migrate reset",

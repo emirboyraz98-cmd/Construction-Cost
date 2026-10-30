@@ -1,12 +1,13 @@
 // Veritabanını hazırlayıp verilen komutu çalıştıran yardımcı betik.
 //
-//   node scripts/with-db.mjs [--prepare] -- <komut> [argümanlar]
+//   node scripts/with-db.mjs [--prepare] [--generate] -- <komut> [argümanlar]
 //
 // - DATABASE_URL tanımlıysa o veritabanı kullanılır (gerçek PostgreSQL sunucusu).
 // - Tanımlı değilse proje içindeki `.pgdata/` klasöründe gömülü PostgreSQL
 //   (embedded-postgres paketinin ikili dosyaları) başlatılır; sisteme kurulum gerekmez.
 // - --prepare: komuttan önce Prisma istemcisini (gerekirse) üretir, migration'ları
 //   uygular ve başlangıç verisini (seed) yükler.
+// - --generate: komut başarıyla bitince Prisma istemcisini yeniden üretir (migrate dev sonrası).
 // Komut bitince (Ctrl+C dahil) bu betiğin başlattığı veritabanı düzgünce kapatılır.
 
 import { spawn, spawnSync } from "node:child_process";
@@ -52,7 +53,7 @@ function parseArgs(argv) {
   const separator = argv.indexOf("--");
   const flags = separator === -1 ? argv : argv.slice(0, separator);
   const command = separator === -1 ? [] : argv.slice(separator + 1);
-  return { prepare: flags.includes("--prepare"), command };
+  return { prepare: flags.includes("--prepare"), generate: flags.includes("--generate"), command };
 }
 
 /** Bir süreci çalıştırır ve çıkış kodunu döndürür. */
@@ -299,7 +300,7 @@ async function generateClientIfNeeded(env) {
 }
 
 async function main() {
-  const { prepare, command } = parseArgs(process.argv.slice(2));
+  const { prepare, generate, command } = parseArgs(process.argv.slice(2));
   if (command.length === 0) fail("Çalıştırılacak komut verilmedi.");
 
   let embedded = null;
@@ -341,7 +342,18 @@ async function main() {
     setTimeout(() => child.exitCode === null && child.kill(signal), 5000).unref();
   };
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(signal, () => forward(signal));
-  child.on("exit", (code, signal) => stop(code ?? (signal ? 1 : 0)));
+  child.on("exit", async (code, signal) => {
+    const exitCode = code ?? (signal ? 1 : 0);
+    if (exitCode === 0 && generate && !shuttingDown) {
+      try {
+        await runStep(["prisma", "generate"], env, "Prisma istemcisi üretilemedi.");
+      } catch (error) {
+        console.error(`\x1b[31m[veritabanı] HATA:\x1b[0m ${error.message}`);
+        return stop(1);
+      }
+    }
+    stop(exitCode);
+  });
 }
 
 main().catch((error) => fail(error?.stack ?? String(error)));
