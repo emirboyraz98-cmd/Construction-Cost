@@ -31,7 +31,10 @@ const summaryInclude = {
   supplier: { select: { id: true, name: true } },
   items: { orderBy: { sortOrder: "asc" }, include: { allocations: { select: { projectId: true, quantity: true } } } },
   payments: { orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }] },
-  invoices: { orderBy: [{ date: "asc" }, { createdAt: "asc" }], include: { lines: true } },
+  invoices: {
+    orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+    include: { lines: true, documents: { select: { id: true, fileName: true } } },
+  },
 } satisfies Prisma.ConnectionInclude;
 
 type ConnectionRow = Prisma.ConnectionGetPayload<{ include: typeof summaryInclude }>;
@@ -55,7 +58,7 @@ type Activity = Awaited<ReturnType<typeof loadActivity>>;
 
 export type ItemSummary = ConnectionRow["items"][number] & { balance: ItemBalance; deliveredValue: Decimal };
 
-function summarize(c: ConnectionRow, activity: Activity, today: Date) {
+function summarize<T extends ConnectionRow>(c: T, activity: Activity, today: Date) {
   const items: ItemSummary[] = c.items.map((item) => {
     const draws = activity.draws.filter((d) => d.connectionItemId === item.id);
     const balance = itemBalance(
@@ -123,7 +126,7 @@ function summarize(c: ConnectionRow, activity: Activity, today: Date) {
   );
 
   return {
-    ...c,
+    ...(c as Omit<T, "items" | "invoices">),
     items,
     invoices,
     totals: { contractNet, contractTotal, delivered, paid, unpaidPlan, advance, invoiced: invoices.reduce((s, i) => s.plus(dec(i.totalAmount)), zero()) },
@@ -131,7 +134,7 @@ function summarize(c: ConnectionRow, activity: Activity, today: Date) {
   };
 }
 
-export type ConnectionSummary = ReturnType<typeof summarize>;
+export type ConnectionSummary = ReturnType<typeof summarize<ConnectionRow>>;
 
 async function summaries(where: Prisma.ConnectionWhereInput) {
   const rows = await db.connection.findMany({ where, include: summaryInclude, orderBy: [{ date: "desc" }, { createdAt: "desc" }] });
