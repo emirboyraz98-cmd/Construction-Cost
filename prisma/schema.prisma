@@ -62,11 +62,15 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  sessions        Session[]
-  permissions     ProjectPermission[]
-  tabs            UserTab[]
-  auditLogs       AuditLog[]
-  createdProjects Project[]           @relation("ProjectCreatedBy")
+  sessions         Session[]
+  permissions      ProjectPermission[]
+  tabs             UserTab[]
+  auditLogs        AuditLog[]
+  createdProjects  Project[]           @relation("ProjectCreatedBy")
+  createdExpenses  Expense[]           @relation("ExpenseCreatedBy")
+  approvedExpenses Expense[]           @relation("ExpenseApprovedBy")
+  documents        Document[]
+  expenseImports   ExpenseImport[]
 }
 
 /// Oturum. `id`, tarayıcıdaki çerez değerinin SHA-256 özetidir; düz token saklanmaz.
@@ -120,12 +124,14 @@ model Project {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  createdBy   User?               @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  blocks      Block[]
-  costItems   CostItem[]
-  permissions ProjectPermission[]
-  tabs        UserTab[]
-  auditLogs   AuditLog[]
+  createdBy      User?               @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  blocks         Block[]
+  costItems      CostItem[]
+  permissions    ProjectPermission[]
+  tabs           UserTab[]
+  auditLogs      AuditLog[]
+  expenses       Expense[]
+  expenseImports ExpenseImport[]
 
   @@index([status])
 }
@@ -146,7 +152,8 @@ model Block {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  expenses Expense[]
 
   @@unique([projectId, name])
   @@index([projectId])
@@ -194,6 +201,7 @@ model CostItem {
   parent   CostItem?         @relation("CostItemTree", fields: [parentId], references: [id], onDelete: NoAction)
   children CostItem[]        @relation("CostItemTree")
   template CostItemTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  expenses Expense[]
 
   @@unique([projectId, code])
   @@index([projectId, parentId])
@@ -251,4 +259,196 @@ model Parameter {
   updatedAt    DateTime @updatedAt
 
   @@index([year, kind])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 1 – Harcama girişi (PLAN.md Bölüm 8)
+// ---------------------------------------------------------------------------
+
+enum Currency {
+  TRY
+  USD
+  EUR
+  GBP
+}
+
+/// Tedarikçi, taşeron veya ikisi birden.
+enum SupplierKind {
+  SUPPLIER
+  SUBCONTRACTOR
+  BOTH
+}
+
+/// Tedarikçi / taşeron (şirket geneli; projeye bağlı değil).
+model Supplier {
+  id        String       @id @default(cuid())
+  name      String
+  /// Vergi kimlik no veya TC kimlik no
+  taxNumber String?
+  taxOffice String?
+  kind      SupplierKind @default(SUPPLIER)
+  phone     String?
+  email     String?
+  address   String?
+  iban      String?
+  notes     String?
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  expenses Expense[]
+
+  @@index([name])
+  @@index([taxNumber])
+}
+
+enum RateSource {
+  TCMB
+  MANUAL
+}
+
+/// Döviz kuru (şirket geneli). Gün ve para birimi başına bir kayıt; elle girilen TCMB'nin yerini alır.
+model ExchangeRate {
+  id        String     @id @default(cuid())
+  date      DateTime   @db.Date
+  currency  Currency
+  /// Döviz alış
+  buying    Decimal    @db.Decimal(18, 6)
+  /// Döviz satış
+  selling   Decimal    @db.Decimal(18, 6)
+  source    RateSource
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([date, currency])
+}
+
+/// Harcama mı, (bağlantı / taşeron) avans ödemesi mi. Avanslar maliyete yazılmaz, ayrı izlenir.
+enum ExpenseKind {
+  EXPENSE
+  ADVANCE
+}
+
+enum DocumentType {
+  INVOICE
+  DELIVERY_NOTE
+  RECEIPT
+  PROGRESS_BILLING
+  VOUCHER
+  NONE
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  PROMISSORY_NOTE
+  CREDIT_CARD
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Harcama kaydı. Tutarlar orijinal para biriminde ve TL karşılığı olarak (işlem kuruyla) saklanır.
+/// Birden fazla projeyi ilgilendiren fatura, her proje için bir satıra bölünür; satırlar
+/// `splitGroupId` ile birbirine bağlıdır (PLAN'daki HarcamaDağılımı).
+model Expense {
+  id             String         @id @default(cuid())
+  projectId      String
+  blockId        String?
+  costItemId     String?
+  supplierId     String?
+  kind           ExpenseKind    @default(EXPENSE)
+  date           DateTime       @db.Date
+  description    String?
+  quantity       Decimal?       @db.Decimal(18, 4)
+  unit           String?
+  /// Birim fiyat (KDV hariç, orijinal para birimi)
+  unitPrice      Decimal?       @db.Decimal(18, 4)
+  currency       Currency       @default(TRY)
+  /// İşlem kuru (TL için 1)
+  exchangeRate   Decimal        @default(1) @db.Decimal(18, 6)
+  /// KDV oranı (yüzde, ör. 20)
+  vatRate        Decimal        @default(0) @db.Decimal(5, 2)
+  /// Matrah (KDV hariç), orijinal para birimi
+  netAmount      Decimal        @db.Decimal(18, 2)
+  vatAmount      Decimal        @db.Decimal(18, 2)
+  totalAmount    Decimal        @db.Decimal(18, 2)
+  netAmountTry   Decimal        @db.Decimal(18, 2)
+  vatAmountTry   Decimal        @db.Decimal(18, 2)
+  totalAmountTry Decimal        @db.Decimal(18, 2)
+  documentType   DocumentType
+  documentNo     String?
+  paymentStatus  PaymentStatus  @default(UNPAID)
+  paymentMethod  PaymentMethod?
+  dueDate        DateTime?      @db.Date
+  paidAt         DateTime?      @db.Date
+  approvalStatus ApprovalStatus @default(PENDING)
+  approvalNote   String?
+  approvedById   String?
+  approvedAt     DateTime?
+  createdById    String
+  /// Projelere bölünmüş faturanın ortak kimliği ve bu satırın payı (0–1)
+  splitGroupId   String?
+  splitRatio     Decimal?       @db.Decimal(9, 6)
+  importId       String?
+  /// Silinen kayıt (kayıt tutulur, listelerde görünmez)
+  deletedAt      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  block      Block?         @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  costItem   CostItem?      @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+  supplier   Supplier?      @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy  User           @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedBy User?          @relation("ExpenseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  import     ExpenseImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+  documents  Document[]
+
+  @@index([projectId, date])
+  @@index([projectId, approvalStatus])
+  @@index([projectId, costItemId])
+  @@index([supplierId, documentNo])
+  @@index([paymentStatus, dueDate])
+  @@index([splitGroupId])
+}
+
+/// Belge (fiş/fatura fotoğrafı, PDF). Dosyanın kendisi depolama alanında (`uploads/`) durur.
+model Document {
+  id           String   @id @default(cuid())
+  expenseId    String?
+  fileName     String
+  mimeType     String
+  size         Int
+  storageKey   String   @unique
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  expense    Expense? @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  uploadedBy User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([expenseId])
+}
+
+/// Excel / tablo modundan toplu giriş; hangi kayıtların birlikte aktarıldığı izlenir.
+model ExpenseImport {
+  id          String   @id @default(cuid())
+  projectId   String
+  fileName    String?
+  rowCount    Int
+  createdById String
+  createdAt   DateTime @default(now())
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  expenses  Expense[]
 }

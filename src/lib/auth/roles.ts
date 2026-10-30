@@ -35,7 +35,17 @@ export type Capability =
   | "blocks.edit"
   | "costTree.view"
   | "costTree.edit"
-  | "users.manage";
+  | "users.manage"
+  // Faz 1 – harcamalar
+  | "expense.create"
+  | "expense.viewAll"
+  | "expense.approve"
+  | "expense.manage"
+  | "supplier.view"
+  | "supplier.manage"
+  | "rates.manage"
+  | "parameters.manage"
+  | "accountant.export";
 
 const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "project.create": [Role.yonetici, Role.teknik_ofis],
@@ -52,6 +62,31 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   ],
   "costTree.edit": [Role.yonetici, Role.teknik_ofis],
   "users.manage": [Role.yonetici],
+  /** Harcama girişi (mobil hızlı giriş, tablo modu) */
+  "expense.create": [Role.yonetici, Role.muhasebe, Role.santiye_sefi, Role.satin_alma],
+  /** Projedeki bütün harcamaları görmek; diğerleri yalnızca kendi girdiklerini görür */
+  "expense.viewAll": [
+    Role.yonetici,
+    Role.teknik_ofis,
+    Role.muhasebe,
+    Role.satin_alma,
+    Role.dis_muhasebeci,
+  ],
+  "expense.approve": [Role.yonetici, Role.muhasebe],
+  /** Başkasının kaydını düzeltme/silme, ödeme işaretleme, içe aktarma, fatura bölme */
+  "expense.manage": [Role.yonetici, Role.muhasebe],
+  "supplier.view": [
+    Role.yonetici,
+    Role.teknik_ofis,
+    Role.santiye_sefi,
+    Role.muhasebe,
+    Role.satin_alma,
+    Role.dis_muhasebeci,
+  ],
+  "supplier.manage": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  "rates.manage": [Role.yonetici, Role.muhasebe],
+  "parameters.manage": [Role.yonetici, Role.muhasebe],
+  "accountant.export": [Role.yonetici, Role.muhasebe, Role.dis_muhasebeci],
 };
 
 export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {

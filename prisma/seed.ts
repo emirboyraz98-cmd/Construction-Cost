@@ -1,6 +1,7 @@
 // Başlangıç verisi (her `npm run dev` başında çalışır, tekrar çalıştırılması güvenlidir):
 // 1) Varsayılan İKY şablonu (PLAN.md Bölüm 3) — eksik kalemler eklenir, mevcutlar değiştirilmez.
 // 2) Hiç kullanıcı yoksa ilk yönetici hesabı.
+// 3) Parametre tablosunda KDV oranı yoksa başlangıç oranları.
 import { randomUUID } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -64,8 +65,30 @@ async function seedAdmin() {
   return { email, usedDefaultPassword: !process.env.SEED_ADMIN_PASSWORD };
 }
 
+/**
+ * Harcama girişinde seçilen KDV oranları (Temmuz 2023'ten beri %20 genel, %10 ve %1 indirimli).
+ * Parametre tablosuna başlangıç değeri olarak bir kez yazılır; Ayarlar > Parametreler'den
+ * değiştirilebilir. Muhasebeciyle teyit edilmelidir.
+ */
+async function seedVatRates() {
+  if ((await prisma.parameter.count({ where: { kind: "kdv_orani" } })) > 0) return 0;
+  const year = new Date().getUTCFullYear();
+  const rates = [
+    { value: "20", description: "Genel oran" },
+    { value: "10", description: "İndirimli oran" },
+    { value: "1", description: "İndirimli oran" },
+    { value: "0", description: "KDV'siz / istisna" },
+  ];
+  await prisma.parameter.createMany({
+    data: rates.map((rate) => ({ year, kind: "kdv_orani", unit: "%", ...rate })),
+  });
+  return rates.length;
+}
+
 async function main() {
   const added = await seedCostTemplate();
+  const vat = await seedVatRates();
+  if (vat > 0) console.log(`KDV oranları parametre tablosuna eklendi (${vat} oran).`);
   if (added > 0) console.log(`İKY şablonu: ${added} kalem eklendi.`);
 
   const admin = await seedAdmin();

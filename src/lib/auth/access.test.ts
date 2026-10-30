@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { canModifyExpense, expenseVisibility, initialApprovalStatus } from "../expenses/access";
 import {
   canInProject,
   canSeeProject,
@@ -69,5 +70,28 @@ describe("proje yetki filtresi", () => {
     expect(canInProject(scope, "kadikoy", "costTree.view")).toBe(true);
     expect(canInProject(scope, "kadikoy", "costTree.edit")).toBe(false);
     expect(canInProject(scope, "kadikoy", "project.edit")).toBe(false);
+  });
+});
+
+describe("harcama görünürlüğü ve düzeltme yetkisi", () => {
+  it("şantiye şefi yalnızca kendi girdiği harcamaları görür; satış hiç göremez", () => {
+    expect(expenseVisibility("santiye_sefi", "u1")).toEqual({ createdById: "u1" });
+    expect(expenseVisibility("muhasebe", "u2")).toEqual({});
+    expect(expenseVisibility("satis", "u3")).toBeNull();
+  });
+
+  it("giren kişi onaylanmamış kaydını düzeltir; onaylananı yalnızca ofis düzeltir", () => {
+    const pending = { createdById: "u1", approvalStatus: "PENDING" as const };
+    const approved = { createdById: "u1", approvalStatus: "APPROVED" as const };
+    expect(canModifyExpense("santiye_sefi", "u1", pending)).toBe(true);
+    expect(canModifyExpense("santiye_sefi", "u1", approved)).toBe(false);
+    expect(canModifyExpense("santiye_sefi", "u9", pending)).toBe(false);
+    expect(canModifyExpense("muhasebe", "u2", approved)).toBe(true);
+    expect(canModifyExpense("dis_muhasebeci", "u4", pending)).toBe(false);
+  });
+
+  it("şantiyeden girilen harcama onay bekler, ofisin girdiği onaylı başlar", () => {
+    expect(initialApprovalStatus("santiye_sefi")).toBe("PENDING");
+    expect(initialApprovalStatus("muhasebe")).toBe("APPROVED");
   });
 });
