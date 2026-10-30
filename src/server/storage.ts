@@ -6,10 +6,11 @@ import { ALLOWED_UPLOADS, type AllowedMime } from "@/lib/files";
 
 // Belge dosyaları (fiş/fatura fotoğrafları, PDF). Şimdilik yerel diskte, varsayılan olarak
 // proje klasöründeki `uploads/` altında; sunucuya geçişte S3 uyumlu depolamaya taşınabilir.
-const ROOT = path.resolve(process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"));
+// turbopackIgnore: çalışma anında belirlenen yol; derleyicinin tüm projeyi pakete katmasını önler.
+const ROOT = path.resolve(/*turbopackIgnore: true*/ process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"));
 
 function fullPath(key: string): string {
-  const resolved = path.resolve(ROOT, key);
+  const resolved = path.resolve(/*turbopackIgnore: true*/ ROOT, key);
   if (!resolved.startsWith(ROOT + path.sep)) throw new Error("Geçersiz dosya anahtarı.");
   return resolved;
 }
