@@ -79,9 +79,13 @@ function decimal(raw: string, label: string, issues: Issue[], path: string, opts
   return value;
 }
 
-/** Formu doğrular ve tutarları hesaplar. Hatalar alan bazında döner. */
+/**
+ * Formu doğrular ve tutarları hesaplar. Hatalar alan bazında döner.
+ * `requireCostItem: false`: ortak faturada kalem her projede koduna göre ayrıca seçilir.
+ */
 export function parseExpenseForm(
   input: unknown,
+  options: { requireCostItem?: boolean } = {},
 ): { ok: true; data: ExpenseData } | { ok: false; fieldErrors: Record<string, string> } {
   const shape = expenseFormSchema.safeParse(input);
   if (!shape.success) {
@@ -94,7 +98,9 @@ export function parseExpenseForm(
 
   const date = dateInputToDate(v.date);
   if (!date) issues.push({ path: "date", message: "Tarih seçin." });
-  if (v.kind === "EXPENSE" && !v.costItemId) issues.push({ path: "costItemId", message: "Maliyet kalemini seçin." });
+  if (v.kind === "EXPENSE" && !v.costItemId && options.requireCostItem !== false) {
+    issues.push({ path: "costItemId", message: "Maliyet kalemini seçin." });
+  }
 
   const vatRate = decimal(v.vatRate, "KDV oranı", issues, "vatRate", { min: 0, max: 100 });
   if (vatRate == null && !issues.some((i) => i.path === "vatRate")) {

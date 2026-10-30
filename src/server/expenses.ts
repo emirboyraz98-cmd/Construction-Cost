@@ -554,8 +554,14 @@ export async function createSplitExpense(base: ExpenseData, allocations: SplitAl
   }
 
   const weights = allocations.map((a) => a.weight);
-  const parts = splitExpenseAmounts(base.amounts, weights);
-  const ratios = ratiosFromWeights(weights);
+  let parts: ReturnType<typeof splitExpenseAmounts>;
+  let ratios: Decimal[];
+  try {
+    parts = splitExpenseAmounts(base.amounts, weights);
+    ratios = ratiosFromWeights(weights);
+  } catch (error) {
+    throw new ActionError(error instanceof Error ? error.message : "Dağıtım oranları geçersiz.");
+  }
   const saved = await storeFiles(files);
   const groupId = randomUUID();
   try {
