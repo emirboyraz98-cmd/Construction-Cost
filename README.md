@@ -360,6 +360,9 @@ program yine tarayıcıdan kullanılır.
 - Proje panelinin üstünde role göre büyük düğmeler (Harcama gir, Malzeme geldi, Onay bekleyen, Satış
   yap, Tahsilat gir) ve yeni projede **“Proje kurulumu”** adım listesi.
 - Kullanıcı menüsü → **Nasıl kullanılır?**: role göre adım adım kısa kılavuz.
+- **Resimli kullanım kılavuzu** (Nasıl kullanılır? → Resimli kılavuz, `/help/guide`): örnek bir projeyi
+  (“Örnek – Ataşehir Konutları”) baştan sona kurarak programın tamamı, 42 ekran görüntüsü ve örnek
+  hesaplarla. “PDF olarak indir” ile yazdırılabilir. Görseller `public/kilavuz/` klasöründedir.
 - **PDF çıktılar** (tarayıcıda “Yazdır → PDF olarak kaydet”): hakediş (imza alanlı), müşteri ödeme
   planı (satış sözleşmesi ekranında “Ödeme planı (PDF)”), fiyat listesi.
 

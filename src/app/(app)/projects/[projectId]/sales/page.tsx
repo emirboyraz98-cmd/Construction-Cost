@@ -67,7 +67,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pr
       />
       <div className="grid grid-cols-1 gap-4">
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4 2xl:grid-cols-8">
             <Figure label="Boş" value={String(s.available)} />
             <Figure label="Rezerve" value={String(s.reserved)} />
             <Figure label="Satıldı" value={String(s.sold)} />

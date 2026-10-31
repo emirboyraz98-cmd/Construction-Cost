@@ -95,7 +95,7 @@ export function Figure({ label, value, note, tone }: { label: string; value: str
   return (
     <div className="min-w-0">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn("font-medium tabular-nums", tone === "warn" && "text-amber-700", tone === "danger" && "text-destructive")}>{value}</p>
+      <p className={cn("font-medium tabular-nums [overflow-wrap:anywhere]", tone === "warn" && "text-amber-700", tone === "danger" && "text-destructive")}>{value}</p>
       {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
     </div>
   );

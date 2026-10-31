@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BookOpenIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Role } from "@/generated/prisma/enums";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -8,7 +10,10 @@ import { getAccess } from "@/server/access";
 
 export const metadata: Metadata = { title: "Nasıl kullanılır?" };
 
-type Guide = { title: string; steps: (string | { text: string; href: string })[] };
+type Guide = {
+  title: string;
+  steps: (string | { text: string; href: string })[];
+};
 
 const GUIDES: { roles: Role[]; guide: Guide }[] = [
   {
@@ -33,8 +38,14 @@ const GUIDES: { roles: Role[]; guide: Guide }[] = [
         "Zil simgesi bekleyen işleri gösterir (onay bekleyen kayıtlar, vadesi gelen ödemeler).",
         "Harcamalar → durum “Onay bekliyor” → kontrol edip onaylayın veya nedenini yazıp reddedin.",
         "Çok sayıda fatura: Harcamalar → Toplu giriş → e-Fatura XML / ZIP veya Excel. Maliyet kalemini seçip “Kontrol et → Aktar”.",
-        { text: "Vade listesinden bu hafta ödenecekleri görün ve ödendi işaretleyin.", href: "/company/payables" },
-        { text: "Ay sonunda muhasebeci paketini (Excel + fiş fotoğrafları) indirin.", href: "/company/accountant" },
+        {
+          text: "Vade listesinden bu hafta ödenecekleri görün ve ödendi işaretleyin.",
+          href: "/company/payables",
+        },
+        {
+          text: "Ay sonunda muhasebeci paketini (Excel + fiş fotoğrafları) indirin.",
+          href: "/company/accountant",
+        },
       ],
     },
   },
@@ -43,10 +54,17 @@ const GUIDES: { roles: Role[]; guide: Guide }[] = [
     guide: {
       title: "Yeni proje kurmak",
       steps: [
-        { text: "“Yeni proje” ile proje bilgilerini girin (başlangıç tarihi ve süre önemli).", href: "/projects/new" },
+        {
+          text: "“Yeni proje” ile proje bilgilerini girin (başlangıç tarihi ve süre önemli).",
+          href: "/projects/new",
+        },
         "Proje panelindeki “Proje kurulumu” kutusu sıradaki adımı gösterir: bloklar → bağımsız bölümler (“Kat kat üret”) → arsa sahipleri → bütçe → fiyat listesi → nakit varsayımları.",
         "Bütçe: Metraj ekranında katsayılar hazır gelir (beton, demir, kalıp …); “Bütçede olmayanları ekle” ile satırlar oluşur, fiyatları kütüphaneden veya elle girin.",
         "Fiyatlandırma: kâr ve komisyon oranını yazın, fiyatları kontrol edin, “Fiyat listesini onayla”. Satış ekibi onaylı listeyi görür.",
+        {
+          text: "Ekran görüntüleriyle adım adım: resimli kılavuz, 3. bölüm.",
+          href: "/help/guide#kurulum",
+        },
       ],
     },
   },
@@ -80,9 +98,18 @@ const GUIDES: { roles: Role[]; guide: Guide }[] = [
     guide: {
       title: "Yönetici: kullanıcılar ve güvenlik",
       steps: [
-        { text: "Kullanıcı ekleyin ve projelere rolüyle yetki verin (şantiye şefi yalnızca kendi şantiyesini görür).", href: "/settings/users" },
-        { text: "Yedekler: program her gün otomatik yedek alır; arada bir harici diske kopyalayın.", href: "/settings/backups" },
-        { text: "Değişiklik geçmişi: kim neyi ne zaman değiştirdi.", href: "/settings/history" },
+        {
+          text: "Kullanıcı ekleyin ve projelere rolüyle yetki verin (şantiye şefi yalnızca kendi şantiyesini görür).",
+          href: "/settings/users",
+        },
+        {
+          text: "Yedekler: program her gün otomatik yedek alır; arada bir harici diske kopyalayın.",
+          href: "/settings/backups",
+        },
+        {
+          text: "Değişiklik geçmişi: kim neyi ne zaman değiştirdi.",
+          href: "/settings/history",
+        },
         "Satış KDV oranlarını muhasebecinizle teyit edip Ayarlar → Parametreler'den düzeltin.",
       ],
     },
@@ -94,8 +121,28 @@ export default async function HelpPage() {
   const mine = GUIDES.filter((g) => g.roles.includes(user.role));
   return (
     <>
-      <PageHeader title="Nasıl kullanılır?" description={`${ROLE_LABELS[user.role]} olarak en çok kullanacağınız işler, adım adım.`} />
+      <PageHeader
+        title="Nasıl kullanılır?"
+        description={`${ROLE_LABELS[user.role]} olarak en çok kullanacağınız işler, adım adım.`}
+        actions={
+          <Button asChild>
+            <Link href="/help/guide">
+              <BookOpenIcon />
+              Resimli kılavuz
+            </Link>
+          </Button>
+        }
+      />
       <div className="grid max-w-3xl grid-cols-1 gap-4">
+        <Link href="/help/guide" className="flex items-start gap-3 rounded-xl border bg-card p-4 text-sm hover:border-primary/50 hover:bg-primary/5">
+          <BookOpenIcon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+          <span className="grid gap-0.5">
+            <span className="font-medium">Resimli kullanım kılavuzu</span>
+            <span className="text-muted-foreground">
+              Örnek bir projeyi baştan sona kurarak programın tamamı: proje açma, bölümler, arsa payı, bütçe, fiyat listesi, nakit, harcama, satış ve tahsilat. PDF olarak da indirilebilir.
+            </span>
+          </span>
+        </Link>
         {mine.map(({ guide }) => (
           <Card key={guide.title} className="gap-3">
             <CardHeader>
@@ -118,7 +165,13 @@ export default async function HelpPage() {
             </CardContent>
           </Card>
         ))}
-        <p className="text-sm text-muted-foreground">Takıldığınız bir yer olursa ekranlardaki açıklama yazılarına bakın; ayrıntılı kılavuz program klasöründeki README dosyasındadır.</p>
+        <p className="text-sm text-muted-foreground">
+          Takıldığınız bir yer olursa ekranlardaki açıklama yazılarına ve{" "}
+          <Link href="/help/guide" className="underline decoration-dotted underline-offset-2 hover:text-primary">
+            resimli kılavuza
+          </Link>{" "}
+          bakın.
+        </p>
       </div>
     </>
   );
