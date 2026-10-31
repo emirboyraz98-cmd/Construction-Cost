@@ -11,6 +11,8 @@ import { computeProgressBilling, progressCostRows } from "../src/lib/contracts/p
 import { planCostTreeCopy } from "../src/lib/cost-tree/tree";
 import { computeExpenseAmounts } from "../src/lib/expenses/amounts";
 import { generateUnits } from "../src/lib/budget/units";
+import { factorKey, priceUnits, unitVatRate } from "../src/lib/pricing/pricing";
+import { addMonths, buildPlan, contractAmounts } from "../src/lib/sales/sales";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const d = (v: string | number) => new Decimal(v);
@@ -408,6 +410,100 @@ async function main() {
       { projectId: project.id, kind: "FACADE", key: "G", value: d("1.03") },
     ],
   });
+
+  // Onaylı ilk fiyat listesi (örnek: hedef gelir yuvarlak bir tutar; gerçek listede Fiyatlandırma → Onayla kullanılır)
+  const contractorUnits = (await db.unit.findMany({ where: { projectId: project.id, owner: "CONTRACTOR" } })).sort((a, b) => a.floor - b.floor || a.doorNo.localeCompare(b.doorNo, "tr", { numeric: true }));
+  const factorRows = await db.pricingFactor.findMany({ where: { projectId: project.id } });
+  const factors = new Map<"USAGE" | "FLOOR" | "FACADE" | "VIEW" | "LAYOUT", Map<string, Decimal>>();
+  for (const f of factorRows) (factors.get(f.kind) ?? factors.set(f.kind, new Map()).get(f.kind)!).set(f.key, d(f.value.toString()));
+  const demoPrices = priceUnits({
+    targetRevenue: d(45_000_000),
+    units: contractorUnits.map((u) => ({ id: u.id, usageType: u.usageType, grossArea: d(u.grossArea.toString()), extraArea: null, floor: u.floor, facade: factorKey(u.facade) || null, view: null, layout: u.layout, lockedPrice: null })),
+    factors,
+    extraAreaFactor: d(0),
+    roundingStep: d(10000),
+  });
+  const vatRule = { reducedRate: d(10), generalRate: d(20), reducedNetAreaLimit: d(150), reducedEligible: true };
+  const vatOf = (u: (typeof contractorUnits)[number]) => unitVatRate({ usageType: u.usageType, netArea: d(u.netArea.toString()), override: null }, vatRule)!;
+  await db.priceList.create({
+    data: {
+      projectId: project.id,
+      name: "Demo – ilk fiyat listesi (örnek)",
+      approvedAt: daysAgo(90),
+      approvedById: admin.id,
+      costBasis: "BUDGET",
+      cost: d(0),
+      advertising: d(0),
+      commissionPercent: d(2),
+      profitMethod: "MARGIN",
+      profitPercent: d(25),
+      baseM2: demoPrices.baseByUsage.get("RESIDENTIAL") ?? d(0),
+      targetRevenue: d(45_000_000),
+      total: demoPrices.total,
+      lines: { create: demoPrices.units.map((p) => ({ unitId: p.id, price: p.price, vatRate: vatOf(contractorUnits.find((u) => u.id === p.id)!) })) },
+    },
+  });
+  for (const p of demoPrices.units) {
+    await db.unit.update({ where: { id: p.id }, data: { listPrice: p.price, listVatRate: vatOf(contractorUnits.find((u) => u.id === p.id)!) } });
+  }
+
+  // Müşteriler, satışlar, tahsilatlar ve rezervasyon
+  const unitByDoor = (block: string, door: string) => contractorUnits.find((u) => u.blockId === block && u.doorNo === door)!;
+  const [zeynep, ahmet, elif] = await Promise.all(
+    [
+      { name: "Zeynep Yılmaz", identityNo: "10000000146", phone: "0532 111 22 33", email: "zeynep@example.com" },
+      { name: "Kaya Yapı Danışmanlık Ltd.", identityNo: "1234567890", taxOffice: "Kadıköy", phone: "0216 222 33 44" },
+      { name: "Elif Demir", phone: "0533 444 55 66" },
+    ].map((c) => db.customer.create({ data: { projectId: project.id, ...c } })),
+  );
+  const sell = async (draft: (typeof contractorUnits)[number], customerId: string, saleDate: Date, discount: number, downRatio: number, count: number) => {
+    const unit = await db.unit.findUniqueOrThrow({ where: { id: draft.id } });
+    const listPrice = d(unit.listPrice!.toString());
+    const vatRate = d(unit.listVatRate!.toString());
+    const amounts = contractAmounts({ listPrice, discount: d(discount), vatRate });
+    const plan = buildPlan({
+      total: amounts.totalAmount,
+      downPayment: { amount: amounts.totalAmount.times(downRatio).div(10000).floor().times(10000), date: saleDate },
+      fixed: [],
+      installments: { count, firstDate: addMonths(saleDate, 1), intervalMonths: 1 },
+    });
+    const contract = await db.saleContract.create({
+      data: {
+        projectId: project.id,
+        unitId: unit.id,
+        customerId,
+        date: saleDate,
+        listPrice,
+        discount: d(discount),
+        vatRate,
+        ...amounts,
+        salePriceTry: amounts.salePrice,
+        agent: "Moda Emlak",
+        commissionAmount: amounts.salePrice.times(0.02).toDecimalPlaces(2),
+        createdById: admin.id,
+        installments: { create: plan.rows.map((r, i) => ({ ...r, sortOrder: i })) },
+      },
+      include: { installments: { orderBy: { dueDate: "asc" } } },
+    });
+    await db.unit.update({ where: { id: unit.id }, data: { priceLocked: true } });
+    return contract;
+  };
+  // 1) 75 gün önce satış: peşinat ve 1. taksit ödendi, 2. taksit gecikmiş
+  const sale1 = await sell(unitByDoor(blockA.id, "9"), zeynep.id, daysAgo(75), 50_000, 0.4, 12);
+  await db.collection.createMany({
+    data: sale1.installments.slice(0, 2).map((i, index) => ({ contractId: sale1.id, date: i.dueDate, amount: i.amount, amountTry: i.amount, method: index === 0 ? ("BANK_TRANSFER" as const) : ("CASH" as const), createdById: muhasebe.id })),
+  });
+  // 2) 20 gün önce satış: peşinatın yarısı havale, yarısı vadeli çek (portföyde)
+  const sale2 = await sell(unitByDoor(blockB.id, "7"), ahmet.id, daysAgo(20), 0, 0.3, 18);
+  const half = d(sale2.installments[0].amount.toString()).div(2).toDecimalPlaces(2);
+  await db.collection.createMany({
+    data: [
+      { contractId: sale2.id, date: daysAgo(20), amount: half, amountTry: half, method: "BANK_TRANSFER", createdById: muhasebe.id },
+      { contractId: sale2.id, date: daysAgo(20), amount: half, amountTry: half, method: "CHEQUE", documentNo: "ÇK-004512", bank: "Örnek Bank", chequeDueDate: new Date(today.getTime() + 10 * DAY), chequeStatus: "PENDING", createdById: muhasebe.id },
+    ],
+  });
+  // 3) Geçerli rezervasyon (5 gün kaldı)
+  await db.reservation.create({ data: { projectId: project.id, unitId: unitByDoor(blockA.id, "10").id, customerId: elif.id, startDate: daysAgo(2), expiresAt: new Date(today.getTime() + 5 * DAY), deposit: d(50000), createdById: satis.id } });
 
   // Sekme: yönetici açınca demo projesi sekmede görünsün
   const last = await db.userTab.aggregate({ where: { userId: admin.id }, _max: { position: true } });

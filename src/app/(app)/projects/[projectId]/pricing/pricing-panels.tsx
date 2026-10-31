@@ -227,6 +227,7 @@ export type PriceRowView = {
   current: string | null;
   change: string | null;
   locked: boolean;
+  sold: boolean;
 };
 
 export function PriceTable({ projectId, rows, canEdit, canApprove, hasList }: { projectId: string; rows: PriceRowView[]; canEdit: boolean; canApprove: boolean; hasList: boolean }) {
@@ -285,11 +286,18 @@ export function PriceTable({ projectId, rows, canEdit, canApprove, hasList }: { 
                 <td className={cn("py-2", !canApprove && "pl-4")}>
                   <span className="flex flex-wrap items-center gap-1.5 font-medium">
                     {r.block} · No {r.doorNo}
-                    {r.locked && (
-                      <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700">
+                    {r.sold ? (
+                      <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800">
                         <LockIcon className="size-3" />
-                        Kilitli
+                        Satıldı
                       </Badge>
+                    ) : (
+                      r.locked && (
+                        <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700">
+                          <LockIcon className="size-3" />
+                          Kilitli
+                        </Badge>
+                      )
                     )}
                   </span>
                   <span className="block text-xs text-muted-foreground">{[r.floorLabel, r.usage, r.layout, r.facade && `Cephe ${r.facade}`, r.view].filter(Boolean).join(" · ")}</span>

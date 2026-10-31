@@ -65,7 +65,11 @@ export type Capability =
   | "pricing.view"
   | "pricing.edit"
   | "pricing.approve"
-  | "priceList.view";
+  | "priceList.view"
+  // Faz 6 – satış ve tahsilat
+  | "sales.view"
+  | "sales.manage"
+  | "collection.manage";
 
 const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "project.create": [Role.yonetici, Role.teknik_ofis],
@@ -143,6 +147,12 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "pricing.approve": [Role.yonetici],
   /** Onaylı bölüm fiyat listesi */
   "priceList.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satis, Role.dis_muhasebeci],
+  /** Satışlar, müşteriler (kimlik bilgileri dahil — KVKK: yalnızca bu roller), ödeme planları, tahsilatlar */
+  "sales.view": [Role.yonetici, Role.muhasebe, Role.satis, Role.dis_muhasebeci],
+  /** Müşteri, rezervasyon, satış sözleşmesi, ödeme planı, teslim */
+  "sales.manage": [Role.yonetici, Role.muhasebe, Role.satis],
+  /** Tahsilat girişi, çek / senet durumu */
+  "collection.manage": [Role.yonetici, Role.muhasebe, Role.satis],
 };
 
 export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {

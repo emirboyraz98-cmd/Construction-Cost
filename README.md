@@ -3,7 +3,7 @@
 İnşaat şirketi için maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı.
 Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 
-**Durum: Faz 5 – Fiyatlandırma.**
+**Durum: Faz 6 – Satış ve tahsilat.**
 
 - **Faz 0 (altyapı):** kullanıcı girişi ve roller, proje bazlı yetki, proje sekmeleri, yeni proje
   sihirbazı, portföy ve proje paneli, bloklar ve maliyet ağacı (İKY).
@@ -21,6 +21,9 @@ Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 - **Faz 5 (fiyatlandırma):** reklam ve komisyon payı, iki kâr yöntemi (marj / maliyet üzerine),
   kullanım tipine göre baz fiyat, kat / cephe / manzara / tip katsayıları, normalizasyon, yuvarlama,
   satış KDV'si, fiyat kilidi, onaylı fiyat listesi sürümleri, Excel ve PDF (yazdır) fiyat listesi.
+- **Faz 6 (satış ve tahsilat):** müşteriler, süreli rezervasyon, satış sözleşmesi (indirim, KDV,
+  döviz, emlakçı komisyonu), ödeme planı (peşinat, taksit, ara ödeme, anahtar teslim, kredi),
+  tahsilat ve kısmi ödeme, çek / senet takibi, geciken ve yaklaşan taksitler, teslim tarihi.
 
 Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
@@ -116,6 +119,8 @@ program yine tarayıcıdan kullanılır.
 | Fiyatlandırma ayarları ve katsayılar | Proje → **Fiyatlandırma** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, dış muhasebeci |
 | Fiyat listesi onayı, fiyat kilidi | Proje → **Fiyatlandırma** | Yönetici |
 | Onaylı fiyat listesi (maliyetsiz) | Proje → **Fiyatlandırma** | + satış ekibi |
+| Müşteri, rezervasyon, satış, ödeme planı, teslim | Proje → **Satışlar** | Yönetici, muhasebe, satış · görme: + dış muhasebeci |
+| Tahsilat girişi, çek / senet durumu | Proje → **Tahsilatlar** veya sözleşme sayfası | Yönetici, muhasebe, satış |
 
 - **Onay akışı:** Şantiye şefinin ve satın almanın girdiği kayıtlar *Onay bekliyor* olarak düşer;
   muhasebe veya yönetici onaylar ya da nedenini yazarak reddeder. Reddedilen kaydı giren kişi
@@ -222,6 +227,31 @@ program yine tarayıcıdan kullanılır.
   ve onaylı listeye göre gereken artış gösterilir.
 - **Çıktılar:** Excel ve yazdırılabilir sayfa (tarayıcıda “PDF olarak kaydet”). Taslak çıktı yalnızca
   maliyet görebilenlere açıktır.
+
+### Satış ve tahsilat: nasıl çalışır?
+
+- **Bölüm durumu:** Boş → Rezerve → Satıldı; arsa sahibi bölümleri satışa kapalıdır (teslim
+  tarihi takip edilir). Satışlar ekranında durum filtresi, satış ve tahsilat özeti ile hedef gelire
+  göre durum (satılanların gerçek fiyatı + boşların liste fiyatı ↔ onaylı listenin hedef geliri) görünür.
+- **Müşteri:** projeye bağlıdır. Kimlik ve iletişim bilgilerini yalnızca yönetici, muhasebe, satış
+  ve dış muhasebeci görür (KVKK). Satış veya rezervasyon sırasında listeden seçilir ya da yeni açılır.
+- **Rezervasyon:** başlangıç ve bitiş tarihi, kapora, teklif fiyatı. Bitiş günü geçince kendiliğinden
+  düşer; “Satışa dönüştür” ile satış formu müşteri ve fiyatla dolu açılır.
+- **Satış sözleşmesi:** liste fiyatı (onaylı listeden), indirim, satış fiyatı, KDV (listedeki oran),
+  TL veya döviz (sözleşme kuru), emlakçı ve komisyon (fiyatlandırmadaki yüzdeyle önerilir).
+  Kaydedilince bölümün fiyatı kilitlenir; fiyatlandırmada **gerçek satış fiyatı** kullanılır ve
+  hedefe ulaşmak için kalan bölümlerin ne kadar artması gerektiği görünür. Satılmış bölümün kilidi
+  açılamaz; satış iptal edilince bölüm yeniden satışa açılır.
+- **Ödeme planı:** “Planı oluştur” peşinat, anahtar teslim ve kredi düşüldükten sonra kalanı eşit
+  taksitlere böler (kuruş farkı son taksitte); satırlar elle düzenlenebilir, ara ödeme eklenebilir.
+  Plan toplamı KDV dahil satış tutarına eşit olmalıdır.
+- **Tahsilat:** en eski vadeli taksitten başlayarak dağıtılır (kısmi ödeme olur). Çek / senet
+  “portföyde” kaydedilir; **tahsil edildi** işaretlenince tahsilata sayılır, karşılıksız çıkarsa
+  sayılmaz. Çekle karşılanan taksit gecikmiş sayılmaz (“çek / senette”), kalan alacak ise çek tahsil
+  edilene kadar düşmez.
+- **Tahsilatlar ekranı:** geciken taksitler (gün sayısıyla), 30 gün içinde vadesi gelenler,
+  portföydeki çek / senetler ve son tahsilatlar; taksit takvimi ve tahsilatlar Excel olarak iner.
+  Portföy ve proje kartlarında satış, tahsilat ve geciken taksit sayısı görünür.
 
 ### Telefona uygulama gibi ekleme
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { PendingFigure, ProjectCard, SpendFigure } from "@/components/project-card";
+import { ProjectCard, SpendFigure } from "@/components/project-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { projectRole } from "@/lib/auth/access";
@@ -16,6 +16,7 @@ import { listProjects } from "@/server/projects";
 import { AlertList } from "@/components/purchasing/shared";
 import { budgetTotals } from "@/server/budget";
 import { controlSummaries } from "@/server/control";
+import { salesSummaries } from "@/server/sales";
 import { connectionAlertOverview } from "@/server/connections";
 import { listPayables, spendSummaries } from "@/server/reports";
 
@@ -31,7 +32,12 @@ export default async function PortfolioPage() {
     connectionAlertOverview(),
   ]);
   const budgetProjects = projects.filter((p) => hasCapability(projectRole(scope, p.id), "budget.view")).map((p) => p.id);
-  const [budgets, controls] = await Promise.all([budgetTotals(budgetProjects), controlSummaries(budgetProjects)]);
+  const salesProjects = projects.filter((p) => hasCapability(projectRole(scope, p.id), "sales.view")).map((p) => p.id);
+  const [budgets, controls, sales] = await Promise.all([budgetTotals(budgetProjects), controlSummaries(budgetProjects), salesSummaries(salesProjects)]);
+  const salesTotals = [...sales.values()].reduce(
+    (acc, v) => ({ collected: acc.collected.plus(v.collectedTry), remaining: acc.remaining.plus(v.remainingTry), overdue: acc.overdue.plus(v.overdueTry), overdueCount: acc.overdueCount + v.overdueCount }),
+    { collected: new Decimal(0), remaining: new Decimal(0), overdue: new Decimal(0), overdueCount: 0 },
+  );
   const budgetTotal = [...budgets.values()].reduce((s, v) => s.plus(v), new Decimal(0));
   const canCreate = hasCapability(user.role, "project.create");
   const blockCount = projects.reduce((sum, project) => sum + project._count.blocks, 0);
@@ -95,8 +101,13 @@ export default async function PortfolioPage() {
                 <p className="text-lg font-semibold tabular-nums">{totals.pending}</p>
               </div>
             </>
+          ) : salesProjects.length > 0 ? (
+            <>
+              <SpendFigure label="Tahsil edilen" value={salesTotals.collected} />
+              <SpendFigure label="Kalan alacak" value={salesTotals.remaining} note={salesTotals.overdueCount ? `${salesTotals.overdueCount} taksit gecikmiş` : "Gecikme yok"} />
+            </>
           ) : (
-            <PendingFigure label="Tahsilat" phase={6} />
+            <div />
           )}
         </CardContent>
       </Card>
@@ -181,6 +192,7 @@ export default async function PortfolioPage() {
               }
               budget={budgets.has(project.id) ? budgets.get(project.id) : undefined}
               control={controls.get(project.id) ?? null}
+              sales={sales.get(project.id)}
             />
           ))}
         </div>

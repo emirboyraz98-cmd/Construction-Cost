@@ -77,13 +77,13 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
   {
     key: "sales",
     label: "Satışlar",
-    phase: 6,
-    description: "Bölüm durumu, rezervasyon, satış sözleşmesi, ödeme planı.",
+    capability: "sales.view",
+    description: "Bölüm durumu, müşteriler, rezervasyon, satış sözleşmesi, ödeme planı, teslim.",
   },
   {
     key: "collections",
     label: "Tahsilatlar",
-    phase: 6,
+    capability: "sales.view",
     description: "Taksit takvimi, geciken taksitler, tahsilat girişi.",
   },
   {

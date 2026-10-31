@@ -113,7 +113,8 @@ export default async function PricingPage({ params }: PageProps<"/projects/[proj
     priceWithVat: s(r.priceWithVat),
     current: s(r.current),
     change: s(r.change),
-    locked: r.unit.priceLocked,
+    locked: r.priced?.locked ?? r.unit.priceLocked,
+    sold: r.sold,
   }));
 
   return (

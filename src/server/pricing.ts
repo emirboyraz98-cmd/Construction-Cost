@@ -132,13 +132,17 @@ const sortUnits = (units: UnitRow[]) =>
 
 /** Canlı fiyat hesabı (yetki kontrolü çağıranda). */
 async function computePricing(projectId: string) {
-  const [settings, factorRows, units, lists] = await Promise.all([
+  const [settings, factorRows, units, lists, sales] = await Promise.all([
     loadSettings(projectId),
     db.pricingFactor.findMany({ where: { projectId } }),
     loadUnits(projectId),
     db.priceList.findMany({ where: { projectId }, orderBy: { approvedAt: "desc" }, include: { approvedBy: { select: { name: true } } } }),
+    db.saleContract.findMany({ where: { projectId, status: "ACTIVE" }, select: { unitId: true, salePriceTry: true } }),
   ]);
   sortUnits(units);
+  // Satılmış bölümde kilitli fiyat = gerçek satış fiyatı (KDV hariç, TL); diğer kilitliler onaylı liste fiyatı.
+  const soldPrice = new Map(sales.map((c) => [c.unitId, dec(c.salePriceTry)]));
+  const lockedPrice = (u: UnitRow) => soldPrice.get(u.id) ?? (u.priceLocked && u.listPrice != null ? dec(u.listPrice) : null);
   const costs = await pricingCosts(projectId, settings);
   const vat = await saleVatRule(settings.reducedVatEligible);
   const factors = factorTable(factorRows);
@@ -151,7 +155,7 @@ async function computePricing(projectId: string) {
     method: settings.profitMethod,
     profitPercent: settings.profitPercent,
   });
-  const lockedWithoutPrice = contractorUnits.filter((u) => u.priceLocked && u.listPrice == null).length;
+  const lockedWithoutPrice = contractorUnits.filter((u) => u.priceLocked && lockedPrice(u) == null).length;
   const priced = base.ok
     ? priceUnits({
         targetRevenue: base.targetRevenue,
@@ -164,7 +168,7 @@ async function computePricing(projectId: string) {
           facade: u.facade,
           view: u.view,
           layout: u.layout,
-          lockedPrice: u.priceLocked && u.listPrice != null ? dec(u.listPrice) : null,
+          lockedPrice: lockedPrice(u),
         })),
         factors,
         extraAreaFactor: settings.extraAreaFactor,
@@ -185,7 +189,8 @@ async function computePricing(projectId: string) {
       priceWithVat: price ? withVat(price, vatRate) : null,
       perM2: price && dec(u.grossArea).gt(0) ? price.div(dec(u.grossArea)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP) : null,
       current,
-      change: price && current?.gt(0) && !u.priceLocked ? price.div(current).minus(1).times(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP) : null,
+      sold: soldPrice.has(u.id),
+      change: price && current?.gt(0) && !p?.locked ? price.div(current).minus(1).times(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP) : null,
     };
   });
   const profit = priced ? profitSummary({ revenue: priced.total, cost: costs.cost, advertising: costs.advertising, commissionPercent: settings.commissionPercent }) : null;
@@ -205,7 +210,7 @@ async function computePricing(projectId: string) {
     profit,
     warnings,
     lists,
-    requiredChange: priced ? requiredChangePercent(rows.filter((r) => r.price).map((r) => ({ current: r.current, next: r.price!, locked: r.unit.priceLocked }))) : null,
+    requiredChange: priced ? requiredChangePercent(rows.filter((r) => r.price).map((r) => ({ current: r.current, next: r.price!, locked: Boolean(r.priced?.locked) }))) : null,
   };
 }
 
@@ -331,6 +336,9 @@ export async function setUnitsLocked(projectId: string, unitIds: string[], locke
   const units = await db.unit.findMany({ where: { id: { in: unitIds }, projectId }, select: { id: true, doorNo: true, listPrice: true, owner: true } });
   if (locked && units.some((u) => u.listPrice == null)) throw new ActionError("Onaylı fiyatı olmayan bölüm kilitlenemez; önce fiyat listesini onaylayın.");
   if (units.some((u) => u.owner !== "CONTRACTOR")) throw new ActionError("Arsa sahibi bölümleri fiyatlanmaz.");
+  if (!locked && (await db.saleContract.count({ where: { unitId: { in: units.map((u) => u.id) }, status: "ACTIVE" } }))) {
+    throw new ActionError("Satılmış bölümün fiyat kilidi açılamaz; önce satışı iptal edin.");
+  }
   await db.$transaction(async (tx) => {
     await tx.unit.updateMany({ where: { id: { in: units.map((u) => u.id) } }, data: { priceLocked: locked } });
     await writeAudit(tx, { userId: user.id, projectId, action: locked ? "lock" : "unlock", entity: "Unit", changes: { units: units.map((u) => u.doorNo) } });
@@ -362,11 +370,11 @@ export async function approvePriceList(projectId: string, name: string, note: st
         targetRevenue: base.targetRevenue,
         total: data.priced!.total,
         approvedById: user.id,
-        lines: { create: priced.map((r) => ({ unitId: r.unit.id, price: r.price!, vatRate: r.vatRate, locked: r.unit.priceLocked })) },
+        lines: { create: priced.map((r) => ({ unitId: r.unit.id, price: r.price!, vatRate: r.vatRate, locked: Boolean(r.priced?.locked) })) },
       },
     });
     for (const r of priced) {
-      if (r.unit.priceLocked) continue;
+      if (r.priced?.locked) continue;
       await tx.unit.update({ where: { id: r.unit.id }, data: { listPrice: r.price, listVatRate: r.vatRate } });
     }
     await writeAudit(tx, { userId: user.id, projectId, action: "approve", entity: "PriceList", entityId: list.id, changes: { name, total: data.priced!.total.toString(), units: priced.length } });

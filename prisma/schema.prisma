@@ -78,6 +78,8 @@ model User {
   transfers        MaterialTransfer[]    @relation("TransferCreatedBy")
   pricingSettings  PricingSetting[]      @relation("PricingSettingUpdatedBy")
   priceLists       PriceList[]           @relation("PriceListApprovedBy")
+  saleContracts    SaleContract[]        @relation("SaleContractCreatedBy")
+  collections      Collection[]          @relation("CollectionCreatedBy")
 }
 
 /// Oturum. `id`, tarayıcıdaki çerez değerinin SHA-256 özetidir; düz token saklanmaz.
@@ -153,6 +155,9 @@ model Project {
   pricingSetting        PricingSetting?
   pricingFactors        PricingFactor[]
   priceLists            PriceList[]
+  customers             Customer[]
+  reservations          Reservation[]
+  saleContracts         SaleContract[]
 
   @@index([status])
 }
@@ -914,13 +919,17 @@ model Unit {
   priceLocked     Boolean   @default(false)
   /// Elle girilen satış KDV oranı; boşsa parametre kuralı
   vatRateOverride Decimal?  @db.Decimal(5, 2)
+  /// Teslim tarihi (satılan ve arsa sahibi bölümleri)
+  handoverDate    DateTime? @db.Date
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  block      Block           @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  landowner  Landowner?      @relation(fields: [landownerId], references: [id], onDelete: SetNull)
-  priceLines PriceListLine[]
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  block         Block           @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  landowner     Landowner?      @relation(fields: [landownerId], references: [id], onDelete: SetNull)
+  priceLines    PriceListLine[]
+  reservations  Reservation[]
+  saleContracts SaleContract[]
 
   @@unique([blockId, doorNo])
   @@index([projectId])
@@ -1250,4 +1259,163 @@ model PriceListLine {
   unit      Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@unique([priceListId, unitId])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 6 – Satış ve tahsilat (PLAN.md Bölüm 10)
+// ---------------------------------------------------------------------------
+
+/// Müşteri (projeye bağlı; kimlik bilgileri yalnızca satış yetkisi olanlara görünür — KVKK).
+model Customer {
+  id         String   @id @default(cuid())
+  projectId  String
+  name       String
+  /// T.C. kimlik veya vergi numarası
+  identityNo String?
+  taxOffice  String?
+  phone      String?
+  email      String?
+  address    String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  contracts    SaleContract[]
+
+  @@index([projectId, name])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CANCELLED
+  /// Satışa dönüştü
+  CONVERTED
+}
+
+/// Süreli rezervasyon / opsiyon; süresi dolan okunurken boşa düşmüş sayılır.
+model Reservation {
+  id          String            @id @default(cuid())
+  projectId   String
+  unitId      String
+  customerId  String
+  startDate   DateTime          @db.Date
+  expiresAt   DateTime          @db.Date
+  /// Kapora (TL)
+  deposit     Decimal?          @db.Decimal(18, 2)
+  /// Teklif edilen fiyat (KDV hariç)
+  quotedPrice Decimal?          @db.Decimal(18, 2)
+  status      ReservationStatus @default(ACTIVE)
+  note        String?
+  createdById String?
+  createdAt   DateTime          @default(now())
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([projectId, status])
+  @@index([unitId])
+}
+
+enum SaleStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model SaleContract {
+  id               String     @id @default(cuid())
+  projectId        String
+  unitId           String
+  customerId       String
+  contractNo       String?
+  date             DateTime   @db.Date
+  currency         Currency   @default(TRY)
+  /// Döviz bazlı satışta sözleşme tarihindeki kur (TL)
+  exchangeRate     Decimal    @default(1) @db.Decimal(18, 6)
+  /// Liste fiyatı, indirim ve satış fiyatı KDV hariç, sözleşme para biriminde
+  listPrice        Decimal    @db.Decimal(18, 2)
+  discount         Decimal    @default(0) @db.Decimal(18, 2)
+  salePrice        Decimal    @db.Decimal(18, 2)
+  vatRate          Decimal    @db.Decimal(5, 2)
+  vatAmount        Decimal    @db.Decimal(18, 2)
+  totalAmount      Decimal    @db.Decimal(18, 2)
+  /// Satış fiyatının TL karşılığı (KDV hariç) — fiyatlandırmada kilitli fiyat
+  salePriceTry     Decimal    @db.Decimal(18, 2)
+  agent            String?
+  /// Emlakçı komisyonu (TL)
+  commissionAmount Decimal?   @db.Decimal(18, 2)
+  status           SaleStatus @default(ACTIVE)
+  cancelledAt      DateTime?
+  cancelReason     String?
+  notes            String?
+  createdById      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unit         Unit          @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy    User?         @relation("SaleContractCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  installments Installment[]
+  collections  Collection[]
+
+  @@index([projectId, status])
+  @@index([unitId])
+}
+
+enum InstallmentKind {
+  DOWN_PAYMENT
+  INSTALLMENT
+  INTERIM
+  KEY_DELIVERY
+  BANK_LOAN
+}
+
+/// Ödeme planı satırı (KDV dahil, sözleşme para biriminde).
+model Installment {
+  id         String          @id @default(cuid())
+  contractId String
+  dueDate    DateTime        @db.Date
+  amount     Decimal         @db.Decimal(18, 2)
+  kind       InstallmentKind @default(INSTALLMENT)
+  note       String?
+  sortOrder  Int             @default(0)
+
+  contract SaleContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId, dueDate])
+  @@index([dueDate])
+}
+
+enum ChequeStatus {
+  /// Portföyde (vadesi gelmedi / tahsil edilmedi)
+  PENDING
+  CLEARED
+  BOUNCED
+}
+
+/// Tahsilat; vade sırasına göre taksitlere dağıtılır. Çek / senet tahsil edilince sayılır.
+model Collection {
+  id            String        @id @default(cuid())
+  contractId    String
+  date          DateTime      @db.Date
+  amount        Decimal       @db.Decimal(18, 2)
+  exchangeRate  Decimal       @default(1) @db.Decimal(18, 6)
+  amountTry     Decimal       @db.Decimal(18, 2)
+  method        PaymentMethod
+  documentNo    String?
+  /// Çek / senet vadesi ve durumu
+  chequeDueDate DateTime?     @db.Date
+  chequeStatus  ChequeStatus?
+  bank          String?
+  note          String?
+  createdById   String?
+  createdAt     DateTime      @default(now())
+
+  contract  SaleContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdBy User?        @relation("CollectionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([contractId, date])
 }

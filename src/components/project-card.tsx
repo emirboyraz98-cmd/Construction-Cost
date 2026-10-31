@@ -48,12 +48,15 @@ export function ProjectCard({
   spend,
   budget,
   control,
+  sales,
 }: {
   project: ProjectCardData;
   spend?: SpendSummary | null;
   budget?: { toString(): string } | null;
   /** Bütçe kontrolü özeti (EAC, sapma, ilerleme) */
   control?: { eac: { toString(): string }; variance: { toString(): string }; progress: { toString(): string } | null } | null;
+  /** Satış ve tahsilat özeti (yetkisi yoksa undefined) */
+  sales?: { sold: number; contractorUnits: number; salesTry: { toString(): string }; collectedTry: { toString(): string }; overdueTry: { toString(): string }; overdueCount: number };
 }) {
   const area = totalConstructionArea(project.blocks);
   return (
@@ -107,6 +110,18 @@ export function ProjectCard({
                   <p className="text-xs text-muted-foreground">Sapma</p>
                   <p className={Number(control.variance.toString()) < 0 ? "font-medium text-destructive tabular-nums" : "font-medium tabular-nums"}>{formatMoney(control.variance)}</p>
                   <p className="text-[11px] text-muted-foreground">{Number(control.variance.toString()) < 0 ? "Aşım bekleniyor" : "Bütçe içinde"}</p>
+                </div>
+              </>
+            )}
+            {sales && (
+              <>
+                <SpendFigure label="Satış (KDV dahil)" value={sales.salesTry} note={`${sales.sold} / ${sales.contractorUnits} bölüm satıldı`} />
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Tahsil edilen</p>
+                  <p className="font-medium tabular-nums">{formatMoney(sales.collectedTry)}</p>
+                  <p className={sales.overdueCount ? "text-[11px] text-destructive" : "text-[11px] text-muted-foreground"}>
+                    {sales.overdueCount ? `${sales.overdueCount} taksit gecikmiş · ${formatMoney(sales.overdueTry)}` : "Gecikme yok"}
+                  </p>
                 </div>
               </>
             )}

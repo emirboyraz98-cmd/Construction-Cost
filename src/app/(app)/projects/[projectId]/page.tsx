@@ -5,7 +5,7 @@ import { ListTreeIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { InfoList } from "@/components/info-list";
 import { PageHeader } from "@/components/page-header";
 import { ApprovalBadge } from "@/components/expenses/badges";
-import { PendingFigure, SpendFigure } from "@/components/project-card";
+import { SpendFigure } from "@/components/project-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import { projectConnections } from "@/server/connections";
 import { budgetTotals } from "@/server/budget";
 import { controlSummaries } from "@/server/control";
 import { listTotals } from "@/server/pricing";
+import { salesSummaries } from "@/server/sales";
 import { listContracts } from "@/server/contracts";
 import { projectExpenseOverview } from "@/server/expenses";
 import { getProject, listProjectTeam } from "@/server/projects";
@@ -47,6 +48,7 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
   ]);
   const control = canSeeBudget ? (await controlSummaries([projectId])).get(projectId) : undefined;
   const priceList = hasCapability(role, "priceList.view") ? (await listTotals([projectId])).get(projectId) : undefined;
+  const sales = hasCapability(role, "sales.view") ? (await salesSummaries([projectId])).get(projectId) : undefined;
   const team = hasCapability(role, "project.viewTeam") ? await listProjectTeam(projectId) : null;
   const totalArea = totalConstructionArea(project.blocks);
   const floorArea = permittedFloorArea(project.landArea, project.floorAreaRatio);
@@ -104,7 +106,15 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
                 />
               </Link>
             )}
-            <PendingFigure label="Satış / tahsilat" phase={6} />
+            {sales && (
+              <Link href={`/projects/${project.id}/collections`} className="min-w-0 hover:underline">
+                <SpendFigure
+                  label="Satış / tahsilat"
+                  value={sales.collectedTry}
+                  note={`${sales.sold} / ${sales.contractorUnits} bölüm satıldı${sales.overdueCount ? ` · ${sales.overdueCount} taksit gecikmiş` : ""}`}
+                />
+              </Link>
+            )}
             {canSeeTree ? (
               <Link href={`/projects/${project.id}/cost-tree`} className="min-w-0 hover:underline">
                 <p className="text-xs text-muted-foreground">Maliyet ağacı</p>
