@@ -13,6 +13,7 @@ import { computeExpenseAmounts } from "../src/lib/expenses/amounts";
 import { generateUnits } from "../src/lib/budget/units";
 import { factorKey, priceUnits, unitVatRate } from "../src/lib/pricing/pricing";
 import { addMonths, buildPlan, contractAmounts } from "../src/lib/sales/sales";
+import { proposeSchedule } from "../src/lib/cashflow/cashflow";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const d = (v: string | number) => new Decimal(v);
@@ -504,6 +505,31 @@ async function main() {
   });
   // 3) Geçerli rezervasyon (5 gün kaldı)
   await db.reservation.create({ data: { projectId: project.id, unitId: unitByDoor(blockA.id, "10").id, customerId: elif.id, startDate: daysAgo(2), expiresAt: new Date(today.getTime() + 5 * DAY), deposit: d(50000), createdById: satis.id } });
+
+  // Nakit akışı: varsayılan iş programı, örnek varsayımlar, bir senaryo ve şirket genel merkez gideri (örnek değerler)
+  const groups = await db.costItem.findMany({ where: { projectId: project.id, parentId: null }, select: { id: true, code: true } });
+  await db.scheduleEntry.createMany({
+    data: groups.flatMap((g) => {
+      const range = proposeSchedule(g.code, project.durationMonths ?? 24);
+      return range ? [{ projectId: project.id, costItemId: g.id, ...range }] : [];
+    }),
+  });
+  await db.cashFlowSetting.create({
+    data: { projectId: project.id, openingCash: d(5_000_000), monthlyInflationPercent: d("1.5"), monthlyInterestPercent: d(3), salesPerMonth: d(2), downPaymentPercent: d(30), installmentMonths: 12, updatedById: admin.id },
+  });
+  await db.scenario.create({
+    data: {
+      projectId: project.id,
+      name: "Kötümser (örnek)",
+      note: "Örnek varsayımlar; ekip kendi değerlerini girer",
+      monthlyInflationPercent: d(3),
+      delayMonths: 3,
+      salesSpeedPercent: d(60),
+      salesPriceChangePercent: d(-5),
+      adjustments: { create: [{ costItemCode: "05", changePercent: d(10) }] },
+    },
+  });
+  await db.companyCashSetting.upsert({ where: { id: "default" }, update: {}, create: { id: "default", openingCash: d(2_000_000), monthlyOverhead: d(250_000) } });
 
   // Sekme: yönetici açınca demo projesi sekmede görünsün
   const last = await db.userTab.aggregate({ where: { userId: admin.id }, _max: { position: true } });

@@ -89,13 +89,13 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
   {
     key: "cash-flow",
     label: "Nakit akışı",
-    phase: 7,
-    description: "Aylık harcama, tahsilat ve bağlantı ödemeleri; iş programı.",
+    capability: "cashflow.view",
+    description: "Aylık harcama, hakediş, bağlantı ödemeleri, tahsilat ve satış varsayımı; iş programı, finansman maliyeti.",
   },
   {
     key: "scenarios",
     label: "Senaryolar",
-    phase: 7,
+    capability: "cashflow.view",
     description: "İyimser / baz / kötümser senaryolar ve duyarlılık analizi.",
   },
   {
@@ -160,10 +160,17 @@ export const COMPANY_MODULES: readonly (ModuleDef & { href: string })[] = [
     description: "Malzeme, işçilik ve makine kütüphanesi; fiyat geçmişi, bağlantı fiyatları, reçeteler.",
   },
   {
+    key: "cash",
+    href: "/company/cash-flow",
+    label: "Konsolide nakit",
+    capability: "companyCash.view",
+    description: "Tüm projelerin nakit akışı, atanmamış bağlantı ödemeleri ve genel merkez giderleri.",
+  },
+  {
     key: "reports",
     href: "/company/reports",
     label: "Projeler arası raporlar",
-    phase: 7,
+    capability: "cashflow.view",
     description: "Projeler arası karşılaştırma (m² maliyet, birim fiyatlar, kâr), konsolide harcama ve nakit.",
   },
   { key: "settings", href: "/settings", label: "Ayarlar", description: "Kullanıcılar ve ayarlar." },

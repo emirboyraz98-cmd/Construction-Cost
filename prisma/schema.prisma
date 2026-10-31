@@ -158,6 +158,9 @@ model Project {
   customers             Customer[]
   reservations          Reservation[]
   saleContracts         SaleContract[]
+  cashFlowSetting       CashFlowSetting?
+  scheduleEntries       ScheduleEntry[]
+  scenarios             Scenario[]
 
   @@index([status])
 }
@@ -234,6 +237,7 @@ model CostItem {
   progressEstimates CostItemProgress[]
   template          CostItemTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
   expenses          Expense[]
+  scheduleEntries   ScheduleEntry[]
 
   @@unique([projectId, code])
   @@index([projectId, parentId])
@@ -1418,4 +1422,89 @@ model Collection {
   createdBy User?        @relation("CollectionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([contractId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 7 – Nakit akışı ve senaryolar (PLAN.md 7.8, 7.9)
+// ---------------------------------------------------------------------------
+
+/// İş programı: maliyet kaleminin harcanacağı aylar (proje başlangıcına göre 1. ay = başlangıç ayı).
+model ScheduleEntry {
+  id         String @id @default(cuid())
+  projectId  String
+  costItemId String
+  startMonth Int
+  endMonth   Int
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costItem CostItem @relation(fields: [costItemId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, costItemId])
+}
+
+/// Projenin nakit akışı varsayımları (baz senaryo).
+model CashFlowSetting {
+  projectId               String   @id
+  openingCash             Decimal  @default(0) @db.Decimal(18, 2)
+  /// Planlanan (KDV hariç) maliyete eklenecek ortalama KDV oranı; boşsa parametre tablosundaki genel oran
+  costVatPercent          Decimal? @db.Decimal(5, 2)
+  monthlyInflationPercent Decimal  @default(0) @db.Decimal(6, 3)
+  /// Dövizli bütçe satırları ve dövizli bağlantı ödemeleri için kur değişimi (%)
+  fxChangePercent         Decimal  @default(0) @db.Decimal(6, 2)
+  /// Nakit açığına uygulanan aylık finansman maliyeti (%)
+  monthlyInterestPercent  Decimal  @default(0) @db.Decimal(6, 3)
+  /// Satılmamış bölümler: ayda satılacak bölüm sayısı, başlangıç ayı (proje ayı), peşinat ve taksit
+  salesPerMonth           Decimal  @default(0) @db.Decimal(6, 2)
+  salesStartMonth         Int?
+  downPaymentPercent      Decimal  @default(100) @db.Decimal(5, 2)
+  installmentMonths       Int      @default(0)
+  updatedById             String?
+  updatedAt               DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+/// Şirket geneli nakit varsayımları (tek satır, id = "default").
+model CompanyCashSetting {
+  id              String   @id @default("default")
+  openingCash     Decimal  @default(0) @db.Decimal(18, 2)
+  /// Genel merkez giderleri (aylık, KDV dahil)
+  monthlyOverhead Decimal  @default(0) @db.Decimal(18, 2)
+  updatedAt       DateTime @updatedAt
+}
+
+/// Senaryo: baz varsayımlara göre değişiklikler (boş alan = baz değer).
+model Scenario {
+  id                      String   @id @default(cuid())
+  projectId               String
+  name                    String
+  note                    String?
+  monthlyInflationPercent Decimal? @db.Decimal(6, 3)
+  fxChangePercent         Decimal? @db.Decimal(6, 2)
+  monthlyInterestPercent  Decimal? @db.Decimal(6, 3)
+  delayMonths             Int      @default(0)
+  salesPriceChangePercent Decimal  @default(0) @db.Decimal(6, 2)
+  /// Satış hızı (% — 100 baz hız)
+  salesSpeedPercent       Decimal  @default(100) @db.Decimal(6, 2)
+  /// Arsa sahibi payı (%); boşsa mevcut bölüm dağılımı
+  landownerSharePercent   Decimal? @db.Decimal(5, 2)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  adjustments ScenarioAdjustment[]
+
+  @@index([projectId])
+}
+
+/// Kalem bazında fiyat değişimi (kod öneki: "05.05" demir, "05" tüm kaba inşaat).
+model ScenarioAdjustment {
+  id            String  @id @default(cuid())
+  scenarioId    String
+  costItemCode  String
+  changePercent Decimal @db.Decimal(6, 2)
+
+  scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([scenarioId, costItemCode])
 }

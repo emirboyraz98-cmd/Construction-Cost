@@ -69,7 +69,13 @@ export type Capability =
   // Faz 6 – satış ve tahsilat
   | "sales.view"
   | "sales.manage"
-  | "collection.manage";
+  | "collection.manage"
+  // Faz 7 – nakit akışı ve senaryolar
+  | "cashflow.view"
+  | "cashflow.edit"
+  | "scenario.manage"
+  | "companyCash.view"
+  | "companyCash.manage";
 
 const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "project.create": [Role.yonetici, Role.teknik_ofis],
@@ -153,6 +159,14 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "sales.manage": [Role.yonetici, Role.muhasebe, Role.satis],
   /** Tahsilat girişi, çek / senet durumu */
   "collection.manage": [Role.yonetici, Role.muhasebe, Role.satis],
+  /** Proje nakit akışı, iş programı, senaryolar ve projeler arası karşılaştırma (maliyet ve kâr içerir) */
+  "cashflow.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.dis_muhasebeci],
+  /** İş programı ve nakit varsayımları */
+  "cashflow.edit": [Role.yonetici, Role.teknik_ofis, Role.muhasebe],
+  "scenario.manage": [Role.yonetici, Role.teknik_ofis],
+  /** Şirket geneli konsolide nakit */
+  "companyCash.view": [Role.yonetici, Role.muhasebe, Role.dis_muhasebeci],
+  "companyCash.manage": [Role.yonetici, Role.muhasebe],
 };
 
 export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {

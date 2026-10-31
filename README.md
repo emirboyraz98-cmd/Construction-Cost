@@ -3,7 +3,7 @@
 İnşaat şirketi için maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı.
 Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 
-**Durum: Faz 6 – Satış ve tahsilat.**
+**Durum: Faz 7 – Nakit akışı ve senaryolar.**
 
 - **Faz 0 (altyapı):** kullanıcı girişi ve roller, proje bazlı yetki, proje sekmeleri, yeni proje
   sihirbazı, portföy ve proje paneli, bloklar ve maliyet ağacı (İKY).
@@ -24,6 +24,10 @@ Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 - **Faz 6 (satış ve tahsilat):** müşteriler, süreli rezervasyon, satış sözleşmesi (indirim, KDV,
   döviz, emlakçı komisyonu), ödeme planı (peşinat, taksit, ara ödeme, anahtar teslim, kredi),
   tahsilat ve kısmi ödeme, çek / senet takibi, geciken ve yaklaşan taksitler, teslim tarihi.
+- **Faz 7 (nakit ve senaryo):** iş programı (basit Gantt), aylık nakit akışı (harcama, hakediş,
+  bağlantı ödemeleri, kalan maliyet, tahsilat, taksit, satış varsayımı), enflasyon / kur / finansman
+  maliyeti, senaryolar ve duyarlılık, kâra en çok etki eden kalemler, şirket geneli konsolide nakit,
+  projeler arası karşılaştırma.
 
 Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
@@ -121,6 +125,10 @@ program yine tarayıcıdan kullanılır.
 | Onaylı fiyat listesi (maliyetsiz) | Proje → **Fiyatlandırma** | + satış ekibi |
 | Müşteri, rezervasyon, satış, ödeme planı, teslim | Proje → **Satışlar** | Yönetici, muhasebe, satış · görme: + dış muhasebeci |
 | Tahsilat girişi, çek / senet durumu | Proje → **Tahsilatlar** veya sözleşme sayfası | Yönetici, muhasebe, satış |
+| Nakit akışı, iş programı, varsayımlar | Proje → **Nakit akışı** | Düzenleme: yönetici, teknik ofis, muhasebe · görme: + dış muhasebeci |
+| Senaryolar | Proje → **Senaryolar** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, dış muhasebeci |
+| Konsolide nakit, genel merkez gideri | Şirket geneli → **Konsolide nakit** | Düzenleme: yönetici, muhasebe · görme: + dış muhasebeci |
+| Projeler arası karşılaştırma | Şirket geneli → **Projeler arası raporlar** | Yönetici, teknik ofis, muhasebe, dış muhasebeci |
 
 - **Onay akışı:** Şantiye şefinin ve satın almanın girdiği kayıtlar *Onay bekliyor* olarak düşer;
   muhasebe veya yönetici onaylar ya da nedenini yazarak reddeder. Reddedilen kaydı giren kişi
@@ -252,6 +260,38 @@ program yine tarayıcıdan kullanılır.
 - **Tahsilatlar ekranı:** geciken taksitler (gün sayısıyla), 30 gün içinde vadesi gelenler,
   portföydeki çek / senetler ve son tahsilatlar; taksit takvimi ve tahsilatlar Excel olarak iner.
   Portföy ve proje kartlarında satış, tahsilat ve geciken taksit sayısı görünür.
+
+### Nakit akışı ve senaryolar: nasıl çalışır?
+
+- **İş programı** (Nakit akışı → İş programı): her maliyet kalemi için başlangıç ve bitiş ayı (1 =
+  proje başlangıç ayı). Programı olmayan kalem üst kaleminin, o da yoksa tüm projenin aralığını
+  kullanır. “Varsayılan program öner” ana gruplara tipik konut sırasına göre süreye oranlı aralık
+  yazar (yalnızca başlangıç varsayımı).
+- **Nakit akışı** (KDV dahil, aylık):
+  - Çıkış: harcama ve avanslar (ödendiyse ödeme tarihinde, değilse vadesinde), onaylı hakedişlerin
+    net ödemesi, bağlantı ödeme planı (projeye tahsis payı oranında) ve **kalan maliyet**.
+  - Kalan maliyet = tahmini tamamlanma maliyeti (EAC) − gerçekleşen − bağlantıyla sabitlenmiş açık
+    miktar; iş programındaki aylara eşit yayılır, KDV eklenir.
+  - Giriş: tahsilatlar, kalan taksitler, portföydeki çekler (vadesinde) ve satılmamış bölümler için
+    satış varsayımı (ayda kaç bölüm, peşinat, taksit sayısı; liste fiyatıyla).
+  - Vadesi geçmiş ödenmemiş kalemler bu aya yazılır.
+  - Varsayımlar: başlangıç nakdi, aylık maliyet artışı (bileşik), kur değişimi (dövizli bütçe
+    satırları, ödemeler ve tahsilatlar), aylık finansman maliyeti (kümülatif açığa).
+  - Ekranda en yüksek nakit ihtiyacı ve ayı, finansman maliyeti, dönem sonu bakiye ve beklenen kâr
+    (KDV hariç, finansman dahil) görünür; Excel olarak iner.
+- **Senaryolar:** kalem bazında fiyat değişimi (kod öneki: 05.05 demir, 05 tüm kaba inşaat), kur,
+  aylık artış, finansman, gecikme (ay), satış fiyatı ve hızı, arsa payı. Her senaryo için maliyet,
+  gelir, finansman, kâr, hedef kâr için gereken baz m² fiyatı ve en yüksek nakit ihtiyacı baza göre
+  gösterilir. PLAN 7.9'daki dört duyarlılık örneği (demir +%15, döviz +%20, 3 ay gecikme, arsa payı
+  %50) hazır gelir. Senaryolar kopyalanabilir.
+  - Fiyat değişimleri yalnızca kalan maliyete uygulanır; bağlantıyla sabitlenmiş miktar etkilenmez.
+  - Gecikmede şantiye genel giderleri (03) ve kira yardımı (01.03) süreyle orantılı artar; anahtar
+    teslim ve banka kredisi tahsilatları ile yeni satışlar o kadar ay ötelenir.
+- **Kâra en çok etki eden kalemler:** kalan maliyetin ve satılmamış bölüm fiyatlarının ±%10 değişiminin
+  kâra etkisi, büyükten küçüğe.
+- **Şirket geneli:** konsolide nakit (projeler + atanmamış bağlantı ödemeleri + aylık genel merkez
+  gideri, şirket başlangıç nakdiyle) ve projeler arası karşılaştırma (m² maliyetleri, bütçe / EAC,
+  gelir, kâr, nakit ihtiyacı, ortak malzemelerin birim fiyatları).
 
 ### Telefona uygulama gibi ekleme
 
