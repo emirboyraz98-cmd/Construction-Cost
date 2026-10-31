@@ -3,7 +3,7 @@
 İnşaat şirketi için maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı.
 Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 
-**Durum: Faz 4 – Bütçe kontrolü.**
+**Durum: Faz 5 – Fiyatlandırma.**
 
 - **Faz 0 (altyapı):** kullanıcı girişi ve roller, proje bazlı yetki, proje sekmeleri, yeni proje
   sihirbazı, portföy ve proje paneli, bloklar ve maliyet ağacı (İKY).
@@ -18,6 +18,9 @@ Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 - **Faz 4 (bütçe kontrolü):** baz bütçe (dondurma), bütçe – gerçekleşen – tahmini tamamlanma
   maliyeti (EAC) ve sapma, aşım / risk uyarıları, gerçekleşen katsayılar, bağlantı kapsaması ve
   bağlantı kazancı, Excel çıktısı.
+- **Faz 5 (fiyatlandırma):** reklam ve komisyon payı, iki kâr yöntemi (marj / maliyet üzerine),
+  kullanım tipine göre baz fiyat, kat / cephe / manzara / tip katsayıları, normalizasyon, yuvarlama,
+  satış KDV'si, fiyat kilidi, onaylı fiyat listesi sürümleri, Excel ve PDF (yazdır) fiyat listesi.
 
 Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
@@ -110,6 +113,9 @@ program yine tarayıcıdan kullanılır.
 | Malzeme / fiyat kütüphanesi, reçeteler | Şirket geneli → **Kütüphane** | Yönetici, teknik ofis, muhasebe, satın alma |
 | Metraj ve bütçe | Proje → **Metraj**, **Bütçe** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, satın alma, dış muhasebeci |
 | Baz bütçe, tamamlanma yüzdesi, sapma | Proje → **Bütçe kontrolü** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, satın alma, dış muhasebeci |
+| Fiyatlandırma ayarları ve katsayılar | Proje → **Fiyatlandırma** | Düzenleme: yönetici, teknik ofis · görme: + muhasebe, dış muhasebeci |
+| Fiyat listesi onayı, fiyat kilidi | Proje → **Fiyatlandırma** | Yönetici |
+| Onaylı fiyat listesi (maliyetsiz) | Proje → **Fiyatlandırma** | + satış ekibi |
 
 - **Onay akışı:** Şantiye şefinin ve satın almanın girdiği kayıtlar *Onay bekliyor* olarak düşer;
   muhasebe veya yönetici onaylar ya da nedenini yazarak reddeder. Reddedilen kaydı giren kişi
@@ -192,6 +198,30 @@ program yine tarayıcıdan kullanılır.
 - **Gerçekleşen katsayı:** Metraj ekranı, bu projenin ve diğer projelerin onaylı harcamalarından
   çıkan katsayıyı gösterir; “Gerçekleşen değeri kullan” ile yeni projenin katsayısına aktarılabilir.
 - Ekran **Excel** olarak indirilebilir.
+
+### Fiyatlandırma: nasıl çalışır?
+
+- **Maliyet tabanı:** güncel bütçe, tahmini tamamlanma maliyeti (EAC) veya elle girilen tutar
+  (fizibilite). Bütçenin 14 grubu (pazarlama) maliyetten ayrılır: sabit reklam bütçesi olarak
+  kullanılır (14.06 komisyon hariç); istenirse reklam bütçesi elle girilir.
+- **Baz m² fiyatı** (KDV hariç, PLAN 7.5):
+  - Satış üzerinden marj: (m² maliyeti + reklam m² payı) / (1 − komisyon − marj)
+  - Maliyet üzerine ekleme: (m² maliyeti + reklam m² payı) × (1 + kâr) / (1 − komisyon)
+  - m² = müteahhide kalan satılabilir brüt m². Ekranda diğer yöntemin karşılığı ve başabaş fiyatı
+    da görünür. Karşılık komisyon dahil hesaplanır (ör. %2 komisyonla %25 marj = maliyet üzerine %34,25).
+- **Bölüm fiyatı** = baz m² × kullanım tipi oranı × (brüt m² + bahçe/teras × oran) × kat × cephe ×
+  manzara × tip katsayısı. Katsayılar 1,00 başlar; ekip doldurur ya da önceki projeden kopyalar.
+  Sonra toplam, hedef gelire eşitlenir (normalizasyon) ve yuvarlama adımına göre yuvarlanır.
+- **KDV:** oranlar Ayarlar → Parametreler'den gelir (satış KDV – konut indirimli oran, net alan
+  sınırı, genel oran). Başlangıç değerleri net 150 m²'ye kadar konutta %10, diğerlerinde %20'dir;
+  ruhsat tarihi, kentsel dönüşüm ve arsa değerine göre farklı olabilir — **muhasebecinizle teyit
+  edin**. Bölüm bazında elle oran girilebilir.
+- **Onay ve kilit:** Yönetici “Fiyat listesini onayla” deyince liste sürüm olarak saklanır ve
+  bölümlerin liste fiyatı güncellenir; satış ekibi yalnızca bu listeyi görür. Kilitli (ör. satılmış)
+  bölümlerin fiyatı değişmez; maliyet veya kâr değişince hedef gelirin kalanı diğer bölümlere dağılır
+  ve onaylı listeye göre gereken artış gösterilir.
+- **Çıktılar:** Excel ve yazdırılabilir sayfa (tarayıcıda “PDF olarak kaydet”). Taslak çıktı yalnızca
+  maliyet görebilenlere açıktır.
 
 ### Telefona uygulama gibi ekleme
 

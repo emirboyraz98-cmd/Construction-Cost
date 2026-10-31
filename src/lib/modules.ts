@@ -70,7 +70,7 @@ export const PROJECT_MODULES: readonly ModuleDef[] = [
   {
     key: "pricing",
     label: "Fiyatlandırma",
-    phase: 5,
+    capability: "priceList.view",
     description:
       "Kâr yöntemi, reklam ve komisyon payı, katsayı tabloları → bağımsız bölüm fiyat listesi (KDV hariç/dahil).",
   },

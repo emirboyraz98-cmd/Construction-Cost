@@ -23,6 +23,7 @@ import { AlertList, Meter } from "@/components/purchasing/shared";
 import { projectConnections } from "@/server/connections";
 import { budgetTotals } from "@/server/budget";
 import { controlSummaries } from "@/server/control";
+import { listTotals } from "@/server/pricing";
 import { listContracts } from "@/server/contracts";
 import { projectExpenseOverview } from "@/server/expenses";
 import { getProject, listProjectTeam } from "@/server/projects";
@@ -45,6 +46,7 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
     canSeeBudget ? budgetTotals([projectId]) : null,
   ]);
   const control = canSeeBudget ? (await controlSummaries([projectId])).get(projectId) : undefined;
+  const priceList = hasCapability(role, "priceList.view") ? (await listTotals([projectId])).get(projectId) : undefined;
   const team = hasCapability(role, "project.viewTeam") ? await listProjectTeam(projectId) : null;
   const totalArea = totalConstructionArea(project.blocks);
   const floorArea = permittedFloorArea(project.landArea, project.floorAreaRatio);
@@ -90,6 +92,15 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
                       ? `EAC ${formatMoney(control.eac)} · ${control.variance.isNegative() ? "aşım" : "sapma"} ${formatMoney(control.variance)}`
                       : "Bütçe ekranı"
                   }
+                />
+              </Link>
+            )}
+            {priceList !== undefined && (
+              <Link href={`/projects/${project.id}/pricing`} className="min-w-0 hover:underline">
+                <SpendFigure
+                  label="Fiyat listesi (KDV hariç)"
+                  value={priceList?.total ?? 0}
+                  note={priceList?.priced ? `${priceList.priced} bölüm fiyatlı` : "Onaylı liste yok"}
                 />
               </Link>
             )}

@@ -76,6 +76,8 @@ model User {
   progressBillings ProgressBilling[]     @relation("ProgressBillingCreatedBy")
   approvedBillings ProgressBilling[]     @relation("ProgressBillingApprovedBy")
   transfers        MaterialTransfer[]    @relation("TransferCreatedBy")
+  pricingSettings  PricingSetting[]      @relation("PricingSettingUpdatedBy")
+  priceLists       PriceList[]           @relation("PriceListApprovedBy")
 }
 
 /// Oturum. `id`, tarayıcıdaki çerez değerinin SHA-256 özetidir; düz token saklanmaz.
@@ -148,6 +150,9 @@ model Project {
   progressBillings      ProgressBilling[]
   transfersOut          MaterialTransfer[]      @relation("TransferFrom")
   transfersIn           MaterialTransfer[]      @relation("TransferTo")
+  pricingSetting        PricingSetting?
+  pricingFactors        PricingFactor[]
+  priceLists            PriceList[]
 
   @@index([status])
 }
@@ -902,12 +907,20 @@ model Unit {
   owner           UnitOwner @default(CONTRACTOR)
   landownerId     String?
   notes           String?
+  /// Onaylı fiyat listesindeki fiyat (KDV hariç, TL)
+  listPrice       Decimal?  @db.Decimal(18, 2)
+  listVatRate     Decimal?  @db.Decimal(5, 2)
+  /// Kilitli fiyat yeniden fiyatlamada değişmez (satılmış bölüm, PLAN 7.6)
+  priceLocked     Boolean   @default(false)
+  /// Elle girilen satış KDV oranı; boşsa parametre kuralı
+  vatRateOverride Decimal?  @db.Decimal(5, 2)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  block     Block      @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  landowner Landowner? @relation(fields: [landownerId], references: [id], onDelete: SetNull)
+  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  block      Block           @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  landowner  Landowner?      @relation(fields: [landownerId], references: [id], onDelete: SetNull)
+  priceLines PriceListLine[]
 
   @@unique([blockId, doorNo])
   @@index([projectId])
@@ -1135,4 +1148,106 @@ model CostItemProgress {
   costItem CostItem @relation(fields: [costItemId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, costItemId])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 5 – Fiyatlandırma (PLAN.md 7.4–7.6)
+// ---------------------------------------------------------------------------
+
+enum ProfitMethod {
+  /// Satış üzerinden marj
+  MARGIN
+  /// Maliyet üzerine ekleme
+  MARKUP
+}
+
+enum PricingCostBasis {
+  /// Güncel bütçe
+  BUDGET
+  /// Tahmini tamamlanma maliyeti (bütçe kontrolü)
+  EAC
+  /// Elle girilen toplam maliyet (fizibilite)
+  MANUAL
+}
+
+enum PricingFactorKind {
+  /// Kullanım tipi oranı (ör. dükkân = konut × 1,8)
+  USAGE
+  FLOOR
+  FACADE
+  VIEW
+  LAYOUT
+}
+
+model PricingSetting {
+  projectId          String           @id
+  profitMethod       ProfitMethod     @default(MARGIN)
+  profitPercent      Decimal          @default(0) @db.Decimal(6, 2)
+  commissionPercent  Decimal          @default(0) @db.Decimal(6, 2)
+  /// Boşsa bütçenin 14 grubu (14.06 komisyon hariç)
+  advertisingBudget  Decimal?         @db.Decimal(18, 2)
+  costBasis          PricingCostBasis @default(BUDGET)
+  manualCost         Decimal?         @db.Decimal(18, 2)
+  roundingStep       Decimal          @default(10000) @db.Decimal(14, 2)
+  /// Bahçe / teras ek alanının brüt m²'ye eklenme oranı (0 = fiyata katılmaz)
+  extraAreaFactor    Decimal          @default(0) @db.Decimal(6, 4)
+  /// Konutlar indirimli KDV şartlarını sağlıyor mu (muhasebeciyle teyit edilir)
+  reducedVatEligible Boolean          @default(true)
+  updatedById        String?
+  updatedAt          DateTime         @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  updatedBy User?   @relation("PricingSettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model PricingFactor {
+  id        String            @id @default(cuid())
+  projectId String
+  kind      PricingFactorKind
+  /// Kat numarası, cephe, manzara, tip veya kullanım tipi
+  key       String
+  value     Decimal           @db.Decimal(8, 4)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, kind, key])
+}
+
+/// Onaylanan fiyat listesi sürümü (o anki girdi ve fiyatlarla).
+model PriceList {
+  id                String           @id @default(cuid())
+  projectId         String
+  name              String
+  note              String?
+  costBasis         PricingCostBasis
+  cost              Decimal          @db.Decimal(18, 2)
+  advertising       Decimal          @db.Decimal(18, 2)
+  commissionPercent Decimal          @db.Decimal(6, 2)
+  profitMethod      ProfitMethod
+  profitPercent     Decimal          @db.Decimal(6, 2)
+  baseM2            Decimal          @db.Decimal(14, 2)
+  targetRevenue     Decimal          @db.Decimal(18, 2)
+  total             Decimal          @db.Decimal(18, 2)
+  approvedById      String?
+  approvedAt        DateTime         @default(now())
+
+  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approvedBy User?           @relation("PriceListApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  lines      PriceListLine[]
+
+  @@index([projectId, approvedAt])
+}
+
+model PriceListLine {
+  id          String   @id @default(cuid())
+  priceListId String
+  unitId      String
+  price       Decimal  @db.Decimal(18, 2)
+  vatRate     Decimal? @db.Decimal(5, 2)
+  locked      Boolean  @default(false)
+
+  priceList PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  unit      Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([priceListId, unitId])
 }

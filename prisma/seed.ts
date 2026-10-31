@@ -86,6 +86,27 @@ async function seedVatRates() {
 }
 
 /**
+ * Bağımsız bölüm satışlarında KDV kuralı (fiyatlandırma). Başlangıç değerleri 1.4.2022 sonrası
+ * ruhsatlı konutlar için yaygın uygulamadır (net 150 m²'ye kadar %10, üstü ve ticari %20); ruhsat
+ * tarihi, kentsel dönüşüm ve arsa değerine göre farklı olabilir. Muhasebeciyle teyit edilmelidir.
+ */
+async function seedSaleVat() {
+  const year = new Date().getUTCFullYear();
+  const rows = [
+    { kind: "satis_kdv_konut_indirimli", value: "10", unit: "%", description: "Net alanı sınırın altındaki konut; muhasebeciyle teyit edin" },
+    { kind: "satis_kdv_konut_net_sinir", value: "150", unit: "m²", description: "İndirimli oranın uygulandığı en fazla net alan" },
+    { kind: "satis_kdv_genel", value: "20", unit: "%", description: "Büyük konut, dükkân, ofis" },
+  ];
+  let added = 0;
+  for (const row of rows) {
+    if (await prisma.parameter.count({ where: { kind: row.kind } })) continue;
+    await prisma.parameter.create({ data: { year, ...row } });
+    added++;
+  }
+  return added;
+}
+
+/**
  * Parametrik metraj katsayı şablonu (PLAN.md Bölüm 6). Değerler PLAN'daki aralıkların ortasıdır
  * ve yalnızca başlangıç varsayımıdır; projede düzenlenir, gerçekleşen katsayılarla kalibre edilir.
  */
@@ -106,6 +127,8 @@ async function main() {
   const added = await seedCostTemplate();
   const vat = await seedVatRates();
   const coefficients = await seedCoefficients();
+  const saleVat = await seedSaleVat();
+  if (saleVat > 0) console.log(`Satış KDV parametreleri eklendi (${saleVat}).`);
   if (coefficients > 0) console.log(`Parametrik katsayı şablonu eklendi (${coefficients} katsayı).`);
   if (vat > 0) console.log(`KDV oranları parametre tablosuna eklendi (${vat} oran).`);
   if (added > 0) console.log(`İKY şablonu: ${added} kalem eklendi.`);

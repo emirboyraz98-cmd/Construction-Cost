@@ -29,12 +29,13 @@ async function main() {
   }
   const admin = await db.user.findFirstOrThrow({ where: { role: "yonetici" } });
   const password = await hashPassword("Demo.2026");
-  const user = (email: string, name: string, role: "muhasebe" | "santiye_sefi" | "satin_alma") =>
+  const user = (email: string, name: string, role: "muhasebe" | "santiye_sefi" | "satin_alma" | "satis") =>
     db.user.upsert({ where: { email }, update: {}, create: { email, name, role, passwordHash: password } });
-  const [muhasebe, sef, satinAlma] = await Promise.all([
+  const [muhasebe, sef, satinAlma, satis] = await Promise.all([
     user("muhasebe@demo.local", "Ayşe Muhasebe", "muhasebe"),
     user("sef@demo.local", "Ali Şantiye Şefi", "santiye_sefi"),
     user("satinalma@demo.local", "Can Satın Alma", "satin_alma"),
+    user("satis@demo.local", "Deniz Satış", "satis"),
   ]);
 
   // Tedarikçiler
@@ -74,7 +75,7 @@ async function main() {
   await db.costItem.createMany({ data: planCostTreeCopy(templates, project.id, randomUUID, true) });
   const items = new Map((await db.costItem.findMany({ where: { projectId: project.id } })).map((i) => [i.code, i]));
   const item = (code: string) => items.get(code)!.id;
-  for (const u of [muhasebe, sef, satinAlma]) {
+  for (const u of [muhasebe, sef, satinAlma, satis]) {
     await db.projectPermission.create({ data: { userId: u.id, projectId: project.id, role: u.role } });
   }
 
@@ -395,13 +396,25 @@ async function main() {
   await line({ ...base, costItemId: item("08.08"), description: "İç boya", quantitySource: "PARAMETRIC", coefficientId: coef.get("08.08")!.id, quantity: d(0), unit: "m²", unitPrice: d(95) });
   await line({ ...base, costItemId: item("11.01"), description: "Asansörler", quantity: d(3), unit: "adet", unitPrice: d(1450000) });
   await line({ ...base, costItemId: item("16.01"), description: "Öngörülemeyen giderler", quantity: d(1), unit: "götürü", unitPrice: d(2500000) });
+  await line({ ...base, costItemId: item("14.01"), description: "Dijital reklam", quantity: d(12), unit: "ay", unitPrice: d(50000) });
+  await line({ ...base, costItemId: item("14.03"), description: "Satış ofisi ve örnek daire", quantity: d(1), unit: "götürü", unitPrice: d(400000) });
+
+  // Fiyatlandırma: oranlar ve katsayılar yalnızca örnek; gerçek projede ekip belirler (PLAN 7.6)
+  await db.pricingSetting.create({ data: { projectId: project.id, profitMethod: "MARGIN", profitPercent: d(25), commissionPercent: d(2), roundingStep: d(10000), updatedById: admin.id } });
+  await db.pricingFactor.createMany({
+    data: [
+      { projectId: project.id, kind: "USAGE", key: "SHOP", value: d("1.8") },
+      ...[5, 6, 7, 8].map((floor) => ({ projectId: project.id, kind: "FLOOR" as const, key: String(floor), value: d(1 + (floor - 4) * 0.015) })),
+      { projectId: project.id, kind: "FACADE", key: "G", value: d("1.03") },
+    ],
+  });
 
   // Sekme: yönetici açınca demo projesi sekmede görünsün
   const last = await db.userTab.aggregate({ where: { userId: admin.id }, _max: { position: true } });
   await db.userTab.create({ data: { userId: admin.id, projectId: project.id, position: (last._max.position ?? -1) + 1 } });
 
   console.log(`Örnek veri yüklendi: "${PROJECT_NAME}" (net ödenecek ilk hakediş ${progress.payableAmount.toFixed(2)} TL).`);
-  console.log("Ek kullanıcılar (şifre Demo.2026): muhasebe@demo.local, sef@demo.local, satinalma@demo.local");
+  console.log("Ek kullanıcılar (şifre Demo.2026): muhasebe@demo.local, sef@demo.local, satinalma@demo.local, satis@demo.local");
 }
 
 main()

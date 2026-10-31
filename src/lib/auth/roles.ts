@@ -60,7 +60,12 @@ export type Capability =
   | "library.view"
   | "library.manage"
   | "budget.view"
-  | "budget.edit";
+  | "budget.edit"
+  // Faz 5 – fiyatlandırma
+  | "pricing.view"
+  | "pricing.edit"
+  | "pricing.approve"
+  | "priceList.view";
 
 const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "project.create": [Role.yonetici, Role.teknik_ofis],
@@ -131,6 +136,13 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   /** Bütçe ve metraj (fiyat içerir; şantiye şefi ve satış görmez) */
   "budget.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
   "budget.edit": [Role.yonetici, Role.teknik_ofis],
+  /** Fiyatlandırma hesabı: maliyet, kâr, katsayılar (satış ekibi maliyet detayını görmez) */
+  "pricing.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.dis_muhasebeci],
+  "pricing.edit": [Role.yonetici, Role.teknik_ofis],
+  /** Fiyat listesi onayı ve fiyat kilidi (PLAN.md Bölüm 2: yönetici) */
+  "pricing.approve": [Role.yonetici],
+  /** Onaylı bölüm fiyat listesi */
+  "priceList.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satis, Role.dis_muhasebeci],
 };
 
 export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {
