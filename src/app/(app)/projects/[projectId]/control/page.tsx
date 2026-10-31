@@ -1,3 +1,4 @@
+import { MoreFigures } from "@/components/more-figures";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DownloadIcon } from "lucide-react";
@@ -51,11 +52,9 @@ export default async function ControlPage({ params, searchParams }: PageProps<"/
           baselines={data.baselines.map((b) => ({ id: b.id, name: b.name, createdAt: b.createdAt.toISOString(), total: b.total.toString() }))}
         />
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Figure label={t.hasBaseline ? "Baz bütçe" : "Referans (güncel bütçe)"} value={formatMoney(t.reference)} note={t.hasBaseline ? data.baseline?.name : "Baz bütçe dondurulmamış"} />
-            <Figure label="Güncel bütçe" value={formatMoney(t.budget)} note="Canlı fiyat ve metrajla" />
             <Figure label="Gerçekleşen" value={formatMoney(t.actual)} />
-            <Figure label="Tamamlanma" value={t.progress ? `%${formatNumber(t.progress, 1)}` : "—"} note="Yapılan işin bütçedeki payı" />
             <Figure label="Tahmini toplam maliyet (EAC)" value={formatMoney(t.eac)} />
             <Figure
               label="Sapma (bütçe − tahmini)"
@@ -63,12 +62,16 @@ export default async function ControlPage({ params, searchParams }: PageProps<"/
               tone={variance.isNegative() ? "danger" : undefined}
               note={variance.isNegative() ? "Aşım bekleniyor" : "Bütçe içinde"}
             />
+            <MoreFigures>
+            <Figure label="Güncel bütçe" value={formatMoney(t.budget)} note="Canlı fiyat ve metrajla" />
+            <Figure label="Tamamlanma" value={t.progress ? `%${formatNumber(t.progress, 1)}` : "—"} note="Yapılan işin bütçedeki payı" />
             <Figure
               label="Müteahhit m² maliyeti"
               value={data.m2.eacContractor ? formatMoney(data.m2.eacContractor) : "—"}
               note={data.m2.referenceContractor ? `Tahmini maliyetle; bütçede ${formatMoney(data.m2.referenceContractor)}` : "Bağımsız bölüm girilmemiş"}
               tone={data.m2.eacContractor && data.m2.referenceContractor && data.m2.eacContractor.gt(data.m2.referenceContractor) ? "warn" : undefined}
             />
+            </MoreFigures>
           </CardContent>
         </Card>
 

@@ -1,3 +1,4 @@
+import { MoreFigures } from "@/components/more-figures";
 import type { Metadata } from "next";
 import { AlertTriangleIcon, DownloadIcon, PrinterIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -142,37 +143,47 @@ export default async function PricingPage({ params }: PageProps<"/projects/[proj
         )}
 
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <Figure label={`Maliyet (${COST_BASIS_LABELS[settings.costBasis]})`} value={formatMoney(costs.cost)} note="Reklam ve komisyon hariç, tüm bina" />
-            <Figure label="Sabit reklam bütçesi" value={formatMoney(costs.advertising)} note={settings.advertisingBudget ? "Elle girildi" : "Bütçenin 14 grubundan"} />
-            <Figure label="Müteahhide kalan brüt m²" value={formatNumber(costs.metrics.contractorGross, 2)} note={`Toplam satılabilir ${formatNumber(costs.metrics.sellableGross, 2)} m²`} />
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {base.ok ? (
               <>
-                <Figure label="m² maliyeti + reklam payı" value={formatMoney(base.fullCostPerM2)} note={`${formatMoney(base.costPerM2)} + ${formatMoney(base.advertisingPerM2)}`} />
-                <Figure label="Başabaş m² fiyatı" value={formatMoney(base.breakEvenM2)} note="Kâr = 0, komisyon dahil" />
                 <Figure
                   label="Baz m² satış fiyatı"
                   value={formatMoney(base.baseM2)}
                   note={`${PROFIT_METHOD_LABELS[settings.profitMethod]} %${formatNumber(settings.profitPercent, 2)} · komisyon %${formatNumber(settings.commissionPercent, 2)}`}
                 />
-                <Figure label="Hedef gelir" value={formatMoney(base.targetRevenue)} note="Müteahhit bölümleri, KDV hariç" />
-                <Figure label="Karşılık" value={`%${formatNumber(base.marginPercent, 2)} marj`} note={`= maliyet üzerine %${formatNumber(base.markupPercent, 2)}`} />
+                <Figure label="m² maliyeti + reklam payı" value={formatMoney(base.fullCostPerM2)} note={`${formatMoney(base.costPerM2)} + ${formatMoney(base.advertisingPerM2)}`} />
               </>
             ) : (
               <Figure label="Baz m² satış fiyatı" value="—" note={base.error} tone="danger" />
             )}
             {priced && profit && (
               <>
-                <Figure label="Liste toplamı" value={formatMoney(priced.total)} note={priced.roundingDifference.isZero() ? "Hedefe eşit" : `Yuvarlama farkı ${formatMoney(priced.roundingDifference)}`} />
-                <Figure label="Komisyon" value={formatMoney(profit.commission)} />
                 <Figure label="Beklenen kâr" value={formatMoney(profit.profit)} tone={profit.profit.isNegative() ? "danger" : undefined} note={profit.marginPercent ? `%${formatNumber(profit.marginPercent, 2)} marj` : undefined} />
+                <Figure label="Liste toplamı" value={formatMoney(priced.total)} note={priced.roundingDifference.isZero() ? "Hedefe eşit" : `Yuvarlama farkı ${formatMoney(priced.roundingDifference)}`} />
+              </>
+            )}
+            <MoreFigures>
+            <Figure label={`Maliyet (${COST_BASIS_LABELS[settings.costBasis]})`} value={formatMoney(costs.cost)} note="Reklam ve komisyon hariç, tüm bina" />
+            <Figure label="Sabit reklam bütçesi" value={formatMoney(costs.advertising)} note={settings.advertisingBudget ? "Elle girildi" : "Bütçenin 14 grubundan"} />
+            <Figure label="Müteahhide kalan brüt m²" value={formatNumber(costs.metrics.contractorGross, 2)} note={`Toplam satılabilir ${formatNumber(costs.metrics.sellableGross, 2)} m²`} />
+              {base.ok && (
+                <>
+                <Figure label="Başabaş m² fiyatı" value={formatMoney(base.breakEvenM2)} note="Kâr = 0, komisyon dahil" />
+                <Figure label="Hedef gelir" value={formatMoney(base.targetRevenue)} note="Müteahhit bölümleri, KDV hariç" />
+                <Figure label="Karşılık" value={`%${formatNumber(base.marginPercent, 2)} marj`} note={`= maliyet üzerine %${formatNumber(base.markupPercent, 2)}`} />
+                </>
+              )}
+              {priced && profit && (
+                <>
+                <Figure label="Komisyon" value={formatMoney(profit.commission)} />
                 <Figure
                   label="Kilitli bölümler"
                   value={formatMoney(priced.lockedTotal)}
                   note={data.requiredChange ? `Kalanlarda onaylı listeye göre ${Number(data.requiredChange) > 0 ? "+" : ""}%${formatNumber(data.requiredChange, 2)}` : priced.normalization ? `Hedefe eşitleme × ${formatNumber(priced.normalization, 4)}` : undefined}
                 />
-              </>
-            )}
+                </>
+              )}
+            </MoreFigures>
           </CardContent>
         </Card>
 

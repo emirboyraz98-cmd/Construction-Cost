@@ -1,3 +1,4 @@
+import { MoreFigures } from "@/components/more-figures";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LayoutGridIcon, ListIcon, UsersIcon } from "lucide-react";
@@ -67,20 +68,22 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pr
       />
       <div className="grid grid-cols-1 gap-4">
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4 2xl:grid-cols-8">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Figure label="Boş" value={String(s.available)} />
-            <Figure label="Rezerve" value={String(s.reserved)} />
             <Figure label="Satıldı" value={String(s.sold)} />
-            <Figure label="Arsa sahibi" value={String(s.landowner)} note="Satışa kapalı" />
-            <Figure label="Satış (KDV hariç)" value={formatMoney(s.soldNetTry)} note={`KDV dahil ${formatMoney(s.soldTotalTry)}`} />
             <Figure label="Tahsil edilen" value={formatMoney(s.collectedTry)} />
             <Figure label="Kalan alacak" value={formatMoney(s.remainingTry)} tone={s.overdueTry.gt(0) ? "warn" : undefined} note={s.overdueTry.gt(0) ? `${formatMoney(s.overdueTry)} gecikmiş` : "Gecikme yok"} />
+            <MoreFigures>
+            <Figure label="Rezerve" value={String(s.reserved)} />
+            <Figure label="Arsa sahibi" value={String(s.landowner)} note="Satışa kapalı" />
+            <Figure label="Satış (KDV hariç)" value={formatMoney(s.soldNetTry)} note={`KDV dahil ${formatMoney(s.soldTotalTry)}`} />
             <Figure
               label="Hedef gelire göre"
               value={gap ? formatMoney(gap) : "—"}
               tone={gap?.isNegative() ? "danger" : undefined}
               note={s.targetRevenue ? `Satılan + boşların liste fiyatı ${formatMoney(s.expectedRevenue)} ↔ hedef ${formatMoney(s.targetRevenue)}` : "Onaylı fiyat listesi yok"}
             />
+            </MoreFigures>
           </CardContent>
         </Card>
 

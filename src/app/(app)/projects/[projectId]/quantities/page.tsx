@@ -1,3 +1,4 @@
+import { MoreFigures } from "@/components/more-figures";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
@@ -33,13 +34,15 @@ export default async function QuantitiesPage({ params }: PageProps<"/projects/[p
       />
       <div className="grid grid-cols-1 gap-4">
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <Figure label="İnşaat alanı" value={`${formatNumber(m.constructionArea)} m²`} note="Blokların toplamı" />
             <Figure label="Satılabilir brüt" value={`${formatNumber(m.sellableGross)} m²`} note={`${m.unitCount} bağımsız bölüm`} />
-            <Figure label="Satılabilir net" value={`${formatNumber(m.sellableNet)} m²`} />
             <Figure label="Müteahhide kalan brüt" value={`${formatNumber(m.contractorGross)} m²`} />
+            <MoreFigures>
+            <Figure label="Satılabilir net" value={`${formatNumber(m.sellableNet)} m²`} />
             <Figure label="Arsa sahiplerine" value={`${formatNumber(m.landownerGross)} m²`} />
             <Figure label="Arsa alanı" value={`${formatNumber(m.landArea)} m²`} />
+            </MoreFigures>
           </CardContent>
         </Card>
         <Card className="gap-3 pb-0">

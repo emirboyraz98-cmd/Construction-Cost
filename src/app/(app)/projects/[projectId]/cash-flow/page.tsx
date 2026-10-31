@@ -1,3 +1,4 @@
+import { MoreFigures } from "@/components/more-figures";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangleIcon, CalendarRangeIcon, DownloadIcon } from "lucide-react";
@@ -59,18 +60,20 @@ export default async function CashFlowPage({ params }: PageProps<"/projects/[pro
           </ul>
         )}
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <Figure label="Toplam giriş" value={formatMoney(flow.totalIn)} note={`${monthLabel(flow.firstMonth)} – ${monthLabel(flow.lastMonth)}`} />
-            <Figure label="Toplam çıkış" value={formatMoney(flow.totalOut)} />
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <Figure
               label="En yüksek nakit ihtiyacı"
               value={formatMoney(outcome.peakNeed)}
               tone={outcome.peakNeed.gt(0) ? "warn" : undefined}
               note={outcome.peakNeed.gt(0) ? `${monthLabel(outcome.peakMonth)} (başlangıç nakdi dahil)` : "Bakiye hiç eksiye düşmüyor"}
             />
-            <Figure label="Finansman maliyeti" value={formatMoney(flow.financingCost)} note={settings.monthlyInterestPercent.gt(0) ? `Aylık %${formatNumber(settings.monthlyInterestPercent, 3)}` : "Oran girilmedi"} />
             <Figure label="Dönem sonu bakiye" value={formatMoney(flow.endBalance)} tone={flow.endBalance.isNegative() ? "danger" : undefined} />
             <Figure label="Beklenen kâr (KDV hariç)" value={formatMoney(outcome.profit)} tone={outcome.profit.isNegative() ? "danger" : undefined} note={outcome.marginPercent ? `%${formatNumber(outcome.marginPercent, 2)} marj · finansman dahil` : undefined} />
+            <MoreFigures>
+            <Figure label="Toplam giriş" value={formatMoney(flow.totalIn)} note={`${monthLabel(flow.firstMonth)} – ${monthLabel(flow.lastMonth)}`} />
+            <Figure label="Toplam çıkış" value={formatMoney(flow.totalOut)} />
+            <Figure label="Finansman maliyeti" value={formatMoney(flow.financingCost)} note={settings.monthlyInterestPercent.gt(0) ? `Aylık %${formatNumber(settings.monthlyInterestPercent, 3)}` : "Oran girilmedi"} />
+            </MoreFigures>
           </CardContent>
         </Card>
         <Card className="py-4">

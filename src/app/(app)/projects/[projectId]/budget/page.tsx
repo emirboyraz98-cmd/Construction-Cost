@@ -1,3 +1,4 @@
+import { MoreFigures } from "@/components/more-figures";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
@@ -45,20 +46,22 @@ export default async function BudgetPage({ params }: PageProps<"/projects/[proje
       />
       <div className="grid grid-cols-1 gap-4">
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Figure label="Toplam maliyet (KDV hariç)" value={formatMoney(summary.total)} />
-            <Figure label="Yapım maliyeti (04–12)" value={formatMoney(summary.construction)} />
-            <Figure label="İnşaat m² maliyeti" value={m2.construction ? formatMoney(m2.construction) : "—"} note={`Yapım / ${formatNumber(metrics.constructionArea)} m² inşaat`} />
-            <Figure label="Toplam / inşaat m²" value={m2.totalPerConstruction ? formatMoney(m2.totalPerConstruction) : "—"} />
             <Figure
               label="Müteahhit satılabilir m² maliyeti"
               value={m2.contractorSellable ? formatMoney(m2.contractorSellable) : "—"}
               note={metrics.contractorGross.gt(0) ? `Toplam / ${formatNumber(metrics.contractorGross)} m² müteahhit brüt` : "Bağımsız bölüm girilmemiş"}
               tone={metrics.contractorGross.isZero() ? "warn" : undefined}
             />
+            <Figure label="İnşaat m² maliyeti" value={m2.construction ? formatMoney(m2.construction) : "—"} note={`Yapım / ${formatNumber(metrics.constructionArea)} m² inşaat`} />
             <Link href={`/projects/${projectId}/control`} className="min-w-0 hover:underline">
               <Figure label="Gerçekleşen (onaylı, KDV hariç)" value={formatMoney(budget.actualTotal)} note="Karşılaştırma: Bütçe kontrolü sekmesi" />
             </Link>
+            <MoreFigures>
+            <Figure label="Yapım maliyeti (04–12)" value={formatMoney(summary.construction)} />
+            <Figure label="Toplam / inşaat m²" value={m2.totalPerConstruction ? formatMoney(m2.totalPerConstruction) : "—"} />
+            </MoreFigures>
           </CardContent>
         </Card>
 

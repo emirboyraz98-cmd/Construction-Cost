@@ -1,3 +1,4 @@
+import { MoreFigures } from "@/components/more-figures";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DownloadIcon } from "lucide-react";
@@ -99,13 +100,15 @@ export default async function CollectionsPage({ params }: PageProps<"/projects/[
       />
       <div className="grid grid-cols-1 gap-4">
         <Card className="py-4">
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <Figure label="Aktif sözleşme" value={String(s.contracts)} />
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Figure label="Tahsil edilen" value={formatMoney(s.collectedTry)} />
             <Figure label="Kalan alacak" value={formatMoney(s.remainingTry)} />
             <Figure label="Geciken" value={formatMoney(s.overdueTry)} tone={s.overdueTry.gt(0) ? "danger" : undefined} note={`${data.overdue.length} taksit`} />
             <Figure label="30 gün içinde" value={formatMoney(s.upcomingTry)} note={`${data.upcoming.length} taksit`} />
+            <MoreFigures>
+            <Figure label="Aktif sözleşme" value={String(s.contracts)} />
             <Figure label="Portföydeki çek / senet" value={formatMoney(s.chequesTry)} note={`${data.cheques.length} adet`} />
+            </MoreFigures>
           </CardContent>
         </Card>
 
