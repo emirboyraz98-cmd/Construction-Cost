@@ -1,5 +1,4 @@
-// Sol menüdeki modüller (PLAN.md Bölüm 11 ve 14). Henüz yapılmayanlar "Yakında"
-// olarak gösterilir ve hangi fazda geleceği yazılır.
+// Sol menüdeki modüller ve bölümler. Henüz yapılmayanlar "Yakında" olarak gösterilir.
 import type { Capability } from "./auth/roles";
 
 export type ModuleDef = {
@@ -176,39 +175,132 @@ export const COMPANY_MODULES: readonly (ModuleDef & { href: string })[] = [
   { key: "settings", href: "/settings", label: "Ayarlar", description: "Kullanıcılar ve ayarlar." },
 ];
 
-/** Menüde başlıklar altında gruplama (sırayla); listede olmayan modül son gruba düşer. */
-export const PROJECT_GROUPS: readonly { label: string; keys: readonly string[] }[] = [
-  { label: "Günlük işler", keys: ["", "expenses", "collections"] },
-  { label: "Satın alma", keys: ["contracts"] },
-  { label: "Bina ve maliyet", keys: ["blocks", "units", "land", "quantities", "budget", "control", "cost-tree"] },
-  { label: "Satış", keys: ["pricing", "sales"] },
-  { label: "Finans ve rapor", keys: ["cash-flow", "scenarios", "reports"] },
+/**
+ * Sadeleştirilmiş menü: proje 6, şirket 5 bölüm. Her bölümün alt ekranları sayfanın üstünde
+ * sekme olarak çıkar. `advanced` sekmeler basit görünümde gizlenir (adresle yine açılır).
+ */
+export type SectionTab = { key: string; label: string; advanced?: boolean };
+export type NavSection = { id: string; label: string; description: string; tabs: readonly SectionTab[] };
+
+export const PROJECT_SECTIONS: readonly NavSection[] = [
+  { id: "panel", label: "Proje paneli", description: "Projenin özeti ve sıradaki işler.", tabs: [{ key: "", label: "Proje paneli" }] },
+  {
+    id: "expenses",
+    label: "Harcamalar",
+    description: "Harcama girişi, onay, taşeron ve hakediş.",
+    tabs: [
+      { key: "expenses", label: "Harcamalar" },
+      { key: "contracts", label: "Taşeron & hakediş" },
+    ],
+  },
+  {
+    id: "building",
+    label: "Bina ve arsa",
+    description: "Bloklar, bağımsız bölümler, arsa sahipleri.",
+    tabs: [
+      { key: "blocks", label: "Bloklar" },
+      { key: "units", label: "Bağımsız bölümler" },
+      { key: "land", label: "Arsa & sözleşme" },
+    ],
+  },
+  {
+    id: "budget",
+    label: "Bütçe",
+    description: "Metraj, bütçe, bütçe kontrolü.",
+    tabs: [
+      { key: "budget", label: "Bütçe" },
+      { key: "quantities", label: "Metraj" },
+      { key: "control", label: "Bütçe kontrolü" },
+      { key: "cost-tree", label: "Maliyet ağacı", advanced: true },
+    ],
+  },
+  {
+    id: "sales",
+    label: "Satış",
+    description: "Fiyat listesi, satışlar, tahsilatlar.",
+    tabs: [
+      { key: "sales", label: "Satışlar" },
+      { key: "collections", label: "Tahsilatlar" },
+      { key: "pricing", label: "Fiyatlandırma" },
+    ],
+  },
+  {
+    id: "money",
+    label: "Nakit ve rapor",
+    description: "Nakit akışı, raporlar, senaryolar.",
+    tabs: [
+      { key: "cash-flow", label: "Nakit akışı" },
+      { key: "reports", label: "Raporlar" },
+      { key: "scenarios", label: "Senaryolar", advanced: true },
+    ],
+  },
 ];
 
-export const COMPANY_GROUPS: readonly { label: string; keys: readonly string[] }[] = [
-  { label: "Genel", keys: ["portfolio", "projects"] },
-  { label: "Satın alma", keys: ["connections", "transfers", "suppliers", "library"] },
-  { label: "Muhasebe", keys: ["payables", "shared-invoice", "accountant"] },
-  { label: "Finans", keys: ["cash", "reports"] },
-  { label: "Sistem", keys: ["settings"] },
+export const COMPANY_SECTIONS: readonly NavSection[] = [
+  {
+    id: "portfolio",
+    label: "Portföy",
+    description: "Tüm projelerin özeti.",
+    tabs: [
+      { key: "portfolio", label: "Portföy" },
+      { key: "projects", label: "Projeler" },
+    ],
+  },
+  {
+    id: "purchasing",
+    label: "Satın alma",
+    description: "Bağlantılar, tedarikçiler, fiyat kütüphanesi.",
+    tabs: [
+      { key: "connections", label: "Bağlantılar" },
+      { key: "suppliers", label: "Tedarikçiler" },
+      { key: "library", label: "Kütüphane", advanced: true },
+      { key: "transfers", label: "Malzeme transferi", advanced: true },
+    ],
+  },
+  {
+    id: "payments",
+    label: "Ödemeler",
+    description: "Vade listesi, muhasebeci paketi.",
+    tabs: [
+      { key: "payables", label: "Vade listesi" },
+      { key: "accountant", label: "Muhasebeci paketi" },
+      { key: "shared-invoice", label: "Ortak fatura", advanced: true },
+    ],
+  },
+  {
+    id: "reports",
+    label: "Şirket raporları",
+    description: "Projeler arası karşılaştırma ve toplam nakit.",
+    tabs: [
+      { key: "reports", label: "Projeler arası" },
+      { key: "cash", label: "Konsolide nakit" },
+    ],
+  },
+  { id: "settings", label: "Ayarlar", description: "Kullanıcılar ve ayarlar.", tabs: [{ key: "settings", label: "Ayarlar" }] },
 ];
 
-/** Modülleri gruplara ayırır (boş gruplar atlanır). */
-export function groupModules<T extends { key: string }>(modules: readonly T[], groups: readonly { label: string; keys: readonly string[] }[]) {
-  const used = new Set<string>();
-  const result = groups
-    .map((g) => {
-      const items = g.keys.map((k) => modules.find((m) => m.key === k)).filter((m): m is T => Boolean(m));
-      items.forEach((m) => used.add(m.key));
-      return { label: g.label, items };
-    })
-    .filter((g) => g.items.length > 0);
-  const rest = modules.filter((m) => !used.has(m.key));
-  if (rest.length) {
-    if (result.length) result[result.length - 1].items.push(...rest);
-    else result.push({ label: "", items: rest });
-  }
-  return result;
+/** Bölümün kullanıcıya görünen sekmeleri (yetki ve görünüm kipine göre; açık olan sekme her zaman kalır). */
+export function visibleTabs<T extends SectionTab>(
+  section: { tabs: readonly T[] },
+  canSee: (key: string) => boolean,
+  advanced: boolean,
+  activeKey?: string | null,
+): T[] {
+  return section.tabs.filter((t) => canSee(t.key) && (advanced || !t.advanced || t.key === activeKey));
+}
+
+/** Proje adresindeki ilk bölüm ("" = panel). */
+export function projectSegment(pathname: string): { projectId: string; key: string } | null {
+  const m = pathname.match(/^\/projects\/([^/]+)(?:\/([^/]+))?/);
+  if (!m || m[1] === "new") return null;
+  return { projectId: m[1], key: m[2] ?? "" };
+}
+
+/** Şirket geneli adresine karşılık gelen modül anahtarı. */
+export function companyKey(pathname: string): string | null {
+  if (pathname === "/projects") return "projects";
+  const mod = COMPANY_MODULES.filter((m) => m.href !== "/projects").find((m) => pathname === m.href || pathname.startsWith(m.href + "/"));
+  return mod?.key ?? null;
 }
 
 export function projectModuleHref(projectId: string, key: string): string {

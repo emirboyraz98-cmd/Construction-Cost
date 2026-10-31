@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { InfoTip } from "@/components/info-tip";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -21,10 +22,13 @@ export function FormField({
 }) {
   return (
     <div className={cn("grid content-start gap-1.5", className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required && <span className="text-destructive">*</span>}
-      </Label>
+      <div className="flex items-center gap-1">
+        <Label htmlFor={id}>
+          {label}
+          {required && <span className="text-destructive">*</span>}
+        </Label>
+        {typeof label === "string" && <InfoTip term={label} />}
+      </div>
       {children}
       {error ? (
         <p className="text-xs text-destructive" id={`${id}-error`}>

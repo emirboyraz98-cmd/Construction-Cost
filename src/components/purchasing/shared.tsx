@@ -1,3 +1,4 @@
+import { InfoTip } from "@/components/info-tip";
 import { AlertTriangleIcon, FileTextIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ConnectionStatus, ContractStatus, ProgressBillingStatus } from "@/generated/prisma/enums";
@@ -94,7 +95,10 @@ export function NoAccess({ text }: { text: string }) {
 export function Figure({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: "warn" | "danger" }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">
+        {label}
+        <InfoTip term={label} className="ml-1" />
+      </p>
       <p className={cn("font-medium tabular-nums [overflow-wrap:anywhere]", tone === "warn" && "text-amber-700", tone === "danger" && "text-destructive")}>{value}</p>
       {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
     </div>

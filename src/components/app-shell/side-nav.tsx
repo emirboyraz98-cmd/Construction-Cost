@@ -3,79 +3,54 @@
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import {
-  ActivityIcon,
-  ArrowRightLeftIcon,
   BanknoteIcon,
-  BarChart3Icon,
-  BlocksIcon,
-  BookOpenIcon,
-  DoorOpenIcon,
-  HardHatIcon,
+  Building2Icon,
   CalendarClockIcon,
-  FileArchiveIcon,
-  CalculatorIcon,
   FileSignatureIcon,
-  FolderKanbanIcon,
   GaugeIcon,
-  HandCoinsIcon,
   HandshakeIcon,
-  LandPlotIcon,
   LayoutGridIcon,
-  ListTreeIcon,
   type LucideIcon,
   ReceiptTextIcon,
-  RulerIcon,
   SettingsIcon,
-  ShuffleIcon,
-  SplitIcon,
   TrendingUpIcon,
-  TruckIcon,
   WalletIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import type { Role } from "@/generated/prisma/enums";
 import { hasCapability } from "@/lib/auth/roles";
 import { PROJECT_STATUS_LABELS } from "@/lib/labels";
-import { COMPANY_GROUPS, COMPANY_MODULES, groupModules, PROJECT_GROUPS, PROJECT_MODULES, projectModuleHref } from "@/lib/modules";
+import { COMPANY_MODULES, COMPANY_SECTIONS, companyKey, PROJECT_MODULES, PROJECT_SECTIONS, projectModuleHref, projectSegment, visibleTabs } from "@/lib/modules";
 import { cn } from "@/lib/utils";
 import type { ShellProject } from "./types";
 
 const PROJECT_ICONS: Record<string, LucideIcon> = {
-  "": GaugeIcon,
+  panel: GaugeIcon,
   expenses: ReceiptTextIcon,
-  contracts: HardHatIcon,
+  building: Building2Icon,
   budget: WalletIcon,
-  control: ActivityIcon,
-  "cost-tree": ListTreeIcon,
-  units: DoorOpenIcon,
-  blocks: BlocksIcon,
-  land: LandPlotIcon,
-  quantities: RulerIcon,
-  pricing: CalculatorIcon,
   sales: FileSignatureIcon,
-  collections: HandCoinsIcon,
-  "cash-flow": BanknoteIcon,
-  scenarios: ShuffleIcon,
-  reports: BarChart3Icon,
+  money: BanknoteIcon,
 };
 
 const COMPANY_ICONS: Record<string, LucideIcon> = {
   portfolio: LayoutGridIcon,
-  projects: FolderKanbanIcon,
-  connections: HandshakeIcon,
-  transfers: ArrowRightLeftIcon,
-  suppliers: TruckIcon,
-  payables: CalendarClockIcon,
-  "shared-invoice": SplitIcon,
-  accountant: FileArchiveIcon,
-  library: BookOpenIcon,
-  cash: BanknoteIcon,
+  purchasing: HandshakeIcon,
+  payments: CalendarClockIcon,
   reports: TrendingUpIcon,
   settings: SettingsIcon,
 };
 
-function GroupLabel({ children }: { children: string }) {
-  return children ? <p className="px-2.5 pt-2 pb-0.5 text-[11px] font-medium text-muted-foreground/80">{children}</p> : null;
+/** Modül anahtarının kullanıcıya açık olup olmadığı. */
+export function canSeeProjectModule(role: Role | null | undefined, key: string) {
+  const m = PROJECT_MODULES.find((x) => x.key === key);
+  return Boolean(m && !m.phase && (!m.capability || hasCapability(role ?? null, m.capability)));
+}
+export function canSeeCompanyModule(role: Role, key: string) {
+  const m = COMPANY_MODULES.find((x) => x.key === key);
+  return Boolean(m && !m.phase && (!m.capability || hasCapability(role, m.capability)));
+}
+export function companyHref(key: string) {
+  return COMPANY_MODULES.find((m) => m.key === key)?.href ?? "/";
 }
 
 function NavLink({
@@ -83,58 +58,56 @@ function NavLink({
   icon: Icon,
   label,
   active,
-  phase,
+  title,
   onNavigate,
 }: {
   href: string;
   icon: LucideIcon;
   label: string;
   active: boolean;
-  phase?: number;
+  title?: string;
   onNavigate?: () => void;
 }) {
   return (
     <Link
       href={href}
       onClick={onNavigate}
+      title={title}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex min-h-10 items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors md:min-h-0 md:py-1.5",
         active
           ? "bg-primary/10 font-medium text-primary"
           : "text-foreground/80 hover:bg-accent hover:text-foreground",
-        phase && !active && "text-muted-foreground",
       )}
     >
       <Icon className="size-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {phase && (
-        <Badge variant="soon" className="px-1.5 text-[10px]" title={`Faz ${phase}'de gelecek`}>
-          Yakında
-        </Badge>
-      )}
+
     </Link>
   );
 }
 
-/**
- * Sol menü: seçili projenin modülleri, altında şirket geneli ekranlar (PLAN.md Bölüm 5.1).
- */
+/** Sol menü: seçili projenin 6 bölümü, altında şirket geneli 5 bölüm. Alt ekranlar sayfa üstünde sekmedir. */
 export function SideNav({
   projects,
   projectRoles,
   userRole,
+  advanced,
   onNavigate,
 }: {
   projects: ShellProject[];
   projectRoles: Record<string, Role>;
   userRole: Role;
+  advanced: boolean;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const { projectId } = useParams<{ projectId?: string }>();
   const project = projectId ? projects.find((p) => p.id === projectId) : undefined;
   const role = project ? projectRoles[project.id] : null;
+  const activeProjectKey = projectSegment(pathname)?.key ?? null;
+  const activeCompanyKey = companyKey(pathname);
 
   return (
     <div className="flex flex-col gap-5 p-3">
@@ -151,29 +124,22 @@ export function SideNav({
               <p className="text-xs text-muted-foreground">{PROJECT_STATUS_LABELS[project.status]}</p>
             </div>
             <nav className="grid grid-cols-1 gap-0.5" aria-label="Proje modülleri">
-              {groupModules(
-                PROJECT_MODULES.filter((module) => !module.capability || hasCapability(role, module.capability)),
-                PROJECT_GROUPS,
-              ).map((group) => (
-                <div key={group.label} className="grid grid-cols-1 gap-0.5">
-                  <GroupLabel>{group.label}</GroupLabel>
-                  {group.items.map((module) => {
-                    const href = projectModuleHref(project.id, module.key);
-                    const active = module.key ? pathname.startsWith(href) : pathname === href;
-                    return (
-                      <NavLink
-                        key={module.key || "panel"}
-                        href={href}
-                        icon={PROJECT_ICONS[module.key] ?? GaugeIcon}
-                        label={module.label}
-                        phase={module.phase}
-                        active={active}
-                        onNavigate={onNavigate}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
+              {PROJECT_SECTIONS.map((section) => {
+                const tabs = visibleTabs(section, (k) => canSeeProjectModule(role, k), advanced, activeProjectKey);
+                if (tabs.length === 0) return null;
+                const active = activeProjectKey !== null && section.tabs.some((t) => t.key === activeProjectKey);
+                return (
+                  <NavLink
+                    key={section.id}
+                    href={projectModuleHref(project.id, tabs[0].key)}
+                    icon={PROJECT_ICONS[section.id] ?? GaugeIcon}
+                    label={section.label}
+                    title={section.description}
+                    active={active}
+                    onNavigate={onNavigate}
+                  />
+                );
+              })}
             </nav>
           </>
         ) : (
@@ -192,25 +158,22 @@ export function SideNav({
           Şirket geneli
         </h2>
         <nav className="grid grid-cols-1 gap-0.5" aria-label="Şirket geneli">
-          {groupModules(
-            COMPANY_MODULES.filter((module) => !module.capability || hasCapability(userRole, module.capability)),
-            COMPANY_GROUPS,
-          ).map((group) => (
-            <div key={group.label} className="grid grid-cols-1 gap-0.5">
-              <GroupLabel>{group.label}</GroupLabel>
-              {group.items.map((module) => (
-                <NavLink
-                  key={module.key}
-                  href={module.href}
-                  icon={COMPANY_ICONS[module.key] ?? SettingsIcon}
-                  label={module.label}
-                  phase={module.phase}
-                  active={module.href === "/projects" ? pathname === "/projects" : pathname.startsWith(module.href)}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </div>
-          ))}
+          {COMPANY_SECTIONS.map((section) => {
+            const tabs = visibleTabs(section, (k) => canSeeCompanyModule(userRole, k), advanced, activeCompanyKey);
+            if (tabs.length === 0) return null;
+            const active = activeCompanyKey !== null && section.tabs.some((t) => t.key === activeCompanyKey);
+            return (
+              <NavLink
+                key={section.id}
+                href={companyHref(tabs[0].key)}
+                icon={COMPANY_ICONS[section.id] ?? SettingsIcon}
+                label={section.label}
+                title={section.description}
+                active={active}
+                onNavigate={onNavigate}
+              />
+            );
+          })}
         </nav>
       </section>
     </div>

@@ -1,5 +1,7 @@
 import * as React from "react";
 
+import { InfoTip } from "@/components/info-tip";
+import { glossaryEntry, textOf } from "@/lib/glossary";
 import { cn } from "@/lib/utils";
 
 function Card({ className, ...props }: React.ComponentProps<"div">) {
@@ -28,9 +30,15 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+/** Kart başlığı; başlık yazısı sözlükte varsa yanına ⓘ eklenir (info={false} ile kapatılır). */
+function CardTitle({ className, children, info, ...props }: React.ComponentProps<"div"> & { info?: string | false }) {
+  const label = info === false ? "" : (info ?? textOf(children).trim());
+  const entry = glossaryEntry(label);
   return (
-    <div data-slot="card-title" className={cn("leading-none font-semibold", className)} {...props} />
+    <div data-slot="card-title" className={cn("leading-none font-semibold", className)} {...props}>
+      {children}
+      {entry && <InfoTip entry={entry} title={label} className="ml-1.5" />}
+    </div>
   );
 }
 

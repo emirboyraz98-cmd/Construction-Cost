@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { CircleHelpIcon, KeyRoundIcon, LogOutIcon, UsersIcon } from "lucide-react";
-import { logoutAction } from "@/app/(app)/actions";
+import { CheckIcon, CircleHelpIcon, KeyRoundIcon, LogOutIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
+import { logoutAction, setViewModeAction } from "@/app/(app)/actions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,8 +25,9 @@ function initials(name: string) {
     .join("");
 }
 
-export function UserMenu({ user, canManageUsers }: { user: ShellUser; canManageUsers: boolean }) {
+export function UserMenu({ user, canManageUsers, advanced }: { user: ShellUser; canManageUsers: boolean; advanced: boolean }) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   return (
     <DropdownMenu>
@@ -44,6 +46,28 @@ export function UserMenu({ user, canManageUsers }: { user: ShellUser; canManageU
           <p className="truncate text-xs font-normal text-muted-foreground">{user.email}</p>
           <p className="text-xs font-normal text-muted-foreground">{ROLE_LABELS[user.role]}</p>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={pending}
+          role="menuitemcheckbox"
+          aria-checked={advanced}
+          onSelect={(e) => {
+            e.preventDefault();
+            startTransition(async () => {
+              await setViewModeAction(!advanced);
+              router.refresh();
+            });
+          }}
+        >
+          <SlidersHorizontalIcon />
+          <span className="grid flex-1 gap-0.5">
+            <span>Gelişmiş görünüm</span>
+            <span className="text-xs text-muted-foreground">{advanced ? "Açık: tüm ekran ve alanlar" : "Kapalı: sade ekranlar"}</span>
+          </span>
+          <span className={advanced ? "flex size-4 items-center justify-center rounded-sm bg-primary text-primary-foreground" : "size-4 rounded-sm border"}>
+            {advanced && <CheckIcon className="size-3 text-primary-foreground" />}
+          </span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/help">

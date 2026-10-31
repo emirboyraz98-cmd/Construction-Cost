@@ -13,8 +13,10 @@ import { SideNav } from "./side-nav";
 import { TabBar } from "./tab-bar";
 import type { ShellProject, ShellTab, ShellUser } from "./types";
 import { UserMenu } from "./user-menu";
+import { SectionTabs } from "./section-tabs";
+import { ViewModeProvider } from "@/components/view-mode";
 
-/** Yerleşim: üstte proje sekmeleri (mobilde proje seçici), solda menü (PLAN.md Bölüm 5.1). */
+/** Yerleşim: üstte proje sekmeleri (mobilde proje seçici), solda menü, içerikte bölüm sekmeleri. */
 export function AppShell({
   user,
   projects,
@@ -22,6 +24,7 @@ export function AppShell({
   projectRoles,
   canCreateProject,
   canManageUsers,
+  advanced,
   children,
 }: {
   user: ShellUser;
@@ -30,6 +33,7 @@ export function AppShell({
   projectRoles: Record<string, Role>;
   canCreateProject: boolean;
   canManageUsers: boolean;
+  advanced: boolean;
   children: ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,14 +69,14 @@ export function AppShell({
           <div className="flex items-center gap-1 self-center">
             <OfflineIndicator owner={user.email} />
             <NotificationBell />
-            <UserMenu user={user} canManageUsers={canManageUsers} />
+            <UserMenu user={user} canManageUsers={canManageUsers} advanced={advanced} />
           </div>
         </div>
       </header>
 
       <div className="flex flex-1">
         <aside className="sticky top-12 hidden h-[calc(100dvh-3rem)] w-60 shrink-0 overflow-y-auto border-r bg-sidebar md:block">
-          <SideNav projects={projects} projectRoles={projectRoles} userRole={user.role} />
+          <SideNav projects={projects} projectRoles={projectRoles} userRole={user.role} advanced={advanced} />
         </aside>
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetContent side="left" className="bg-sidebar p-0 pt-10">
@@ -82,11 +86,17 @@ export function AppShell({
               projects={projects}
               projectRoles={projectRoles}
               userRole={user.role}
+              advanced={advanced}
               onNavigate={() => setMenuOpen(false)}
             />
           </SheetContent>
         </Sheet>
-        <main className="min-w-0 flex-1 px-4 py-5 md:px-6 md:py-6">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-5 md:px-6 md:py-6">
+          <ViewModeProvider advanced={advanced}>
+            <SectionTabs projectRoles={projectRoles} userRole={user.role} advanced={advanced} />
+            {children}
+          </ViewModeProvider>
+        </main>
       </div>
     </div>
   );
