@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { UsersIcon } from "lucide-react";
+import { LayoutGridIcon, ListIcon, UsersIcon } from "lucide-react";
+import { FloorPlan, groupPlan } from "@/components/floor-plan";
 import { PageHeader } from "@/components/page-header";
 import { Figure, NoAccess } from "@/components/purchasing/shared";
 import { Button } from "@/components/ui/button";
@@ -8,15 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { projectRole } from "@/lib/auth/access";
 import { hasCapability } from "@/lib/auth/roles";
 import { FLOOR_LABEL, USAGE_TYPE_LABELS } from "@/lib/budget/labels";
-import { dateToDateInput, formatDateOnly, formatMoney } from "@/lib/format";
+import { dateToDateInput, formatDateOnly, formatMoney, formatNumber } from "@/lib/format";
+import { SALE_STATUS_LABELS, SALE_STATUS_STYLES } from "@/lib/sales/labels";
 import { getAccess } from "@/server/access";
 import { getSalesOverview, listCustomers } from "@/server/sales";
 import { CancelReservationButton, SalesTable, type SalesRowView } from "./sales-panels";
 
 export const metadata: Metadata = { title: "Satışlar" };
 
-export default async function SalesPage({ params }: PageProps<"/projects/[projectId]/sales">) {
+export default async function SalesPage({ params, searchParams }: PageProps<"/projects/[projectId]/sales">) {
   const { projectId } = await params;
+  const planView = (await searchParams).gorunum === "plan";
   const { scope } = await getAccess();
   if (!hasCapability(projectRole(scope, projectId), "sales.view")) return <NoAccess text="Bu projenin satışlarını görme yetkiniz yok." />;
   const [data, { customers }] = await Promise.all([getSalesOverview(projectId), listCustomers(projectId)]);
@@ -118,7 +121,43 @@ export default async function SalesPage({ params }: PageProps<"/projects/[projec
           </Card>
         )}
 
-        <SalesTable projectId={projectId} rows={rows} customers={customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone }))} canManage={data.canManage} today={dateToDateInput(new Date())} />
+        <div className="flex gap-1.5" role="tablist" aria-label="Görünüm">
+          <Button asChild size="sm" variant={planView ? "outline" : "default"}>
+            <Link href="?" role="tab" aria-selected={!planView}>
+              <ListIcon />
+              Liste
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant={planView ? "default" : "outline"}>
+            <Link href="?gorunum=plan" role="tab" aria-selected={planView}>
+              <LayoutGridIcon />
+              Kat planı
+            </Link>
+          </Button>
+        </div>
+        {planView ? (
+          <FloorPlan
+            legend={(["AVAILABLE", "RESERVED", "SOLD", "LANDOWNER"] as const).map((st) => ({ label: SALE_STATUS_LABELS[st], tone: SALE_STATUS_STYLES[st], count: data.rows.filter((r) => r.status === st).length }))}
+            blocks={groupPlan(
+              data.rows.map((r) => ({ ...r.unit, row: r })),
+              (u) => {
+                const r = u.row;
+                return {
+                  tone: SALE_STATUS_STYLES[r.status],
+                  lines: [
+                    [u.layout, `${formatNumber(u.grossArea, 0)} m²`].filter(Boolean).join(" · "),
+                    r.contract ? r.contract.customer.name : r.reservation ? `Rez.: ${r.reservation.customer.name}` : r.status === "LANDOWNER" ? (u.landowner?.name ?? "Arsa sahibi") : u.listPrice ? formatMoney(u.listPrice) : "Liste yok",
+                    ...(r.contract && r.contract.state.overdue.gt(0) ? ["Geciken taksit"] : []),
+                  ],
+                  href: r.contract ? `/projects/${projectId}/sales/${r.contract.id}` : data.canManage && (r.status === "AVAILABLE" || r.status === "RESERVED") ? `/projects/${projectId}/sales/new?bolum=${u.id}` : undefined,
+                  title: `${u.block.name} No ${u.doorNo} · ${SALE_STATUS_LABELS[r.status]}`,
+                };
+              },
+            )}
+          />
+        ) : (
+          <SalesTable projectId={projectId} rows={rows} customers={customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone }))} canManage={data.canManage} today={dateToDateInput(new Date())} />
+        )}
       </div>
     </>
   );

@@ -702,6 +702,21 @@ export async function importExpenses(
 }
 
 /** Mükerrer kontrolü toplu girişte: aynı tedarikçi + belge no zaten kayıtlıysa satır numaraları. */
+/** e-Fatura önerisi: tedarikçinin (vergi no) bu projede en son kullanılan maliyet kalemi kodu. */
+export async function supplierCostItemHints(projectId: string, taxNumbers: string[]) {
+  await expenseAccess(projectId);
+  const result = new Map<string, string>();
+  if (taxNumbers.length === 0) return result;
+  const rows = await db.expense.findMany({
+    where: { projectId, deletedAt: null, costItemId: { not: null }, supplier: { taxNumber: { in: [...new Set(taxNumbers)] } } },
+    orderBy: { date: "desc" },
+    take: 500,
+    select: { supplier: { select: { taxNumber: true } }, costItem: { select: { code: true } } },
+  });
+  for (const r of rows) if (r.supplier?.taxNumber && r.costItem && !result.has(r.supplier.taxNumber)) result.set(r.supplier.taxNumber, r.costItem.code);
+  return result;
+}
+
 export async function findImportDuplicates(rows: { supplierId: string | null; documentNo: string | null }[]) {
   const pairs = rows.filter((row) => row.supplierId && row.documentNo);
   if (pairs.length === 0) return new Set<number>();

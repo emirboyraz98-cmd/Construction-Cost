@@ -3,7 +3,7 @@
 İnşaat şirketi için maliyet, fiyatlandırma, harcama, bağlantı ve satış takip programı.
 Kapsam ve yol haritası: [PLAN.md](PLAN.md).
 
-**Durum: Faz 7 – Nakit akışı ve senaryolar.**
+**Durum: Faz 8 – İyileştirmeler (PLAN'daki tüm fazlar tamamlandı).**
 
 - **Faz 0 (altyapı):** kullanıcı girişi ve roller, proje bazlı yetki, proje sekmeleri, yeni proje
   sihirbazı, portföy ve proje paneli, bloklar ve maliyet ağacı (İKY).
@@ -28,6 +28,8 @@ Kapsam ve yol haritası: [PLAN.md](PLAN.md).
   bağlantı ödemeleri, kalan maliyet, tahsilat, taksit, satış varsayımı), enflasyon / kur / finansman
   maliyeti, senaryolar ve duyarlılık, kâra en çok etki eden kalemler, şirket geneli konsolide nakit,
   projeler arası karşılaştırma.
+- **Faz 8 (iyileştirmeler):** e-Fatura / e-Arşiv XML (ve ZIP) içe aktarma, çevrimdışı harcama girişi,
+  bildirim merkezi, kat planı görünümü (satış durumu ve sahiplik).
 
 Menüde henüz yapılmayan ekranlar **“Yakında”** olarak görünür.
 
@@ -292,6 +294,30 @@ program yine tarayıcıdan kullanılır.
 - **Şirket geneli:** konsolide nakit (projeler + atanmamış bağlantı ödemeleri + aylık genel merkez
   gideri, şirket başlangıç nakdiyle) ve projeler arası karşılaştırma (m² maliyetleri, bütçe / EAC,
   gelir, kâr, nakit ihtiyacı, ortak malzemelerin birim fiyatları).
+
+### İyileştirmeler (Faz 8)
+
+- **e-Fatura / e-Arşiv:** Harcamalar → Toplu giriş → **e-Fatura (XML)**. GİB portalından veya
+  entegratörden indirilen XML dosyaları ya da ZIP (birden fazla) seçilir. Her fatura kalemi ayrı satır
+  veya fatura başına KDV oranına göre tek satır olarak tabloya gelir: tarih, tedarikçi ve vergi no,
+  fatura no, kalem, miktar / birim, birim fiyat, matrah, KDV, vade. Maliyet kalemi tedarikçinin bu
+  projede son kullandığı kalemden önerilir; siz kontrol edip “Kontrol et → Aktar” dersiniz. Aynı
+  fatura ikinci kez yüklenirse mükerrer olarak işaretlenir; iade, tevkifat ve fatura altı iskonto için
+  uyarı verilir. Kayıtlı olmayan tedarikçi vergi numarasıyla açılır.
+- **Çevrimdışı giriş:** Şantiyede internet yoksa hızlı harcama girişi kaydı (fotoğraflarıyla) telefona
+  yazar; üstte “Çevrimdışı · N” görünür. Bağlantı gelince kayıtlar kendiliğinden gönderilir. Mükerrer
+  şüphesi veya hata olursa **Bekleyen kayıtlar** sayfasında “Yine de gönder” / “Sil” seçilir. Hızlı
+  giriş sayfası bir kez açıldıysa internetsiz de açılır (son açılıştaki kalem / tedarikçi listesiyle).
+  Çıkış yapınca bu sayfa önbelleği silinir. Not: bu özellik yalnızca `baslat.bat` / `npm run start`
+  (üretim) ile çalışır, geliştirme modunda (`npm run dev`) devre dışıdır.
+- **Bildirimler:** Üstteki zil, rolünüze göre bekleyen işleri gösterir: onay bekleyen harcama ve
+  hakedişler, reddedilen kayıtlarınız, vadesi geçen / 7 gün içindeki ödemeler, bağlantı uyarıları,
+  geciken taksitler, bitmek üzere olan rezervasyonlar, vadesi gelen çek / senetler. İş tamamlanınca
+  listeden kendiliğinden düşer. E-posta / SMS / telefon bildirimi yoktur.
+- **Kat planı:** Satışlar ve Bağımsız bölümler ekranlarında **Kat planı** düğmesi: bloklar, üst kattan
+  aşağı bölümler. Satışta renk = boş / rezerve / satıldı / arsa sahibi (müşteri, liste fiyatı, geciken
+  taksit yazar; tıklayınca sözleşme veya satış formu açılır); bölümler ekranında renk = müteahhit / arsa
+  sahibi.
 
 ### Telefona uygulama gibi ekleme
 

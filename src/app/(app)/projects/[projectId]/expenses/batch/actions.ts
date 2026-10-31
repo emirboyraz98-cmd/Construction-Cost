@@ -3,14 +3,16 @@
 import { revalidatePath } from "next/cache";
 import Decimal from "decimal.js";
 import ExcelJS from "exceljs";
+import { unzipSync } from "fflate";
 import { z } from "zod";
 import type { Currency } from "@/generated/prisma/enums";
+import { invoiceToRows, parseUblInvoice, type EInvoice } from "@/lib/expenses/einvoice";
 import { resolveImportRow, type ImportRow, type RowResult } from "@/lib/expenses/import-rows";
 import { IMPORT_FIELDS, parseDateValue } from "@/lib/expenses/tabular";
 import { parseDecimalInput } from "@/lib/format";
 import { ActionError } from "@/server/access";
 import { toActionResult } from "@/server/action-error";
-import { findImportDuplicates, importExpenses, importLookups } from "@/server/expenses";
+import { findImportDuplicates, importExpenses, importLookups, supplierCostItemHints } from "@/server/expenses";
 import { ratesBetween } from "@/server/rates";
 
 const MAX_ROWS = 2000;
@@ -59,6 +61,67 @@ export async function readSpreadsheetAction(formData: FormData) {
       return { name: sheet.name, rows };
     });
     return { ok: true as const, sheets: sheets.filter((s) => s.rows.length > 0) };
+  } catch (error) {
+    return toActionResult(error);
+  }
+}
+
+export type EInvoiceReport = { file: string; number: string | null; supplier: string | null; date: string | null; total: string | null; lines: number; warnings: string[]; error: string | null };
+
+/**
+ * e-Fatura / e-Arşiv XML dosyaları (tek tek veya GİB portalından inen ZIP) → tablo modu satırları.
+ * Tedarikçinin bu projede son kullanılan maliyet kalemi öneri olarak yazılır.
+ */
+export async function readEInvoicesAction(projectId: string, formData: FormData) {
+  try {
+    const mode = formData.get("mode") === "invoice" ? "invoice" : "lines";
+    const files = formData.getAll("files").filter((f): f is File => f instanceof File);
+    if (files.length === 0) throw new ActionError("XML veya ZIP dosyası seçin.");
+    if (files.reduce((s, f) => s + f.size, 0) > 30 * 1024 * 1024) throw new ActionError("Dosyalar çok büyük (toplam en fazla 30 MB).");
+    const xmls: { file: string; text: string }[] = [];
+    const decoder = new TextDecoder("utf-8");
+    for (const file of files) {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (/\.zip$/i.test(file.name)) {
+        let entries: Record<string, Uint8Array>;
+        try {
+          entries = unzipSync(bytes, { filter: (f) => /\.xml$/i.test(f.name) && f.originalSize < 10 * 1024 * 1024 });
+        } catch {
+          throw new ActionError(`${file.name} açılamadı (bozuk ZIP).`);
+        }
+        for (const [name, data] of Object.entries(entries)) xmls.push({ file: `${file.name} › ${name}`, text: decoder.decode(data) });
+      } else xmls.push({ file: file.name, text: decoder.decode(bytes) });
+    }
+    if (xmls.length > 300) throw new ActionError("En fazla 300 fatura bir seferde okunur.");
+    const reports: EInvoiceReport[] = [];
+    const invoices: EInvoice[] = [];
+    const seen = new Set<string>();
+    for (const x of xmls) {
+      const r = parseUblInvoice(x.text);
+      if (!r.ok) {
+        reports.push({ file: x.file, number: null, supplier: null, date: null, total: null, lines: 0, warnings: [], error: r.error });
+        continue;
+      }
+      const inv = r.invoice;
+      const key = inv.uuid ?? `${inv.supplier.taxNumber}|${inv.number}`;
+      const duplicate = seen.has(key);
+      seen.add(key);
+      reports.push({
+        file: x.file,
+        number: inv.number,
+        supplier: inv.supplier.name,
+        date: inv.date,
+        total: inv.totals.payable?.toString() ?? inv.totals.total?.toString() ?? null,
+        lines: inv.lines.length,
+        warnings: inv.warnings,
+        error: duplicate ? "Aynı fatura birden fazla seçildi; bir kez alındı." : null,
+      });
+      if (!duplicate) invoices.push(inv);
+    }
+    const hints = await supplierCostItemHints(z.string().parse(projectId), invoices.map((i) => i.supplier.taxNumber).filter((t): t is string => Boolean(t)));
+    const rows = invoices.flatMap((inv) => invoiceToRows(inv, mode, (inv.supplier.taxNumber && hints.get(inv.supplier.taxNumber)) || ""));
+    if (rows.length > MAX_ROWS) throw new ActionError(`En fazla ${MAX_ROWS} satır alınabilir; daha az dosya seçin.`);
+    return { ok: true as const, rows, reports };
   } catch (error) {
     return toActionResult(error);
   }

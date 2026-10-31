@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { getNotifications } from "@/server/notifications";
 import { destroySession } from "@/server/session";
 import { closeProjectTab, moveProjectTab, openProjectTab } from "@/server/tabs";
 
@@ -26,4 +27,13 @@ export async function closeTabAction(id: string) {
 export async function moveTabAction(id: string, toIndex: number) {
   await moveProjectTab(projectId.parse(id), z.number().int().min(0).parse(toIndex));
   revalidatePath("/", "layout");
+}
+
+/** Bildirim zili için güncel bildirimler (Faz 8). */
+export async function notificationsAction() {
+  try {
+    return { ok: true as const, items: await getNotifications() };
+  } catch {
+    return { ok: false as const, items: [] };
+  }
 }

@@ -7,6 +7,7 @@ import {
   CheckCircle2Icon,
   CircleAlertIcon,
   ClipboardPasteIcon,
+  FileCode2Icon,
   FileSpreadsheetIcon,
   LoaderCircleIcon,
   PlusIcon,
@@ -33,7 +34,7 @@ import {
 } from "@/lib/expenses/tabular";
 import { Decimal, formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { checkImportAction, commitImportAction, readSpreadsheetAction, type RowCheck } from "./actions";
+import { checkImportAction, commitImportAction, readEInvoicesAction, readSpreadsheetAction, type EInvoiceReport, type RowCheck } from "./actions";
 
 /** Elle (boş tablo) girişte sütunlar. */
 const MANUAL_FIELDS: ImportField[] = [
@@ -94,6 +95,35 @@ export function BatchEntry({
   const [result, setResult] = useState<{ count: number; newSuppliers: number; skipped: number } | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInput = useRef<HTMLInputElement>(null);
+  const xmlInput = useRef<HTMLInputElement>(null);
+  const [xmlMode, setXmlMode] = useState<"lines" | "invoice">("lines");
+  const [reports, setReports] = useState<EInvoiceReport[]>([]);
+
+  function onEInvoices(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    setError(undefined);
+    const data = new FormData();
+    data.set("mode", xmlMode);
+    for (const f of Array.from(list)) data.append("files", f);
+    startTransition(async () => {
+      const response = await readEInvoicesAction(projectId, data);
+      if (!response.ok) {
+        setError(response.error);
+        return;
+      }
+      setReports(response.reports);
+      if (response.rows.length === 0) {
+        setError("Okunabilen fatura bulunamadı.");
+        return;
+      }
+      const present = IMPORT_FIELDS.filter((f) => response.rows.some((r) => r[f]));
+      setFields(present.includes("costItem") ? present : (["date", "costItem", ...present.filter((f) => f !== "date")] as ImportField[]));
+      setRows(response.rows.map((r) => makeRow(r)));
+      setFileName(`${response.reports.filter((r) => !r.error).length} e-Fatura`);
+      setChecks(new Map());
+      setStep("review");
+    });
+  }
 
   function loadTable(table: string[][], name: string | null) {
     if (table.length === 0) {
@@ -264,7 +294,7 @@ export function BatchEntry({
       <FormError message={error} />
 
       {step === "source" && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -287,6 +317,37 @@ export function BatchEntry({
                 {pending ? <LoaderCircleIcon className="animate-spin" /> : <UploadIcon />}
                 Dosya seç
               </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileCode2Icon className="size-5" /> e-Fatura / e-Arşiv (XML)
+              </CardTitle>
+              <CardDescription>GİB portalından veya entegratörden indirilen XML dosyaları ya da ZIP. Birden fazla seçilebilir; maliyet kalemini tabloda seçersiniz.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <NativeSelect aria-label="e-Fatura satırları" value={xmlMode} onChange={(e) => setXmlMode(e.target.value as "lines" | "invoice")}>
+                <option value="lines">Her fatura kalemi ayrı satır</option>
+                <option value="invoice">Fatura başına tek satır (KDV oranına göre)</option>
+              </NativeSelect>
+              <input
+                ref={xmlInput}
+                type="file"
+                multiple
+                accept=".xml,.zip,application/xml,text/xml,application/zip"
+                className="hidden"
+                onChange={(e) => {
+                  onEInvoices(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <div>
+                <Button variant="outline" onClick={() => xmlInput.current?.click()} disabled={pending}>
+                  {pending ? <LoaderCircleIcon className="animate-spin" /> : <UploadIcon />}
+                  XML / ZIP seç
+                </Button>
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -404,6 +465,30 @@ export function BatchEntry({
 
       {step === "review" && (
         <>
+          {reports.length > 0 && (
+            <Card className="gap-2 py-4">
+              <CardHeader className="px-4">
+                <CardTitle className="text-sm">Okunan e-Faturalar ({reports.filter((r) => !r.error).length} / {reports.length})</CardTitle>
+                <CardDescription className="text-xs">Maliyet kalemi, tedarikçinin bu projede son kullandığı kalemden önerildi; kontrol edin. Aynı tedarikçi + belge no zaten kayıtlıysa satır mükerrer olarak işaretlenir.</CardDescription>
+              </CardHeader>
+              <CardContent className="px-4">
+                <ul className="grid grid-cols-1 gap-1 text-xs">
+                  {reports.map((r, i) => (
+                    <li key={i} className={cn("flex flex-wrap gap-x-2", r.error ? "text-destructive" : r.warnings.length ? "text-amber-800" : "text-muted-foreground")}>
+                      <span className="font-medium">{r.number ?? r.file}</span>
+                      {r.supplier && <span>{r.supplier}</span>}
+                      {r.total && <span className="tabular-nums">{formatMoney(r.total)}</span>}
+                      {r.lines > 0 && <span>{r.lines} kalem</span>}
+                      {r.error && <span>{r.error}</span>}
+                      {r.warnings.map((w) => (
+                        <span key={w}>{w}</span>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
           <div className="flex flex-wrap items-end gap-3">
             <Label className="font-normal">
               Varsayılan KDV oranı

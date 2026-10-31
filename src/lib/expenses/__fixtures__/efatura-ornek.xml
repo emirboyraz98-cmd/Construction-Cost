@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
+  <cbc:ProfileID>TICARIFATURA</cbc:ProfileID>
+  <cbc:ID>ABC2026000000123</cbc:ID>
+  <cbc:UUID>0b5c1f9e-3d2a-4c1b-9a77-5e8f2b6d1a01</cbc:UUID>
+  <cbc:IssueDate>2026-10-28</cbc:IssueDate>
+  <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
+  <cbc:Note>Örnek fatura (test verisi)</cbc:Note>
+  <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification><cbc:ID schemeID="VKN">1234567890</cbc:ID></cac:PartyIdentification>
+      <cac:PartyIdentification><cbc:ID schemeID="MERSISNO">0123456789000001</cbc:ID></cac:PartyIdentification>
+      <cac:PartyName><cbc:Name>Örnek Yapı Malzemeleri A.Ş.</cbc:Name></cac:PartyName>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification><cbc:ID schemeID="TCKN">10000000146</cbc:ID></cac:PartyIdentification>
+      <cac:Person><cbc:FirstName>Ali</cbc:FirstName><cbc:FamilyName>Müteahhit</cbc:FamilyName></cac:Person>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:PaymentMeans><cbc:PaymentMeansCode>42</cbc:PaymentMeansCode><cbc:PaymentDueDate>2026-11-27</cbc:PaymentDueDate></cac:PaymentMeans>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="TRY">2410.00</cbc:TaxAmount>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="TRY">13000.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="TRY">13000.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="TRY">15410.00</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="TRY">15410.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="KGM">800</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">10800.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">2160.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">10800.00</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">2160.00</cbc:TaxAmount>
+        <cbc:Percent>20</cbc:Percent>
+        <cac:TaxCategory><cac:TaxScheme><cbc:Name>KDV</cbc:Name><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme></cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item><cbc:Name>Seramik yapıştırıcı C2TE</cbc:Name></cac:Item>
+    <cac:Price><cbc:PriceAmount currencyID="TRY">13.50</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>2</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">10</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">1200.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">240.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxAmount currencyID="TRY">240.00</cbc:TaxAmount>
+        <cbc:Percent>20</cbc:Percent>
+        <cac:TaxCategory><cac:TaxScheme><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme></cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item><cbc:Name>Derz dolgusu</cbc:Name><cbc:Description>5 kg torba</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount currencyID="TRY">120</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>
+  <cac:InvoiceLine>
+    <cbc:ID>3</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">1000.00</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">10.00</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxAmount currencyID="TRY">10.00</cbc:TaxAmount>
+        <cbc:Percent>1</cbc:Percent>
+        <cac:TaxCategory><cac:TaxScheme><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme></cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item><cbc:Name>Nakliye</cbc:Name></cac:Item>
+    <cac:Price><cbc:PriceAmount currencyID="TRY">1000</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>
+</Invoice>

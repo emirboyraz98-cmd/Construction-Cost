@@ -62,7 +62,11 @@ export function UserMenu({ user, canManageUsers }: { user: ShellUser; canManageU
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={pending}
-          onSelect={() => startTransition(() => logoutAction())}
+          onSelect={() => {
+            // Paylaşılan telefonda önceki kullanıcının çevrimdışı sayfası kalmasın.
+            navigator.serviceWorker?.controller?.postMessage("clear-pages");
+            startTransition(() => logoutAction());
+          }}
         >
           <LogOutIcon />
           Çıkış yap

@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Harcama gir" };
 export default async function NewExpensePage({ params, searchParams }: PageProps<"/projects/[projectId]/expenses/new">) {
   const { projectId } = await params;
   const { copy } = await searchParams;
-  const { role } = await requireProjectAccess(projectId);
+  const { role, user } = await requireProjectAccess(projectId);
   if (!hasCapability(role, "expense.create")) {
     return (
       <>
@@ -67,6 +67,7 @@ export default async function NewExpensePage({ params, searchParams }: PageProps
         vatRates={vatRates}
         advancedOpen={hasCapability(role, "expense.manage")}
         canCreateSupplier
+        offline={{ owner: user.email, projectName: project.name }}
       />
     </>
   );

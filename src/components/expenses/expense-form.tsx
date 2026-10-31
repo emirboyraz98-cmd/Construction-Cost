@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
+  WifiOffIcon,
   CheckCircle2Icon,
   ChevronDownIcon,
   FileTextIcon,
@@ -47,6 +48,7 @@ import {
   PAYMENT_METHOD_LABELS,
 } from "@/lib/expenses/labels";
 import { Decimal, formatDateOnly, formatMoney, formatNumber, parseDecimalInput } from "@/lib/format";
+import { addToOutbox, isNetworkError } from "@/lib/offline/outbox";
 import { cn } from "@/lib/utils";
 import type { ExpenseFormInput } from "@/lib/validation/expense";
 import { FilePicker } from "./file-picker";
@@ -111,6 +113,7 @@ export function ExpenseForm({
   splitLocked = false,
   advancedOpen = false,
   canCreateSupplier,
+  offline,
 }: {
   projectId: string;
   mode: "create" | "edit";
@@ -124,6 +127,8 @@ export function ExpenseForm({
   splitLocked?: boolean;
   advancedOpen?: boolean;
   canCreateSupplier: boolean;
+  /** Yeni kayıtta internet yoksa kayıt telefonda bekletilir (Faz 8) */
+  offline?: { owner: string; projectName: string };
 }) {
   const router = useRouter();
   const [values, setValues] = useState<ExpenseFormValues>(initial);
@@ -140,6 +145,29 @@ export function ExpenseForm({
   const [vatTouched, setVatTouched] = useState(mode === "edit");
   const [pending, startTransition] = useTransition();
   const [another, setAnother] = useState(false);
+  const [queued, setQueued] = useState(false);
+
+  /** İnternet yokken kaydı telefona yazar; bağlantı gelince gönderilir. */
+  async function saveOffline() {
+    if (!offline) return false;
+    const item = costItems.find((c) => c.id === values.costItemId);
+    const amount = values.amountMode === "unit" ? `${values.quantity} × ${values.unitPrice}` : values.amount;
+    await addToOutbox({
+      owner: offline.owner,
+      projectId,
+      projectName: offline.projectName,
+      payload: { ...values },
+      files: files.map((f) => ({ name: f.name, type: f.type, blob: f })),
+      summary: [values.date, item ? `${item.code} ${item.name}` : null, amount ? `${amount} ${values.currency}` : null].filter(Boolean).join(" · "),
+    });
+    setQueued(true);
+    setSaved(null);
+    setFiles([]);
+    setHint(null);
+    set({ amount: "", quantity: "", unitPrice: "", description: "", costItemId: null });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return true;
+  }
 
   const set = (patch: Partial<ExpenseFormValues>) => setValues((current) => ({ ...current, ...patch }));
   const locked = splitLocked;
@@ -186,7 +214,7 @@ export function ExpenseForm({
 
   async function loadRate(date: string, currency: Currency, force = false) {
     if (currency === "TRY") return;
-    const rate = await suggestRateAction(date, currency);
+    const rate = await suggestRateAction(date, currency).catch(() => null);
     if (rate) {
       setValues((current) => (force || !current.exchangeRate ? { ...current, exchangeRate: rate.value.replace(".", ",") } : current));
       setRateNote(`${formatDateOnly(rate.date)} ${rate.source === "TCMB" ? "TCMB döviz alış" : "elle girilen"} kuru`);
@@ -201,7 +229,7 @@ export function ExpenseForm({
     if (!costItemId) return;
     const item = costItems.find((c) => c.id === costItemId);
     if (item?.unit && !values.unit && item.unit !== "götürü") set({ unit: item.unit });
-    const last = await lastUsedAction(projectId, costItemId);
+    const last = await lastUsedAction(projectId, costItemId).catch(() => null);
     if (!last) return;
     const parts: string[] = [];
     if (last.supplier) {
@@ -222,15 +250,21 @@ export function ExpenseForm({
   function submit(confirmDuplicate = false) {
     setFormError(undefined);
     setSaved(null);
+    setQueued(false);
     startTransition(async () => {
+      if (mode === "create" && offline && !navigator.onLine && (await saveOffline())) return;
       const formData = new FormData();
       formData.set("payload", JSON.stringify({ ...values, confirmDuplicate }));
       for (const file of files) formData.append("files", file);
       if (mode === "edit") formData.set("removeDocuments", JSON.stringify(removed));
-      const result =
-        mode === "create"
-          ? await createExpenseAction(projectId, formData)
-          : await updateExpenseAction(projectId, expenseId!, formData);
+      let result: ExpenseSaveResult;
+      try {
+        result = mode === "create" ? await createExpenseAction(projectId, formData) : await updateExpenseAction(projectId, expenseId!, formData);
+      } catch (error) {
+        if (mode === "create" && isNetworkError(error) && (await saveOffline())) return;
+        setFormError(isNetworkError(error) ? "İnternet bağlantısı yok; bağlantı gelince tekrar kaydedin." : "Beklenmeyen bir hata oluştu. Tekrar deneyin.");
+        return;
+      }
       if ("duplicate" in result) {
         setDuplicates(result.duplicate);
         return;
@@ -281,6 +315,20 @@ export function ExpenseForm({
       }}
       className="grid max-w-2xl gap-5 pb-24 md:pb-0"
     >
+      {queued && (
+        <Alert variant="info">
+          <WifiOffIcon />
+          <AlertDescription>
+            <span>
+              İnternet yok: kayıt telefona kaydedildi, bağlantı gelince otomatik gönderilecek.{" "}
+              <Link href="/offline" className="underline">
+                Bekleyen kayıtlar
+              </Link>{" "}
+              — sıradaki kalemi girebilirsiniz.
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
       {saved && (
         <Alert variant="info">
           <CheckCircle2Icon />

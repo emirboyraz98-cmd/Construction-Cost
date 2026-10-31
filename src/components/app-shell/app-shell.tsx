@@ -6,6 +6,8 @@ import { Building2Icon, MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { Role } from "@/generated/prisma/enums";
+import { NotificationBell } from "./notification-bell";
+import { OfflineIndicator } from "./offline-indicator";
 import { ProjectPicker } from "./project-picker";
 import { SideNav } from "./side-nav";
 import { TabBar } from "./tab-bar";
@@ -60,7 +62,9 @@ export function AppShell({
             <ProjectPicker tabs={tabs} projects={projects} canCreateProject={canCreateProject} />
           </div>
 
-          <div className="self-center">
+          <div className="flex items-center gap-1 self-center">
+            <OfflineIndicator owner={user.email} />
+            <NotificationBell />
             <UserMenu user={user} canManageUsers={canManageUsers} />
           </div>
         </div>
