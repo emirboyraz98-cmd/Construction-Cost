@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PaymentBadge } from "@/components/expenses/badges";
 import { PageHeader } from "@/components/page-header";
 import { CheckList } from "@/components/purchasing/checks";
 import { Figure } from "@/components/purchasing/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LAND_MODEL_LABELS } from "@/lib/labels";
-import { Decimal, formatMoney, formatNumber } from "@/lib/format";
+import { dateToDateInput, Decimal, formatDateOnly, formatMoney, formatNumber } from "@/lib/format";
+import { landPayments } from "@/server/land";
 import { getUnitsOverview } from "@/server/units";
+import { LandInstallmentForm } from "./land-payments";
 import { LandownersManager } from "./landowners-manager";
 
 export const metadata: Metadata = { title: "Arsa & sözleşme" };
 
 export default async function LandPage({ params }: PageProps<"/projects/[projectId]/land">) {
   const { projectId } = await params;
-  const data = await getUnitsOverview(projectId);
+  const [data, payments] = await Promise.all([getUnitsOverview(projectId), landPayments(projectId)]);
   const totalGross = data.units.reduce((s, u) => s.plus(u.grossArea.toString()), new Decimal(0));
   const landownerShare = data.landowners.reduce((s, l) => s.plus(l.sharePercent.toString()), new Decimal(0));
   const rent = data.landowners.reduce((s, l) => s.plus(l.monthlyRentAid?.toString() ?? 0), new Decimal(0));
@@ -68,6 +71,36 @@ export default async function LandPage({ params }: PageProps<"/projects/[project
               <Button asChild variant="ghost" className="justify-self-start">
                 <Link href={`/projects/${projectId}/units`}>Bölümleri işaretle →</Link>
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {payments && (
+          <Card className="gap-3">
+            <CardHeader>
+              <CardTitle>Arsa ödemeleri ve ödeme planı</CardTitle>
+              <CardDescription>
+                01 grubundaki ödemeler (arsa bedeli, tapu, kira yardımı …) vade sırasıyla. Ödenen {formatMoney(payments.paid)} · ödenecek {formatMoney(payments.unpaid)}. Taksitler vade listesine ve nakit akışına kendiliğinden yansır; ödendi işareti vade listesinden verilir.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {payments.rows.length > 0 && (
+                <ul className="grid grid-cols-1 divide-y text-sm">
+                  {payments.rows.map((r) => (
+                    <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                      <Link href={`/projects/${projectId}/expenses/${r.id}`} className="min-w-0 hover:underline">
+                        <span className="tabular-nums">{formatDateOnly(r.dueDate ?? r.date)}</span> · {r.costItem?.code} {r.description || r.costItem?.name}
+                        {r.supplier && <span className="text-muted-foreground"> · {r.supplier.name}</span>}
+                      </Link>
+                      <span className="flex items-center gap-2 tabular-nums">
+                        {formatMoney(r.totalAmountTry)}
+                        <PaymentBadge status={r.paymentStatus} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {payments.canAdd && data.landModel !== "FLAT_FOR_LAND" && <LandInstallmentForm projectId={projectId} today={dateToDateInput(new Date())} />}
             </CardContent>
           </Card>
         )}

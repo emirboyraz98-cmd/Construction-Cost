@@ -3,7 +3,7 @@ import { FLOOR_LABEL, USAGE_TYPE_LABELS } from "@/lib/budget/labels";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { ActionError } from "@/server/access";
 import { getPriceListExport } from "@/server/pricing";
-import { PrintButton } from "./print-button";
+import { PrintButton } from "@/components/print-button";
 
 export const metadata: Metadata = { title: "Fiyat listesi" };
 

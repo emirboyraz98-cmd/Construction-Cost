@@ -197,6 +197,13 @@ program yine tarayıcıdan kullanılır.
   - **İnşaat m² maliyeti** = yapım maliyeti (04–12) / toplam inşaat alanı.
   - **Müteahhit satılabilir m² maliyeti** = toplam maliyet / müteahhide kalan brüt m². Kat
     karşılığında arsa sahibinin bölümlerinin maliyeti de müteahhide aittir (PLAN 7.3).
+- **Excel'den metraj:** Bütçe → **Excel'den aktar**. Metraj cetveli / keşif listesi (Excel, CSV veya
+  yapıştırma) toplu eklenir: kalem kodu veya adı, metraj, birim, birim fiyat, blok. Kod bulunamayan
+  satırlar işaretlenir ve eklenmez; fiyatı olmayan satırın fiyatı sonra bütçe ekranında girilir.
+- **Arsa ödemeleri:** Arsa & sözleşme ekranında 01 grubundaki ödemeler vade sırasıyla listelenir. Arsa
+  satın alınan (veya karma) projede taksit buradan eklenir; vade listesine ve nakit akışına yansır.
+- **Maliyet ağacı şablonu:** Ayarlar → Maliyet ağacı şablonu. Yeni projeler bu ağaçla açılır; mevcut
+  projeler etkilenmez.
 
 ### Bütçe kontrolü: nasıl çalışır?
 
@@ -353,6 +360,8 @@ program yine tarayıcıdan kullanılır.
 - Proje panelinin üstünde role göre büyük düğmeler (Harcama gir, Malzeme geldi, Onay bekleyen, Satış
   yap, Tahsilat gir) ve yeni projede **“Proje kurulumu”** adım listesi.
 - Kullanıcı menüsü → **Nasıl kullanılır?**: role göre adım adım kısa kılavuz.
+- **PDF çıktılar** (tarayıcıda “Yazdır → PDF olarak kaydet”): hakediş (imza alanlı), müşteri ödeme
+  planı (satış sözleşmesi ekranında “Ödeme planı (PDF)”), fiyat listesi.
 
 ### Telefona uygulama gibi ekleme
 

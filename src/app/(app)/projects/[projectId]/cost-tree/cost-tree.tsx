@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { createContext, useContext, useMemo, useState, useTransition, type ReactNode } from "react";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -40,6 +40,13 @@ import { COST_UNITS } from "@/lib/cost-tree/default-template";
 import { ancestorIds, buildTree, descendantIds, nextChildCode, type TreeNode } from "@/lib/cost-tree/tree";
 import { cn, normalizeForSearch } from "@/lib/utils";
 import { addCostItemAction, setCostItemActiveAction } from "../actions";
+
+/** Ekleme / aktif-pasif işlemleri: projede proje kalemleri, Ayarlar'da İKY şablonu (aynı ekran). */
+const CostTreeActions = createContext({ add: addCostItemAction, setActive: setCostItemActiveAction });
+
+export function CostTreeActionsProvider({ add, setActive, children }: { add: typeof addCostItemAction; setActive: typeof setCostItemActiveAction; children: ReactNode }) {
+  return <CostTreeActions.Provider value={{ add, setActive }}>{children}</CostTreeActions.Provider>;
+}
 
 export type CostItemRow = {
   id: string;
@@ -300,11 +307,12 @@ function AddItemDialog({
   const [error, setError] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
+  const actions = useContext(CostTreeActions);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
     startTransition(async () => {
-      const result = await addCostItemAction(projectId, {
+      const result = await actions.add(projectId, {
         parentId: parent?.id ?? null,
         code,
         name,
@@ -386,10 +394,11 @@ function ToggleActiveDialog({
   const [pending, startTransition] = useTransition();
   const activating = !item.active;
   const childCount = descendantIds(items, item.id).length;
+  const actions = useContext(CostTreeActions);
 
   function confirm() {
     startTransition(async () => {
-      const result = await setCostItemActiveAction(projectId, item.id, activating);
+      const result = await actions.setActive(projectId, item.id, activating);
       if (result.ok) onClose();
       else setError(result.error);
     });

@@ -378,3 +378,31 @@ export async function addCoefficientLines(projectId: string, coefficientIds: str
   });
   return created;
 }
+
+// ---------------------------------------------------------------------------
+// Excel'den metraj / bütçe içe aktarma
+// ---------------------------------------------------------------------------
+
+export async function budgetImportLookups(projectId: string) {
+  await requireProjectCapability(projectId, "budget.edit");
+  const [costItems, blocks] = await Promise.all([
+    db.costItem.findMany({ where: { projectId, active: true }, select: { id: true, code: true, name: true } }),
+    db.block.findMany({ where: { projectId }, select: { id: true, name: true } }),
+  ]);
+  return { costItems, blocks };
+}
+
+/** Doğrulanmış satırları manuel miktar / elle fiyatla bütçeye ekler (fiyatsız satır fiyatsız kalır). */
+export async function importBudgetLines(projectId: string, rows: { costItemId: string; blockId: string | null; description: string | null; quantity: Decimal; unit: string | null; unitPrice: Decimal | null; currency: Currency; wastePercent: Decimal }[]) {
+  const { user } = await requireProjectCapability(projectId, "budget.edit");
+  if (rows.length === 0) throw new ActionError("Aktarılacak geçerli satır yok.");
+  const last = await db.budgetLine.aggregate({ where: { projectId }, _max: { sortOrder: true } });
+  const start = (last._max.sortOrder ?? 0) + 1;
+  await db.$transaction(async (tx) => {
+    await tx.budgetLine.createMany({
+      data: rows.map((r, i) => ({ projectId, ...r, quantitySource: "MANUAL" as const, priceSource: "MANUAL" as const, priceNote: "Excel'den aktarıldı", sortOrder: start + i })),
+    });
+    await writeAudit(tx, { userId: user.id, projectId, action: "import", entity: "BudgetLine", changes: { rows: rows.length } });
+  });
+  return rows.length;
+}

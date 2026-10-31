@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PrinterIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Figure, NoAccess } from "@/components/purchasing/shared";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { projectRole } from "@/lib/auth/access";
@@ -36,12 +38,20 @@ export default async function ContractPage({ params }: PageProps<"/projects/[pro
         title={`${unit.block.name} No ${unit.doorNo} · ${c.customer.name}`}
         description={`${[FLOOR_LABEL(unit.floor), USAGE_TYPE_LABELS[unit.usageType], unit.layout, `${formatNumber(unit.grossArea, 2)} m² brüt`].filter(Boolean).join(" · ")} · sözleşme ${formatDateOnly(c.date)}${c.contractNo ? ` · No ${c.contractNo}` : ""}`}
         actions={
-          data.canManage && (
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a href={`/print/projects/${projectId}/sales/${c.id}`} target="_blank" rel="noopener">
+                <PrinterIcon />
+                Ödeme planı (PDF)
+              </a>
+            </Button>
+            {data.canManage && (
             <div className="flex flex-wrap gap-2">
               <ContractInfoButton projectId={projectId} contractId={c.id} info={{ contractNo: c.contractNo ?? "", agent: c.agent ?? "", commissionAmount: c.commissionAmount ? formatNumber(c.commissionAmount, 2) : "", notes: c.notes ?? "" }} />
               <CancelContractButton projectId={projectId} contractId={c.id} collected={state.collectedTry.toString()} />
             </div>
-          )
+            )}
+          </div>
         }
       >
         {cancelled && (

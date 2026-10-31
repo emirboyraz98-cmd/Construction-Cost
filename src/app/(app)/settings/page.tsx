@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRightIcon, CoinsIcon, DatabaseBackupIcon, HistoryIcon, KeyRoundIcon, PercentIcon, UsersIcon } from "lucide-react";
+import { ChevronRightIcon, CoinsIcon, DatabaseBackupIcon, HistoryIcon, KeyRoundIcon, ListTreeIcon, PercentIcon, UsersIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { hasCapability } from "@/lib/auth/roles";
 import { getAccess } from "@/server/access";
 
 export const metadata: Metadata = { title: "Ayarlar" };
 
-const UPCOMING = [
-  { label: "Birimler ve maliyet ağacı şablonu", phase: 8, note: "Varsayılan İKY şablonunun düzenlenmesi" },
-];
 
 export default async function SettingsPage() {
   const { user } = await getAccess();
@@ -24,6 +20,9 @@ export default async function SettingsPage() {
       : []),
     ...(hasCapability(user.role, "parameters.manage")
       ? [{ href: "/settings/parameters", icon: PercentIcon, label: "Vergi, harç ve oran parametreleri", note: "KDV oranları; yıl / belediye bazında oranlar" }]
+      : []),
+    ...(hasCapability(user.role, "costTree.edit")
+      ? [{ href: "/settings/template", icon: ListTreeIcon, label: "Maliyet ağacı şablonu", note: "Yeni projelerin İKY ağacı: kalem ekle / pasifleştir" }]
       : []),
     ...(hasCapability(user.role, "backup.manage")
       ? [{ href: "/settings/backups", icon: DatabaseBackupIcon, label: "Yedekler", note: "Otomatik günlük yedekler, şimdi yedek al, indir" }]
@@ -51,17 +50,6 @@ export default async function SettingsPage() {
               </CardContent>
             </Card>
           </Link>
-        ))}
-        {UPCOMING.map((item) => (
-          <Card key={item.label} className="py-4 opacity-80">
-            <CardContent className="flex items-center gap-3">
-              <div className="flex-1">
-                <p className="font-medium">{item.label}</p>
-                <p className="text-sm text-muted-foreground">{item.note}</p>
-              </div>
-              <Badge variant="soon">Faz {item.phase}</Badge>
-            </CardContent>
-          </Card>
         ))}
       </div>
     </>

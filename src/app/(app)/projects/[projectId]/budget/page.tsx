@@ -31,9 +31,16 @@ export default async function BudgetPage({ params }: PageProps<"/projects/[proje
         title="Bütçe"
         description="Kalem kalem miktar × birim fiyat. Toplam maliyet tüm binayı kapsar; satılabilir m² maliyeti müteahhide kalan alana bölünür (PLAN 7.3)."
         actions={
-          <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}/quantities`}>Metraj ve katsayılar</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href={`/projects/${projectId}/quantities`}>Metraj ve katsayılar</Link>
+            </Button>
+            {budget.canEdit && (
+              <Button asChild variant="outline">
+                <Link href={`/projects/${projectId}/budget/import`}>Excel&apos;den aktar</Link>
+              </Button>
+            )}
+          </div>
         }
       />
       <div className="grid grid-cols-1 gap-4">

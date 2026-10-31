@@ -27,6 +27,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   Landowner: "Arsa sahibi",
   ExchangeRate: "Döviz kuru",
   CostItem: "Maliyet kalemi",
+  CostItemTemplate: "Maliyet ağacı şablonu",
   ConnectionInvoice: "Bağlantı faturası",
   BudgetBaseline: "Baz bütçe",
   Resource: "Malzeme",

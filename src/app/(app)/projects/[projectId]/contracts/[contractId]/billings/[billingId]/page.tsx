@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, PrinterIcon } from "lucide-react";
 import { PaymentBadge } from "@/components/expenses/badges";
 import { InfoList } from "@/components/info-list";
 import { PageHeader } from "@/components/page-header";
@@ -32,7 +32,18 @@ export default async function BillingPage({ params }: PageProps<"/projects/[proj
           {b.contract.no} {b.contract.title}
         </Link>
       </Button>
-      <PageHeader title={`${b.seq}. hakediş${perms.amounts ? ` · ${money(b.payableAmount)}` : ""}`} description={`${b.contract.supplier.name} · ${formatDateOnly(b.date)}`}>
+      <PageHeader
+        title={`${b.seq}. hakediş${perms.amounts ? ` · ${money(b.payableAmount)}` : ""}`}
+        description={`${b.contract.supplier.name} · ${formatDateOnly(b.date)}`}
+        actions={
+          <Button asChild variant="outline">
+            <a href={`/print/projects/${projectId}/billings/${b.id}`} target="_blank" rel="noopener">
+              <PrinterIcon />
+              PDF / yazdır
+            </a>
+          </Button>
+        }
+      >
         <div className="mt-2 flex flex-wrap gap-1.5">
           <BillingStatusBadge status={b.status} />
           {b.status === "APPROVED" && <PaymentBadge status={b.paymentStatus} />}
