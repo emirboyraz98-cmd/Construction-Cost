@@ -131,6 +131,7 @@ export default async function UnitsPage({
                   id: b.id,
                   name: b.name,
                   constructionArea: b.constructionArea?.toString() ?? null,
+                  floorCount: b.floorCount,
                 }))}
                 landowners={data.landowners.map((l) => ({
                   id: l.id,

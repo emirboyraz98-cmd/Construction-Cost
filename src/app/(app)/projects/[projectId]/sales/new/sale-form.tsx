@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FormError, FormField } from "@/components/form-field";
+import { FormMore } from "@/components/form-more";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,8 @@ export function SaleForm({
           <FormField id="sl-date" label="Sözleşme tarihi" required error={fieldErrors.date}>
             <Input id="sl-date" type="date" value={form.date} onChange={(e) => set({ date: e.target.value })} />
           </FormField>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <FormMore title="Ayrıntılar: sözleşme no, para birimi" hasValue={Boolean(form.contractNo || form.currency !== "TRY")} className="lg:grid-cols-4">
           <FormField id="sl-no" label="Sözleşme no">
             <Input id="sl-no" value={form.contractNo} onChange={(e) => set({ contractNo: e.target.value })} />
           </FormField>
@@ -118,6 +121,8 @@ export function SaleForm({
               <Input id="sl-rate" inputMode="decimal" value={form.exchangeRate} onChange={(e) => set({ exchangeRate: e.target.value })} />
             </FormField>
           )}
+            </FormMore>
+          </div>
         </CardContent>
       </Card>
 
@@ -147,6 +152,8 @@ export function SaleForm({
               Toplam (KDV dahil) <strong className="tabular-nums">{formatMoney(amounts.totalAmount, form.currency)}</strong>
             </span>
           </div>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <FormMore title="Ayrıntılar: emlakçı, komisyon, not" hasValue={Boolean(form.agent || form.commissionAmount || form.notes)} className="lg:grid-cols-4">
           <FormField id="sl-agent" label="Emlakçı / satış danışmanı">
             <Input id="sl-agent" value={form.agent} onChange={(e) => set({ agent: e.target.value })} />
           </FormField>
@@ -156,6 +163,8 @@ export function SaleForm({
           <FormField id="sl-notes" label="Not" className="sm:col-span-2">
             <Input id="sl-notes" value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
           </FormField>
+            </FormMore>
+          </div>
         </CardContent>
       </Card>
 

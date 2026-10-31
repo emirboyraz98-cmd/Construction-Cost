@@ -406,3 +406,62 @@ export async function importBudgetLines(projectId: string, rows: { costItemId: s
   });
   return rows.length;
 }
+
+// ── Hızlı bütçe (sadeleştirme): ana gruplara m² başına veya götürü tutar ─────────
+export const QUICK_BUDGET_NOTE = "Hızlı bütçe";
+export type QuickMode = "m2" | "lump";
+
+/** Hızlı bütçe ekranı: ana gruplar, varsa önceki hızlı tutarlar ve gruptaki ayrıntılı satır sayısı. */
+export async function quickBudgetData(projectId: string) {
+  await requireProjectCapability(projectId, "budget.edit");
+  const [items, blocks, lines] = await Promise.all([
+    db.costItem.findMany({ where: { projectId, active: true }, select: { id: true, code: true, name: true } }),
+    db.block.findMany({ where: { projectId }, select: { constructionArea: true } }),
+    db.budgetLine.findMany({ where: { projectId }, select: { costItemId: true, priceNote: true, unit: true, unitPrice: true, quantity: true, costItem: { select: { code: true } } } }),
+  ]);
+  const area = blocks.reduce((sum, b) => sum.plus(b.constructionArea?.toString() ?? 0), new Decimal(0));
+  const groups = items
+    .filter((i) => !i.code.includes("."))
+    .sort((a, b) => compareCodes(a.code, b.code))
+    .map((g) => {
+      const quick = lines.find((l) => l.costItemId === g.id && l.priceNote === QUICK_BUDGET_NOTE);
+      const detailed = lines.filter((l) => l.priceNote !== QUICK_BUDGET_NOTE && (l.costItem.code === g.code || l.costItem.code.startsWith(`${g.code}.`))).length;
+      const mode: QuickMode = quick ? (quick.unit === "m²" ? "m2" : "lump") : ["01", "02", "13", "14", "15", "16"].includes(g.code) ? "lump" : "m2";
+      return { id: g.id, code: g.code, name: g.name, mode, amount: quick?.unitPrice?.toString() ?? "", detailed };
+    });
+  return { area: area.toString(), groups };
+}
+
+/** Önceki hızlı bütçe satırlarını silip yenilerini yazar (ayrıntılı satırlara dokunmaz). */
+export async function saveQuickBudget(projectId: string, rows: { costItemId: string; mode: QuickMode; amount: Decimal }[]) {
+  const { user } = await requireProjectCapability(projectId, "budget.edit");
+  const blocks = await db.block.findMany({ where: { projectId }, select: { constructionArea: true } });
+  const area = blocks.reduce((sum, b) => sum.plus(b.constructionArea?.toString() ?? 0), new Decimal(0));
+  const filled = rows.filter((r) => r.amount.gt(0));
+  if (filled.some((r) => r.mode === "m2") && area.lte(0)) throw new ActionError("m² başına hesap için önce blokların inşaat alanını girin.");
+  const valid = new Set((await db.costItem.findMany({ where: { projectId, id: { in: filled.map((r) => r.costItemId) } }, select: { id: true } })).map((c) => c.id));
+  if (filled.some((r) => !valid.has(r.costItemId))) throw new ActionError("Maliyet kalemi bulunamadı.");
+  const last = await db.budgetLine.aggregate({ where: { projectId }, _max: { sortOrder: true } });
+  const start = (last._max.sortOrder ?? 0) + 1;
+  await db.$transaction(async (tx) => {
+    await tx.budgetLine.deleteMany({ where: { projectId, priceNote: QUICK_BUDGET_NOTE } });
+    await tx.budgetLine.createMany({
+      data: filled.map((r, i) => ({
+        projectId,
+        costItemId: r.costItemId,
+        description: r.mode === "m2" ? "Hızlı bütçe – m² başına" : "Hızlı bütçe – götürü",
+        quantitySource: "MANUAL" as const,
+        quantity: r.mode === "m2" ? area : new Decimal(1),
+        unit: r.mode === "m2" ? "m²" : "götürü",
+        priceSource: "MANUAL" as const,
+        unitPrice: r.amount,
+        currency: "TRY" as const,
+        wastePercent: new Decimal(0),
+        priceNote: QUICK_BUDGET_NOTE,
+        sortOrder: start + i,
+      })),
+    });
+    await writeAudit(tx, { userId: user.id, projectId, action: "update", entity: "BudgetLine", changes: { quickBudget: filled.length } });
+  });
+  return filled.length;
+}

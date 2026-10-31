@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PlusIcon, Trash2Icon, WandSparklesIcon } from "lucide-react";
 import { FormField } from "@/components/form-field";
+import { FormMore } from "@/components/form-more";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -61,10 +62,11 @@ export function PlanEditor({ rows, onChange, total, currency, startDate, error }
         <FormField id="g-first" label="İlk taksit">
           <Input id="g-first" type="date" value={gen.first} onChange={(e) => setGen((g) => ({ ...g, first: e.target.value }))} />
         </FormField>
+        <div className="col-span-2 sm:col-span-4 lg:col-span-6">
+          <FormMore title="Ayrıntılar: taksit aralığı, anahtar teslim, banka kredisi" hasValue={Boolean(gen.keyAmount || gen.loanAmount || (gen.interval && gen.interval !== "1"))} className="sm:grid-cols-3 lg:grid-cols-5">
         <FormField id="g-interval" label="Aralık (ay)">
           <Input id="g-interval" inputMode="numeric" value={gen.interval} onChange={(e) => setGen((g) => ({ ...g, interval: e.target.value }))} />
         </FormField>
-        <div className="hidden lg:block" />
         <FormField id="g-key" label="Anahtar teslim ödemesi">
           <Input id="g-key" inputMode="decimal" value={gen.keyAmount} onChange={(e) => setGen((g) => ({ ...g, keyAmount: e.target.value }))} />
         </FormField>
@@ -77,6 +79,8 @@ export function PlanEditor({ rows, onChange, total, currency, startDate, error }
         <FormField id="g-loandate" label="Kredi tarihi">
           <Input id="g-loandate" type="date" value={gen.loanDate} onChange={(e) => setGen((g) => ({ ...g, loanDate: e.target.value }))} />
         </FormField>
+          </FormMore>
+        </div>
         <div className="col-span-2 flex items-end">
           <Button type="button" variant="outline" onClick={generate} className="w-full sm:w-auto">
             <WandSparklesIcon />

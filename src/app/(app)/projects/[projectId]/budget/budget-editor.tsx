@@ -5,6 +5,8 @@ import { AlertTriangleIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-reac
 import { Combobox } from "@/components/combobox";
 import { ChipGroup } from "@/components/expenses/expense-form";
 import { FormError, FormField } from "@/components/form-field";
+import { FormMore } from "@/components/form-more";
+import { useAdvancedView } from "@/components/view-mode";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -128,6 +130,7 @@ export function BudgetEditor({
 }) {
   const [editing, setEditing] = useState<{ id: string | null; form: LineForm } | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const advanced = useAdvancedView();
   const { run, error, fieldErrors, pending, reset } = useAction();
   const set = (patch: Partial<LineForm>) => editing && setEditing({ ...editing, form: { ...editing.form, ...patch } });
   const linesByItem = new Map<string, BudgetLineView[]>();
@@ -258,26 +261,6 @@ export function BudgetEditor({
                 <FormField id="b-desc" label="Açıklama">
                   <Input id="b-desc" value={f.description} onChange={(e) => set({ description: e.target.value })} placeholder="ör. C30 hazır beton" />
                 </FormField>
-                <FormField id="b-block" label="Blok">
-                  <NativeSelect id="b-block" value={f.blockId} onChange={(e) => set({ blockId: e.target.value })}>
-                    <option value="">Ortak (alan oranında dağıtılır)</option>
-                    {options.blocks.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </FormField>
-                <FormField id="b-supply" label="Temin şekli" className="sm:col-span-2">
-                  <NativeSelect id="b-supply" value={f.supplyMethod} onChange={(e) => set({ supplyMethod: e.target.value })}>
-                    <option value="">Belirtilmemiş</option>
-                    {Object.entries(SUPPLY_METHOD_LABELS).map(([v, label]) => (
-                      <option key={v} value={v}>
-                        {label}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </FormField>
               </div>
 
               <fieldset className="grid gap-3 rounded-lg border p-3">
@@ -287,9 +270,9 @@ export function BudgetEditor({
                   value={f.quantitySource}
                   onChange={(v) => set({ quantitySource: v })}
                   options={[
-                    { value: "MANUAL", label: "Manuel" },
-                    { value: "FORMULA", label: "Formül" },
-                    { value: "PARAMETRIC", label: "Katsayıyla (parametrik)" },
+                    { value: "MANUAL" as const, label: "Manuel" },
+                    ...(advanced || f.quantitySource === "FORMULA" ? [{ value: "FORMULA" as const, label: "Formül" }] : []),
+                    { value: "PARAMETRIC" as const, label: "Katsayıyla (parametrik)" },
                   ]}
                 />
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -342,9 +325,9 @@ export function BudgetEditor({
                   value={f.priceSource}
                   onChange={(v) => set({ priceSource: v })}
                   options={[
-                    { value: "MANUAL", label: "Elle / taşeron fiyatı" },
-                    { value: "RESOURCE", label: "Kütüphane" },
-                    { value: "RECIPE", label: "Reçete" },
+                    { value: "MANUAL" as const, label: "Elle / taşeron fiyatı" },
+                    { value: "RESOURCE" as const, label: "Kütüphane" },
+                    ...(advanced || f.priceSource === "RECIPE" ? [{ value: "RECIPE" as const, label: "Reçete" }] : []),
                   ]}
                 />
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -353,6 +336,7 @@ export function BudgetEditor({
                       <FormField id="b-price" label="Birim fiyat" required error={fieldErrors.unitPrice}>
                         <Input id="b-price" inputMode="decimal" value={f.unitPrice} onChange={(e) => set({ unitPrice: e.target.value })} />
                       </FormField>
+                      {(advanced || f.currency !== "TRY") && (
                       <FormField id="b-cur" label="Para birimi" hint={f.currency !== "TRY" ? "Son kayıtlı kurla TL'ye çevrilir." : undefined}>
                         <NativeSelect id="b-cur" value={f.currency} onChange={(e) => set({ currency: e.target.value as Currency })}>
                           {CURRENCIES.map((c) => (
@@ -362,6 +346,7 @@ export function BudgetEditor({
                           ))}
                         </NativeSelect>
                       </FormField>
+                      )}
                     </>
                   )}
                   {f.priceSource === "RESOURCE" && (
@@ -389,11 +374,35 @@ export function BudgetEditor({
                   <FormField id="b-waste" label="Fire (%)" error={fieldErrors.wastePercent} hint={f.priceSource === "RECIPE" ? "Reçetede fire zaten var." : undefined}>
                     <Input id="b-waste" inputMode="decimal" value={f.wastePercent} onChange={(e) => set({ wastePercent: e.target.value })} />
                   </FormField>
-                  <FormField id="b-note" label="Fiyat notu" className="sm:col-span-3">
-                    <Input id="b-note" value={f.priceNote} onChange={(e) => set({ priceNote: e.target.value })} placeholder="ör. Yıldız Yapı teklifi 10/2026" />
-                  </FormField>
+
                 </div>
               </fieldset>
+
+              <FormMore title="Ayrıntılar: blok, temin şekli, fiyat notu" hasValue={Boolean(f.blockId || f.supplyMethod || f.priceNote)}>
+                <FormField id="b-block" label="Blok">
+                  <NativeSelect id="b-block" value={f.blockId} onChange={(e) => set({ blockId: e.target.value })}>
+                    <option value="">Ortak (alan oranında dağıtılır)</option>
+                    {options.blocks.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </FormField>
+                <FormField id="b-supply" label="Temin şekli" className="sm:col-span-2">
+                  <NativeSelect id="b-supply" value={f.supplyMethod} onChange={(e) => set({ supplyMethod: e.target.value })}>
+                    <option value="">Belirtilmemiş</option>
+                    {Object.entries(SUPPLY_METHOD_LABELS).map(([v, label]) => (
+                      <option key={v} value={v}>
+                        {label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </FormField>
+                  <FormField id="b-note" label="Fiyat notu" className="sm:col-span-2">
+                    <Input id="b-note" value={f.priceNote} onChange={(e) => set({ priceNote: e.target.value })} placeholder="ör. Yıldız Yapı teklifi 10/2026" />
+                  </FormField>
+              </FormMore>
             </div>
           )}
           <DialogFooter>

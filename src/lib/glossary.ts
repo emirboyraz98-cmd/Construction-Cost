@@ -55,6 +55,7 @@ const G: Record<string, GlossaryEntry> = {
   "yeni taşeron sözleşmesi": { t: "Taşeronla anlaşılan işler, birim fiyatlar ve kesinti oranları (tevkifat, teminat)." },
   "yeni proje": { t: "Proje bilgileri, arsa modeli ve bloklarla yeni proje açma." },
   "excel'den metraj / bütçe": { t: "Keşif listesini veya metraj cetvelini Excel'den toplu olarak bütçeye ekleme." },
+  "hızlı bütçe": { t: "Ayrıntılı metraj yokken bütçe çıkarmanın en kısa yolu: her ana gruba m² başına veya toplam tahmini maliyet yazılır.", w: "Projenin başında “bu iş kaça çıkar?” sorusuna dakikalar içinde cevap verir. Ayrıntı geldikçe gerçek kalemlerle değiştirilir.", e: "Kaba inşaat 9.000 TL/m² × 3.200 m² = 28,8 milyon TL." },
   "proje kurulumu": { t: "Yeni projede yapılacak 8 adım. Hepsi bitince bu kutu kendiliğinden kalkar." },
 
   // ── Bütçe ve maliyet ───────────────────────────────────────────────

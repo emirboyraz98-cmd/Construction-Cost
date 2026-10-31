@@ -28,7 +28,7 @@ export async function projectSetupSteps(projectId: string, role: Role): Promise<
     { key: "units", label: "Bağımsız bölümler", hint: "“Kat kat üret” ile hızlıca.", done: units > 0, href: `${base}/units` },
     ...(project.landModel !== "PURCHASE" ? [{ key: "land", label: "Arsa sahipleri ve payları", hint: "Kat karşılığında arsa sahibine düşen bölümler.", done: landowners > 0, href: `${base}/land` }] : []),
     { key: "team", label: "Ekip (kullanıcı yetkileri)", hint: "Şantiye şefi, muhasebe, satış ekibi.", done: team > 0, href: "/settings/users" },
-    { key: "budget", label: "Bütçe", hint: "Metraj → bütçe; m² maliyeti çıkar.", done: budgetLines > 0, href: `${base}/budget` },
+    { key: "budget", label: "Bütçe", hint: "Hızlı bütçe (m² ile), Excel veya metraj; m² maliyeti çıkar.", done: budgetLines > 0, href: `${base}/budget` },
     { key: "prices", label: "Fiyat listesi", hint: "Kâr ve komisyonla bölüm fiyatları; onaylayınca satış ekibi görür.", done: priceLists > 0, href: `${base}/pricing` },
     { key: "cash", label: "İş programı ve nakit varsayımları", hint: "Aylık nakit ihtiyacını görmek için.", done: schedule > 0 && cashSetting > 0, href: `${base}/cash-flow` },
   ];

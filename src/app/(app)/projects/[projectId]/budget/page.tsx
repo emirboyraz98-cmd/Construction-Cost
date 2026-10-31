@@ -33,13 +33,15 @@ export default async function BudgetPage({ params }: PageProps<"/projects/[proje
         description="Binanın tamamını yapmanın tahmini maliyeti: her kalem için miktar × birim fiyat (KDV hariç)."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link href={`/projects/${projectId}/quantities`}>Metraj ve katsayılar</Link>
-            </Button>
             {budget.canEdit && (
-              <Button asChild variant="outline">
-                <Link href={`/projects/${projectId}/budget/import`}>Excel&apos;den aktar</Link>
-              </Button>
+              <>
+                <Button asChild variant="outline">
+                  <Link href={`/projects/${projectId}/budget/quick`}>Hızlı bütçe (m² ile)</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/projects/${projectId}/budget/import`}>Excel&apos;den aktar</Link>
+                </Button>
+              </>
             )}
           </div>
         }

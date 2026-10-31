@@ -36,7 +36,7 @@ export type UnitView = {
   notes: string | null;
 };
 
-type Block = { id: string; name: string; constructionArea: string | null };
+type Block = { id: string; name: string; constructionArea: string | null; floorCount?: number | null };
 type Landowner = { id: string; name: string };
 
 type UnitForm = {
@@ -179,7 +179,7 @@ export function UnitsManager({
               </CardDescription>
               {canEdit && (
                 <CardAction className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => { reset(); setGenerating({ blockId: block.id, fromFloor: "1", toFloor: "4", perFloor: "2", startNo: String(rows.length + 1), usageType: "RESIDENTIAL", layout: "", netArea: "", grossArea: "" }); }}>
+                  <Button size="sm" variant="outline" onClick={() => { reset(); setGenerating({ blockId: block.id, fromFloor: "1", toFloor: String(block.floorCount || 4), perFloor: "2", startNo: String(rows.length + 1), usageType: "RESIDENTIAL", layout: "", netArea: "", grossArea: "" }); }}>
                     <LayersIcon />
                     Kat kat üret
                   </Button>
@@ -190,6 +190,11 @@ export function UnitsManager({
                 </CardAction>
               )}
             </CardHeader>
+            {rows.length === 0 && canEdit && (
+              <p className="mx-5 mb-5 rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">
+                Bu blokta henüz bölüm yok. En hızlısı <b>Kat kat üret</b>: kattaki daire sayısını ve alanlarını bir kez yazın, tüm katlara dağıtılsın. Zemin kat dükkânları için ilk ve son katı 0 yazıp ayrıca üretin.
+              </p>
+            )}
             {rows.length > 0 && (
               <Table>
                 <TableHeader>

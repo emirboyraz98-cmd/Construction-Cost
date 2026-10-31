@@ -6,6 +6,7 @@ import { LoaderCircleIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { Combobox } from "@/components/combobox";
 import { FilePicker } from "@/components/expenses/file-picker";
 import { FormError, FormField } from "@/components/form-field";
+import { FormMore } from "@/components/form-more";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -145,6 +146,8 @@ export function ContractForm({
               ))}
             </NativeSelect>
           </FormField>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <FormMore title="Ayrıntılar: durum, başlangıç / bitiş, kapsam" hasValue={Boolean(values.startDate || values.endDate || values.scope || values.status !== "ACTIVE")} className="lg:grid-cols-3">
           <FormField id="status" label="Durum">
             <NativeSelect id="status" value={values.status} onChange={(e) => set({ status: e.target.value as ContractStatus })}>
               {Object.entries(CONTRACT_STATUS_LABELS).map(([value, label]) => (
@@ -163,6 +166,8 @@ export function ContractForm({
           <FormField id="scope" label="Kapsam" className="sm:col-span-2 lg:col-span-3">
             <Textarea id="scope" value={values.scope} onChange={(e) => set({ scope: e.target.value })} />
           </FormField>
+            </FormMore>
+          </div>
         </CardContent>
       </Card>
 

@@ -6,6 +6,7 @@ import { LoaderCircleIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { Combobox } from "@/components/combobox";
 import { FilePicker } from "@/components/expenses/file-picker";
 import { FormError, FormField } from "@/components/form-field";
+import { FormMore } from "@/components/form-more";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -154,11 +155,20 @@ export function ConnectionForm({
               invalid={Boolean(errors.supplierId)}
             />
           </FormField>
-          <FormField id="no" label="Bağlantı no" error={errors.no} hint="Boş bırakılırsa BG-yıl-sıra verilir.">
-            <Input id="no" value={values.no} onChange={(e) => set({ no: e.target.value })} />
-          </FormField>
           <FormField id="date" label="Tarih" required error={errors.date}>
             <Input id="date" type="date" value={values.date} onChange={(e) => set({ date: e.target.value })} />
+          </FormField>
+          <FormField id="lastDrawDate" label="Son çekiş tarihi" error={errors.lastDrawDate}>
+            <Input id="lastDrawDate" type="date" value={values.lastDrawDate} onChange={(e) => set({ lastDrawDate: e.target.value })} />
+          </FormField>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <FormMore
+              title="Ayrıntılar: bağlantı no, fiyat tipi, döviz, geçerlilik, teslim yeri, not"
+              hasValue={Boolean(values.no || values.priceType !== "FIXED" || values.currency !== "TRY" || values.validUntil || values.deliveryPlace || values.notes)}
+              className="lg:grid-cols-3"
+            >
+          <FormField id="no" label="Bağlantı no" error={errors.no} hint="Boş bırakılırsa BG-yıl-sıra verilir.">
+            <Input id="no" value={values.no} onChange={(e) => set({ no: e.target.value })} />
           </FormField>
           <FormField id="status" label="Durum">
             <NativeSelect id="status" value={values.status} onChange={(e) => set({ status: e.target.value as ConnectionStatus })}>
@@ -195,9 +205,6 @@ export function ConnectionForm({
           <FormField id="validUntil" label="Geçerlilik sonu" error={errors.validUntil}>
             <Input id="validUntil" type="date" value={values.validUntil} onChange={(e) => set({ validUntil: e.target.value })} />
           </FormField>
-          <FormField id="lastDrawDate" label="Son çekiş tarihi" error={errors.lastDrawDate}>
-            <Input id="lastDrawDate" type="date" value={values.lastDrawDate} onChange={(e) => set({ lastDrawDate: e.target.value })} />
-          </FormField>
           <FormField id="deliveryPlace" label="Teslim yeri" className="sm:col-span-2">
             <Input id="deliveryPlace" value={values.deliveryPlace} onChange={(e) => set({ deliveryPlace: e.target.value })} placeholder="ör. Şantiye teslim" />
           </FormField>
@@ -214,6 +221,8 @@ export function ConnectionForm({
           <FormField id="notes" label="Notlar" className="sm:col-span-2 lg:col-span-3">
             <Textarea id="notes" value={values.notes} onChange={(e) => set({ notes: e.target.value })} />
           </FormField>
+            </FormMore>
+          </div>
         </CardContent>
       </Card>
 
