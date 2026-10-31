@@ -59,7 +59,7 @@ const GUIDES: { roles: Role[]; guide: Guide }[] = [
           href: "/projects/new",
         },
         "Proje panelindeki “Proje kurulumu” kutusu sıradaki adımı gösterir: bloklar → bağımsız bölümler (“Kat kat üret”) → arsa sahipleri → bütçe → fiyat listesi → nakit varsayımları.",
-        "Bütçe: Metraj ekranında katsayılar hazır gelir (beton, demir, kalıp …); “Bütçede olmayanları ekle” ile satırlar oluşur, fiyatları kütüphaneden veya elle girin.",
+        "Bütçe: en hızlısı Bütçe → “Hızlı bütçe (m² ile)”: ana gruplara m² başına tutar yazın. Ayrıntı için Metraj sekmesi (hazır katsayılar) veya “Excel’den aktar”.",
         "Fiyatlandırma: kâr ve komisyon oranını yazın, fiyatları kontrol edin, “Fiyat listesini onayla”. Satış ekibi onaylı listeyi görür.",
         {
           text: "Ekran görüntüleriyle adım adım: resimli kılavuz, 3. bölüm.",
@@ -73,7 +73,7 @@ const GUIDES: { roles: Role[]; guide: Guide }[] = [
     guide: {
       title: "Satış ve tahsilat",
       steps: [
-        "Satışlar → “Kat planı” ile boş / rezerve / satılmış bölümleri görün.",
+        "Satış → Satışlar → “Kat planı” ile boş / rezerve / satılmış bölümleri görün.",
         "Müşteri bakıyorsa “Rezerve” (bitiş tarihiyle); karar verince “Sat”.",
         "Satış formunda indirim ve ödeme planı: peşinat, taksit sayısı, anahtar teslim → “Planı oluştur” → Satışı kaydet.",
         "Para gelince sözleşme sayfasında veya Tahsilatlar ekranında “Tahsil et”. Çek alındıysa çek seçin; vadesinde “Tahsil edildi” işaretleyin.",
@@ -88,7 +88,7 @@ const GUIDES: { roles: Role[]; guide: Guide }[] = [
       steps: [
         "Bütçe kontrolü: hangi kalem aşıldı / aşılacak; tahmini toplam maliyet (EAC).",
         "Nakit akışı: hangi ay ne kadar para gerekecek, en yüksek nakit ihtiyacı ve ayı.",
-        "Senaryolar: “demir %15 artarsa”, “3 ay gecikirse” gibi durumlarda kâr ve nakit nasıl değişir.",
+        "Senaryolar (gelişmiş görünüm): “demir %15 artarsa”, “3 ay gecikirse” gibi durumlarda kâr ve nakit nasıl değişir.",
         { text: "Portföy: tüm projeler tek ekranda.", href: "/portfolio" },
       ],
     },
@@ -111,6 +111,7 @@ const GUIDES: { roles: Role[]; guide: Guide }[] = [
           href: "/settings/history",
         },
         "Satış KDV oranlarını muhasebecinizle teyit edip Ayarlar → Parametreler'den düzeltin.",
+        "Her ayrıntıyı görmek için kullanıcı menüsünden “Gelişmiş görünüm”ü açın: maliyet ağacı, senaryolar, kütüphane gibi uzman ekranlar ve formlardaki tüm alanlar görünür.",
       ],
     },
   },

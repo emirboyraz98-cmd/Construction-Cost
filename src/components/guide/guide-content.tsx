@@ -109,19 +109,44 @@ export function GuideContent({ print = false }: { print?: boolean }) {
               <b>Üstte proje sekmeleri:</b> açtığınız projeler sekme olarak durur; tarayıcıdaki sekmeler gibi aralarında geçiş yapılır.
             </li>
             <li>
-              <b>Solda menü:</b> üst kısım seçili projenin ekranlarıdır (Günlük işler, Satın alma, Bina ve maliyet, Satış, Finans ve rapor). Alt kısım “Şirket geneli”dir (Portföy, Bağlantılar,
-              Tedarikçiler, Vade listesi, Ayarlar …). Herkes yalnızca yetkisi olan menüleri görür.
+              <b>Solda menü, 6 + 5 başlık:</b> üst kısım seçili projenindir: <i>Proje paneli, Harcamalar, Bina ve arsa, Bütçe, Satış, Nakit ve rapor</i>. Alt kısım şirket
+              genelidir: <i>Portföy, Satın alma, Ödemeler, Şirket raporları, Ayarlar</i>.
+            </li>
+            <li>
+              <b>Sayfanın üstünde sekmeler:</b> bir başlığın altındaki ekranlar sekme olarak durur. Örneğin <Nav>Bütçe</Nav> başlığında <i>Bütçe · Metraj · Bütçe kontrolü</i> sekmeleri
+              vardır. Bu kılavuzda yollar “başlık → sekme” diye yazılır.
             </li>
             <li>
               <b>Zil:</b> sizi bekleyen işler (onay bekleyen kayıtlar, vadesi gelen ödemeler, geciken taksitler).
             </li>
             <li>
-              <b>Sağ üstte adınız:</b> kullanıcı menüsü, <Nav>Nasıl kullanılır?</Nav> ve çıkış.
+              <b>Sağ üstte adınız:</b> kullanıcı menüsü: <Nav>Gelişmiş görünüm</Nav>, <Nav>Nasıl kullanılır?</Nav> ve çıkış.
             </li>
           </ul>
+          <Shot eager={print} src="00-panel" alt="Proje paneli: beş soru" caption="Proje paneli beş soruyu cevaplar: Ne harcadık? Bütçe ne durumda? Ne sattık? Kasada ne var, ne lazım? Bu hafta ne ödenecek? Karta tıklayınca ayrıntısı açılır." />
         </GuideStep>
 
-        <GuideStep n="3" title="Kim ne yapar? (roller)">
+        <GuideStep n="3" title="ⓘ işaretleri: her kavramın açıklaması">
+          <p>
+            Başlıkların, rakamların ve form alanlarının yanındaki <b>ⓘ</b> işaretinin üstüne fareyle gelin (telefonda dokunun). Kavramın ne olduğu, neden önemli olduğu ve çoğu zaman bir
+            örnek hesap açılır. İnşaat veya muhasebe terimlerini öğrenmenin en kolay yolu budur.
+          </p>
+          <Shot eager={print} src="00-ipucu" alt="Bir ⓘ açıklamasının açık hali" />
+        </GuideStep>
+
+        <GuideStep n="4" title="Basit ve gelişmiş görünüm">
+          <p>
+            Program <b>basit görünümle</b> açılır: az ekran, kısa formlar. Formlarda isteğe bağlı alanlar <Nav>Ayrıntılar</Nav> kutusunun içindedir; özet kutularında ikincil rakamlar{" "}
+            <Nav>Ayrıntıları göster</Nav> ile açılır.
+          </p>
+          <p>
+            Her ayrıntıyı görmek isterseniz kullanıcı menüsünden <Nav>Gelişmiş görünüm</Nav>ü açın. Maliyet ağacı, senaryolar, fiyat kütüphanesi, malzeme transferi, ortak fatura gibi uzman
+            ekranlar menüye eklenir; formlarda formül, reçete ve döviz seçenekleri görünür. Ayar her kullanıcı ve tarayıcı için ayrı hatırlanır.
+          </p>
+          <Shot eager={print} src="00-gorunum" alt="Kullanıcı menüsünde gelişmiş görünüm anahtarı" />
+        </GuideStep>
+
+        <GuideStep n="5" title="Kim ne yapar? (roller)">
           <p>Her kullanıcının bir rolü vardır; rol, neleri görüp neleri yapabileceğini belirler. Bir kullanıcıya her projede farklı rol verilebilir.</p>
           <Roles />
         </GuideStep>
@@ -154,10 +179,10 @@ export function GuideContent({ print = false }: { print?: boolean }) {
               <Nav>Ayarlar → Maliyet ağacı şablonu</Nav>: yeni projelerin maliyet kalemleri (İKY). Kullanmadığınız kalemleri pasif yapın, eksik olanı ekleyin. Hazır şablonda 135 kalem vardır.
             </li>
             <li>
-              <Nav>Tedarikçiler</Nav>: çalıştığınız firmalar (vergi no ile). Harcama girerken de “yeni tedarikçi” açılabilir.
+              <Nav>Satın alma → Tedarikçiler</Nav>: çalıştığınız firmalar (vergi no ile). Harcama girerken de “yeni tedarikçi” açılabilir.
             </li>
             <li>
-              <Nav>Kütüphane</Nav>: malzeme, işçilik ve makine fiyatları. Faturalardan gelen fiyatlar buraya kendiliğinden yazılır; bütçe bu fiyatları kullanır.
+              <Nav>Satın alma → Kütüphane</Nav> (gelişmiş görünüm): malzeme, işçilik ve makine fiyatları. Faturalardan gelen fiyatlar buraya kendiliğinden yazılır; bütçe bu fiyatları kullanır.
             </li>
           </ul>
         </GuideStep>
@@ -218,7 +243,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
 
         <GuideStep id="k-bolumler" n="3.4" title="Bağımsız bölümler: “Kat kat üret”">
           <p>
-            Aynı tipteki daireleri tek tek girmek yerine katlara toplu dağıtın: <Nav>Bağımsız bölümler → Kat kat üret</Nav>.
+            Aynı tipteki daireleri tek tek girmek yerine katlara toplu dağıtın: <Nav>Bina ve arsa → Bağımsız bölümler → Kat kat üret</Nav>.
           </p>
           <ol>
             <li>
@@ -235,10 +260,10 @@ export function GuideContent({ print = false }: { print?: boolean }) {
         <GuideStep id="k-arsa" n="3.5" title="Arsa sahipleri ve payları">
           <ol>
             <li>
-              <Nav>Arsa & sözleşme → Arsa sahibi ekle</Nav>: ad soyad, sözleşmedeki pay oranı (örnekte <b>%41</b>), aylık kira yardımı (örnekte 25.000 TL), telefon.
+              <Nav>Bina ve arsa → Arsa & sözleşme → Arsa sahibi ekle</Nav>: ad soyad, sözleşmedeki pay oranı (örnekte <b>%41</b>), aylık kira yardımı (örnekte 25.000 TL), telefon.
             </li>
             <li>
-              Arsa sahibine verilecek bölümleri işaretleyin: <Nav>Bağımsız bölümler</Nav> ekranında bölümlerin solundaki kutuları seçin → üstte çıkan <Nav>Sahibini değiştir…</Nav> listesinden arsa
+              Arsa sahibine verilecek bölümleri işaretleyin: <Nav>Bina ve arsa → Bağımsız bölümler</Nav> sekmesinde bölümlerin solundaki kutuları seçin → üstte çıkan <Nav>Sahibini değiştir…</Nav> listesinden arsa
               sahibini seçin → <Nav>Uygula</Nav>.
             </li>
             <li>Program sözleşmedeki pay ile işaretlenen bölümlerin brüt m² oranını karşılaştırır. Fark 0,5 puandan fazlaysa kırmızı uyarı verir.</li>
@@ -265,16 +290,22 @@ export function GuideContent({ print = false }: { print?: boolean }) {
         </GuideStep>
 
         <GuideStep id="k-butce" n="3.7" title="Metraj ve bütçe">
-          <p>Bütçe üç yoldan doldurulur; aynı projede üçünü birlikte kullanabilirsiniz:</p>
+          <p>Bütçe dört yoldan doldurulur; aynı projede birlikte kullanabilirsiniz. Elinizde ayrıntılı metraj yoksa <b>hızlı bütçe</b> ile başlayın, ayrıntı geldikçe gerçek kalemleri ekleyin.</p>
+          <p className="font-medium">0) Hızlı bütçe (en kısası)</p>
+          <p>
+            <Nav>Bütçe → Hızlı bütçe (m² ile)</Nav>: her ana gruba m² başına (ör. kaba inşaat 9.000 TL/m²) veya toplam (götürü) tutar yazın; program inşaat alanıyla çarpar. Tekrar
+            kaydedince önceki hızlı satırların yerine geçer. Aynı grupta ayrıntılı satır varsa uyarır; tutarı iki kez yazmayın.
+          </p>
+          <Shot eager={print} src="15b-hizli-butce" alt="Hızlı bütçe ekranı" caption="Örnek: 2.000 m² × (kaba 10.000 + ince 6.500 TL/m²) + ruhsat 1,5 milyon = 34,5 milyon TL." />
           <p className="font-medium">a) Parametrik metraj (katsayıyla, en hızlısı)</p>
           <p>
-            <Nav>Metraj</Nav> ekranında beton, demir, kalıp, iç sıva ve iç boya için hazır katsayılar vardır (ör. beton 0,42 m³ / m² inşaat alanı). Program bunları alanla çarpar: 3.200 m² × 0,42 =
+            <Nav>Bütçe → Metraj</Nav> sekmesinde beton, demir, kalıp, iç sıva ve iç boya için hazır katsayılar vardır (ör. beton 0,42 m³ / m² inşaat alanı). Program bunları alanla çarpar: 3.200 m² × 0,42 =
             1.344 m³ beton. <Nav>Bütçede olmayanları ekle</Nav> ile bu satırlar bütçeye eklenir. Katsayıları projenize göre düzeltin.
           </p>
           <Shot eager={print} src="12-metraj" alt="Metraj ekranı ve katsayılar" />
           <p className="font-medium">b) Birim fiyat vermek</p>
           <p>
-            <Nav>Bütçe</Nav> ekranında satırın kalem simgesi (<Nav>Düzenle</Nav>) → “Birim fiyat” bölümünde üç seçenek:
+            <Nav>Bütçe</Nav> sekmesinde satırın kalem simgesi (<Nav>Düzenle</Nav>) → “Birim fiyat” bölümünde üç seçenek:
           </p>
           <ul>
             <li>
@@ -322,14 +353,14 @@ export function GuideContent({ print = false }: { print?: boolean }) {
           <Tip tone="calc">70.170.766,40 TL ÷ 1.575 m² = 44.552,87 TL / m² (müteahhit satılabilir m² maliyeti).</Tip>
           <p className="font-medium">Baz bütçeyi dondurmak</p>
           <p>
-            Bütçe hazır olunca <Nav>Bütçe kontrolü → Bütçeyi dondur (baz bütçe)</Nav>. Bu, bugünkü bütçenin fotoğrafıdır; inşaat boyunca sapmalar bu referansa göre izlenir. Güncel bütçe ise fiyat ve
+            Bütçe hazır olunca <Nav>Bütçe → Bütçe kontrolü → Bütçeyi dondur (baz bütçe)</Nav>. Bu, bugünkü bütçenin fotoğrafıdır; inşaat boyunca sapmalar bu referansa göre izlenir. Güncel bütçe ise fiyat ve
             metraj değiştikçe değişmeye devam eder.
           </p>
         </GuideStep>
 
         <GuideStep id="k-fiyat" n="3.8" title="Fiyat listesi">
           <p>
-            <Nav>Fiyatlandırma</Nav> ekranı maliyetten satış fiyatına giden yolu gösterir: maliyet + reklam payı → kâr ve komisyonla baz m² fiyatı → kat / cephe / manzara katsayıları → bölüm
+            <Nav>Satış → Fiyatlandırma</Nav> sekmesi maliyetten satış fiyatına giden yolu gösterir: maliyet + reklam payı → kâr ve komisyonla baz m² fiyatı → kat / cephe / manzara katsayıları → bölüm
             fiyatları.
           </p>
           <Shot eager={print} src="17-fiyatlandirma" alt="Fiyatlandırma ekranı özeti" caption="Üstteki kutular: maliyet, başabaş fiyatı, baz m² satış fiyatı, hedef gelir, beklenen kâr." />
@@ -368,7 +399,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
         <GuideStep id="k-nakit" n="3.9" title="İş programı ve nakit varsayımları">
           <ol>
             <li>
-              <Nav>Nakit akışı → İş programı → Varsayılan program öner</Nav>: maliyet grupları tipik konut sırasına göre aylara yayılır (hafriyat başta, ince işler sonda). Projeye göre düzeltin.
+              <Nav>Nakit ve rapor → Nakit akışı → İş programı → Varsayılan program öner</Nav>: maliyet grupları tipik konut sırasına göre aylara yayılır (hafriyat başta, ince işler sonda). Projeye göre düzeltin.
             </li>
             <li>
               <Nav>Nakit akışı</Nav> ekranında varsayımları girin: başlangıç nakdi (özkaynak), aylık maliyet artışı, aylık finansman maliyeti, ayda kaç bölüm satılacağı, satışın kaçıncı ayda
@@ -390,7 +421,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
           />
           <Tip tone="warn" title="Bu örnekten çıkan ders">
             Aylık %2 maliyet artışı girilince beklenen kâr %25’ten yaklaşık %4’e düşüyor. Çünkü fiyat listesi bugünkü maliyetle hesaplandı, oysa harcamalar 24 aya yayılıyor. Böyle bir durumda fiyat
-            listesini artışa göre güncelleyin veya <Nav>Senaryolar</Nav> ekranında farklı durumları karşılaştırın (bkz. 7. bölüm).
+            listesini artışa göre güncelleyin veya <Nav>Senaryolar</Nav> ekranında (gelişmiş görünüm) farklı durumları karşılaştırın (bkz. 7. bölüm).
           </Tip>
           <p>8 adım bitince panelden “Proje kurulumu” kutusu kalkar. Proje artık günlük kullanıma hazırdır.</p>
         </GuideStep>
@@ -450,7 +481,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
 
         <GuideStep n="4" title="Ödemeler: vade listesi">
           <p>
-            <Nav>Vade listesi</Nav> (şirket geneli): ödenmemiş harcamalar, bağlantı taksitleri ve onaylı hakedişlerin net ödemeleri vade sırasıyla görünür. Ödeme yapınca kaydı seçip{" "}
+            <Nav>Ödemeler → Vade listesi</Nav> (şirket geneli): ödenmemiş harcamalar, bağlantı taksitleri ve onaylı hakedişlerin net ödemeleri vade sırasıyla görünür. Ödeme yapınca kaydı seçip{" "}
             <Nav>Ödendi işaretle</Nav>.
           </p>
           <Shot eager={print} src="38-vade-listesi" alt="Vade listesi" />
@@ -463,7 +494,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
           <p>Tedarikçiyle önceden miktar ve fiyat sabitlediyseniz (ör. 1.400 m³ beton, 3.150 TL/m³):</p>
           <ol>
             <li>
-              <Nav>Bağlantılar → Yeni bağlantı</Nav>: tedarikçi, fiyat tipi (sabit / dövize bağlı), geçerlilik ve son çekiş tarihi.
+              <Nav>Satın alma → Bağlantılar → Yeni bağlantı</Nav>: tedarikçi, fiyat tipi (sabit / dövize bağlı), geçerlilik ve son çekiş tarihi.
             </li>
             <li>Kalemler: malzeme adı, maliyet kalemi (ör. 05.04.01 Hazır beton), isteğe bağlı kütüphane malzemesi, miktar, birim, birim fiyat, KDV.</li>
             <li>
@@ -490,7 +521,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
         <GuideStep n="3" title="Taşeron sözleşmesi ve hakediş">
           <ol>
             <li>
-              <Nav>Taşeron & hakediş → Yeni sözleşme</Nav>: taşeron, sözleşme no, iş, temin şekli, KDV, <b>KDV tevkifatı</b> (ör. 4/10 için 40), <b>teminat kesintisi</b> (%5), avans mahsup oranı ve
+              <Nav>Harcamalar → Taşeron & hakediş → Yeni sözleşme</Nav>: taşeron, sözleşme no, iş, temin şekli, KDV, <b>KDV tevkifatı</b> (ör. 4/10 için 40), <b>teminat kesintisi</b> (%5), avans mahsup oranı ve
               birim fiyatlar (ör. betonarme işçiliği 3.200 m² × 1.400 TL).
             </li>
             <li>
@@ -520,7 +551,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
       >
         <GuideStep n="1" title="Satışlar ekranı">
           <p>
-            Boş / rezerve / satıldı / arsa sahibi bölümler, toplam satış, tahsil edilen ve kalan alacak. <Nav>Kat planı</Nav> düğmesi bölümleri renkli kutular halinde gösterir.
+            <Nav>Satış → Satışlar</Nav>: boş / rezerve / satıldı / arsa sahibi bölümler, toplam satış, tahsil edilen ve kalan alacak. <Nav>Kat planı</Nav> düğmesi bölümleri renkli kutular halinde gösterir.
           </p>
           <Shot eager={print} src="33-satislar" alt="Satışlar ekranı" />
         </GuideStep>
@@ -574,28 +605,28 @@ export function GuideContent({ print = false }: { print?: boolean }) {
       <GuideSection id="takip" title="7. Takip: bütçe, nakit, senaryo">
         <GuideStep n="1" title="Bütçe kontrolü">
           <p>
-            <Nav>Bütçe kontrolü</Nav>: her kalem için baz bütçe, gerçekleşen, tamamlanma ve <b>tahmini tamamlanma maliyeti (EAC)</b>. EAC = bugüne kadar harcanan + kalan iş × güncel fiyat. Sapma = baz
-            bütçe − EAC; eksi çıkan kalem bütçeyi aşacak demektir. “Yalnızca aşım, risk ve bütçesiz kalemler” kutusu listeyi kısaltır.
+            <Nav>Bütçe → Bütçe kontrolü</Nav>: her kalem için baz bütçe, gerçekleşen, tamamlanma ve <b>tahmini toplam maliyet (EAC)</b> = bugüne kadar harcanan + kalan iş × güncel fiyat. Sapma = baz
+            bütçe − tahmini toplam; eksi çıkan kalem bütçeyi aşacak demektir. “Yalnızca aşım, risk ve bütçesiz kalemler” kutusu listeyi kısaltır.
           </p>
           <Shot eager={print} src="16-butce-kontrolu" alt="Bütçe kontrolü ekranı" />
         </GuideStep>
         <GuideStep n="2" title="Senaryolar: “ya şöyle olursa?”">
           <p>
-            <Nav>Senaryolar</Nav> ekranı hazır duyarlılıkları gösterir: demir %15 artarsa, döviz %20 artarsa, inşaat 3 ay uzarsa, arsa payı %50 olursa. Her birinde maliyet, gelir, kâr ve gereken m²
+            <Nav>Nakit ve rapor → Senaryolar</Nav> (gelişmiş görünüm) hazır duyarlılıkları gösterir: demir %15 artarsa, döviz %20 artarsa, inşaat 3 ay uzarsa, arsa payı %50 olursa. Her birinde maliyet, gelir, kâr ve gereken m²
             fiyatı yan yana görünür. <Nav>Yeni senaryo</Nav> ile kendi iyimser / kötümser senaryonuzu kaydedin.
           </p>
           <Shot eager={print} src="34-senaryolar" alt="Senaryolar ekranı" caption="Alttaki “Kâra en çok etki eden kalemler” listesi neyi yakından izlemeniz gerektiğini gösterir." />
         </GuideStep>
-        <GuideStep n="3" title="Portföy ve bildirimler">
+        <GuideStep n="3" title="Proje paneli, portföy ve bildirimler">
           <p>
-            <Nav>Portföy</Nav>: tüm projelerin özeti, bu hafta ödenecekler, bağlantı uyarıları. Zil: size düşen işler. Bir bildirime tıklayınca ilgili ekran açılır; iş bitince bildirim kendiliğinden
+            Her projenin <Nav>Proje paneli</Nav> beş soru kartıyla durumu özetler (bkz. 1.2). <Nav>Portföy</Nav>: tüm projelerin özeti, bu hafta ödenecekler, bağlantı uyarıları. Zil: size düşen işler. Bir bildirime tıklayınca ilgili ekran açılır; iş bitince bildirim kendiliğinden
             kaybolur.
           </p>
           <Shot eager={print} src="40-bildirimler" alt="Portföy ve bildirimler" />
         </GuideStep>
         <GuideStep n="4" title="Raporlar">
           <p>
-            <Nav>Raporlar</Nav>: maliyet kalemine, aya, bloğa ve tedarikçiye göre harcamalar; kayıtlar Excel olarak indirilir. Şirket geneli <Nav>Projeler arası raporlar</Nav> projeleri m² maliyeti,
+            <Nav>Raporlar</Nav>: maliyet kalemine, aya, bloğa ve tedarikçiye göre harcamalar; kayıtlar Excel olarak indirilir. Şirket geneli <Nav>Şirket raporları → Projeler arası</Nav> projeleri m² maliyeti,
             bütçe, tahmini tamamlanma maliyeti, gelir ve beklenen kârla karşılaştırır.
           </p>
         </GuideStep>
@@ -605,7 +636,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
       <GuideSection id="aysonu" title="8. Ay sonu ve güvenlik">
         <GuideStep n="1" title="Muhasebeci paketi">
           <p>
-            <Nav>Muhasebeci paketi</Nav> → dönem seçin (<Nav>Geçen ay</Nav> / <Nav>Bu ay</Nav>) → <Nav>Paketi indir (ZIP)</Nav>. İçinde onaylı fatura listesi (Excel), tedarikçi cari özetleri, avanslar
+            <Nav>Ödemeler → Muhasebeci paketi</Nav> → dönem seçin (<Nav>Geçen ay</Nav> / <Nav>Bu ay</Nav>) → <Nav>Paketi indir (ZIP)</Nav>. İçinde onaylı fatura listesi (Excel), tedarikçi cari özetleri, avanslar
             ve belge fotoğrafları vardır. Mali müşavirinize e-postayla gönderebilirsiniz.
           </p>
           <Shot eager={print} src="41-muhasebeci" alt="Muhasebeci paketi" />

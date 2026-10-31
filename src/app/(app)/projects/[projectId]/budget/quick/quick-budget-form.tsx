@@ -77,7 +77,7 @@ export function QuickBudgetForm({ projectId, area, groups }: { projectId: string
                   {r.detailed > 0 && <span className="block text-xs text-amber-700">Bu grupta {r.detailed} ayrıntılı satır var; tutarı iki kez yazmayın.</span>}
                 </td>
                 <td className="px-3 py-2">
-                  <NativeSelect aria-label={`${r.code} hesap şekli`} value={r.mode} onChange={(e) => set(i, { mode: e.target.value as Group["mode"] })} className="w-36">
+                  <NativeSelect aria-label={`${r.code} hesap şekli`} value={r.mode} onChange={(e) => set(i, { mode: e.target.value as Group["mode"] })} className="w-44">
                     <option value="m2">m² başına</option>
                     <option value="lump">Götürü (toplam)</option>
                   </NativeSelect>

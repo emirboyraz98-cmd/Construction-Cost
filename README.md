@@ -355,7 +355,15 @@ program yine tarayıcıdan kullanılır.
 
 ### Kullanım kolaylıkları
 
-- Menü başlıklar altında: Günlük işler, Satın alma, Bina ve maliyet, Satış, Finans ve rapor.
+- **Sade menü:** proje için 6 başlık (Proje paneli, Harcamalar, Bina ve arsa, Bütçe, Satış, Nakit ve rapor),
+  şirket için 5 başlık (Portföy, Satın alma, Ödemeler, Şirket raporları, Ayarlar). Alt ekranlar sayfanın üstünde sekmedir.
+- **ⓘ açıklamalar:** başlık, özet rakam ve form alanlarının yanındaki ⓘ'ya gelince (telefonda dokununca) kavramın ne olduğu,
+  neden önemli olduğu ve örnek hesap açılır. Metinler `src/lib/glossary.ts` dosyasındadır.
+- **Basit / gelişmiş görünüm:** varsayılan basit görünümde kısa formlar (isteğe bağlı alanlar “Ayrıntılar” altında) ve
+  ana rakamlar görünür. Kullanıcı menüsü → **Gelişmiş görünüm** ile maliyet ağacı, senaryolar, kütüphane, malzeme transferi,
+  ortak fatura ve formlardaki formül / reçete / döviz seçenekleri açılır (tarayıcı başına hatırlanır).
+- **Proje paneli beş soru:** Ne harcadık? Bütçe ne durumda? Ne sattık? Kasada ne var, ne lazım? Bu hafta ne ödenecek?
+- **Hızlı bütçe:** Bütçe → Hızlı bütçe (m² ile): ana gruplara m² başına veya götürü tutar; ayrıntılı metraj sonra eklenir.
 - Giriş sonrası: şantiye şefi doğrudan **harcama girişine**, satış ekibi **satışlara** gelir (tek projesi varsa).
 - Proje panelinin üstünde role göre büyük düğmeler (Harcama gir, Malzeme geldi, Onay bekleyen, Satış
   yap, Tahsilat gir) ve yeni projede **“Proje kurulumu”** adım listesi.
