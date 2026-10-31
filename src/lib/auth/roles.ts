@@ -75,7 +75,10 @@ export type Capability =
   | "cashflow.edit"
   | "scenario.manage"
   | "companyCash.view"
-  | "companyCash.manage";
+  | "companyCash.manage"
+  // Yönetim
+  | "audit.view"
+  | "backup.manage";
 
 const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "project.create": [Role.yonetici, Role.teknik_ofis],
@@ -167,6 +170,9 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   /** Şirket geneli konsolide nakit */
   "companyCash.view": [Role.yonetici, Role.muhasebe, Role.dis_muhasebeci],
   "companyCash.manage": [Role.yonetici, Role.muhasebe],
+  /** Değişiklik geçmişi (kim neyi ne zaman değiştirdi) ve yedekler */
+  "audit.view": [Role.yonetici],
+  "backup.manage": [Role.yonetici],
 };
 
 export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {

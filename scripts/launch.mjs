@@ -40,12 +40,18 @@ function run(command, commandArgs, options = {}) {
 const node = (script, scriptArgs, env) => run(process.execPath, [script, ...scriptArgs], { env: { ...process.env, ...env } });
 const nextBin = path.join("node_modules", "next", "dist", "bin", "next");
 
+// Gömülü PostgreSQL, Windows'ta Türkçe karakter veya boşluk içeren klasör yollarında sorun çıkarabilir.
+if (isWindows && /[^\x00-\x7F]| /.test(root)) {
+  say(`Uyarı: klasör yolu Türkçe karakter veya boşluk içeriyor (${root}). Sorun yaşarsanız klasörü C:\\insaat gibi bir yere taşıyın.`);
+}
+
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 22 || (major === 22 && minor < 12)) fail(`Node.js 22.12 veya üstü gerekli (bu bilgisayarda ${process.versions.node}). nodejs.org adresinden LTS sürümünü kurun.`);
 
 if (args.has("--update")) {
   say("Son sürüm GitHub'dan alınıyor ...");
-  if ((await run("git", ["pull", "--ff-only"])) !== 0) fail("git pull başarısız. Klasörde elle yapılmış değişiklik olabilir.");
+  if (!fs.existsSync(".git")) fail("Bu klasör Git ile indirilmemiş (ZIP olarak indirildiyse güncelleme yapılamaz). README'deki “Bir kez yapılacaklar” adımıyla git clone kullanın.");
+  if ((await run("git", ["pull", "--ff-only"])) !== 0) fail("Güncelleme alınamadı. Git kurulu mu ve internet var mı kontrol edin; klasörde elle değiştirilmiş dosya varsa geri alın.");
 }
 
 if (args.has("--update") || !fs.existsSync("node_modules")) {
@@ -70,6 +76,37 @@ if (args.has("--demo")) {
   if ((await node("scripts/with-db.mjs", ["--prepare", "--", "tsx", "prisma/demo.ts"], env)) !== 0) fail("Örnek veri yüklenemedi.");
 }
 
+const openBrowser = (url) => {
+  const opener = isWindows ? ["cmd", ["/c", "start", "", url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
+  spawn(opener[0], opener[1], { stdio: "ignore", detached: true }).on("error", () => {}).unref();
+};
+
+// Program zaten açıksa (ör. pencere arkada kaldıysa) ikinci kez başlatmak yerine tarayıcıyı aç.
+const alreadyOpen = await new Promise((resolve) => {
+  const socket = net.connect({ host: "127.0.0.1", port: PORT });
+  socket.once("connect", () => (socket.destroy(), resolve(true)));
+  socket.once("error", () => resolve(false));
+});
+if (alreadyOpen) {
+  // Portu kullanan bu program mı, başka bir uygulama mı?
+  const ours = await fetch(`http://127.0.0.1:${PORT}/manifest.webmanifest`)
+    .then((r) => r.text())
+    .then((t) => t.includes("İnşaat Maliyet"))
+    .catch(() => false);
+  if (!ours) fail(`${PORT} portunu başka bir program kullanıyor. .env dosyasına PORT=3005 gibi başka bir port yazın.`);
+  say(`Program zaten açık: http://localhost:${PORT} (tarayıcıda açılıyor). Kapatmak için açık olan program penceresinde Ctrl + C.`);
+  openBrowser(`http://localhost:${PORT}`);
+  process.exit(0);
+}
+
+/** Günlük otomatik yedek (demo hariç): program açılınca ve açık kaldığı sürece saatte bir kontrol. */
+function scheduleBackups() {
+  if (args.has("--demo")) return;
+  const backup = () => node("scripts/backup.mjs", ["--auto"], env).catch(() => {});
+  void backup();
+  setInterval(backup, 60 * 60 * 1000).unref();
+}
+
 /** Program açılınca tarayıcıyı açar ve telefondan bağlanılacak adresi yazar. */
 function openWhenReady() {
   const started = Date.now();
@@ -83,8 +120,8 @@ function openWhenReady() {
       say(`Program hazır: ${url}`);
       if (lan.length) say(`Aynı Wi-Fi'daki telefondan: ${lan.join("  veya  ")}`);
       say("Kapatmak için bu pencerede Ctrl + C.");
-      const opener = isWindows ? ["cmd", ["/c", "start", "", url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
-      spawn(opener[0], opener[1], { stdio: "ignore", detached: true }).on("error", () => {}).unref();
+      openBrowser(url);
+      scheduleBackups();
     });
     socket.once("error", () => {
       socket.destroy();

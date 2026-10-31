@@ -1,11 +1,16 @@
 import { redirect } from "next/navigation";
 import { getAccess } from "@/server/access";
 
-/** Giriş sonrası: tek projesi olan kullanıcı (ör. şantiye şefi) doğrudan projesine gider. */
+/**
+ * Giriş sonrası açılış: tek projesi olan kullanıcı doğrudan işine gider — şantiye şefi harcama
+ * girişine, satış ekibi satış ekranına, diğerleri proje paneline. Birden fazla projede portföy.
+ */
 export default async function HomePage() {
   const { scope } = await getAccess();
   if (!scope.all && scope.grants.size === 1) {
-    const [projectId] = scope.grants.keys();
+    const [[projectId, role]] = scope.grants.entries();
+    if (role === "santiye_sefi") redirect(`/projects/${projectId}/expenses/new`);
+    if (role === "satis") redirect(`/projects/${projectId}/sales`);
     redirect(`/projects/${projectId}`);
   }
   redirect("/portfolio");

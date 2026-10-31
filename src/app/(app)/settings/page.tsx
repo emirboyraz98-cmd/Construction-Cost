@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRightIcon, CoinsIcon, KeyRoundIcon, PercentIcon, UsersIcon } from "lucide-react";
+import { ChevronRightIcon, CoinsIcon, DatabaseBackupIcon, HistoryIcon, KeyRoundIcon, PercentIcon, UsersIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,12 @@ export default async function SettingsPage() {
       : []),
     ...(hasCapability(user.role, "parameters.manage")
       ? [{ href: "/settings/parameters", icon: PercentIcon, label: "Vergi, harç ve oran parametreleri", note: "KDV oranları; yıl / belediye bazında oranlar" }]
+      : []),
+    ...(hasCapability(user.role, "backup.manage")
+      ? [{ href: "/settings/backups", icon: DatabaseBackupIcon, label: "Yedekler", note: "Otomatik günlük yedekler, şimdi yedek al, indir" }]
+      : []),
+    ...(hasCapability(user.role, "audit.view")
+      ? [{ href: "/settings/history", icon: HistoryIcon, label: "Değişiklik geçmişi", note: "Kim neyi ne zaman ekledi, değiştirdi, sildi" }]
       : []),
     { href: "/settings/account", icon: KeyRoundIcon, label: "Hesabım", note: "Şifre değiştir" },
   ];

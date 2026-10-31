@@ -176,6 +176,41 @@ export const COMPANY_MODULES: readonly (ModuleDef & { href: string })[] = [
   { key: "settings", href: "/settings", label: "Ayarlar", description: "Kullanıcılar ve ayarlar." },
 ];
 
+/** Menüde başlıklar altında gruplama (sırayla); listede olmayan modül son gruba düşer. */
+export const PROJECT_GROUPS: readonly { label: string; keys: readonly string[] }[] = [
+  { label: "Günlük işler", keys: ["", "expenses", "collections"] },
+  { label: "Satın alma", keys: ["contracts"] },
+  { label: "Bina ve maliyet", keys: ["blocks", "units", "land", "quantities", "budget", "control", "cost-tree"] },
+  { label: "Satış", keys: ["pricing", "sales"] },
+  { label: "Finans ve rapor", keys: ["cash-flow", "scenarios", "reports"] },
+];
+
+export const COMPANY_GROUPS: readonly { label: string; keys: readonly string[] }[] = [
+  { label: "Genel", keys: ["portfolio", "projects"] },
+  { label: "Satın alma", keys: ["connections", "transfers", "suppliers", "library"] },
+  { label: "Muhasebe", keys: ["payables", "shared-invoice", "accountant"] },
+  { label: "Finans", keys: ["cash", "reports"] },
+  { label: "Sistem", keys: ["settings"] },
+];
+
+/** Modülleri gruplara ayırır (boş gruplar atlanır). */
+export function groupModules<T extends { key: string }>(modules: readonly T[], groups: readonly { label: string; keys: readonly string[] }[]) {
+  const used = new Set<string>();
+  const result = groups
+    .map((g) => {
+      const items = g.keys.map((k) => modules.find((m) => m.key === k)).filter((m): m is T => Boolean(m));
+      items.forEach((m) => used.add(m.key));
+      return { label: g.label, items };
+    })
+    .filter((g) => g.items.length > 0);
+  const rest = modules.filter((m) => !used.has(m.key));
+  if (rest.length) {
+    if (result.length) result[result.length - 1].items.push(...rest);
+    else result.push({ label: "", items: rest });
+  }
+  return result;
+}
+
 export function projectModuleHref(projectId: string, key: string): string {
   return key ? `/projects/${projectId}/${key}` : `/projects/${projectId}`;
 }

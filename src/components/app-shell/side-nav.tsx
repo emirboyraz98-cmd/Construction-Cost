@@ -36,7 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Role } from "@/generated/prisma/enums";
 import { hasCapability } from "@/lib/auth/roles";
 import { PROJECT_STATUS_LABELS } from "@/lib/labels";
-import { COMPANY_MODULES, PROJECT_MODULES, projectModuleHref } from "@/lib/modules";
+import { COMPANY_GROUPS, COMPANY_MODULES, groupModules, PROJECT_GROUPS, PROJECT_MODULES, projectModuleHref } from "@/lib/modules";
 import { cn } from "@/lib/utils";
 import type { ShellProject } from "./types";
 
@@ -69,9 +69,14 @@ const COMPANY_ICONS: Record<string, LucideIcon> = {
   "shared-invoice": SplitIcon,
   accountant: FileArchiveIcon,
   library: BookOpenIcon,
+  cash: BanknoteIcon,
   reports: TrendingUpIcon,
   settings: SettingsIcon,
 };
+
+function GroupLabel({ children }: { children: string }) {
+  return children ? <p className="px-2.5 pt-2 pb-0.5 text-[11px] font-medium text-muted-foreground/80">{children}</p> : null;
+}
 
 function NavLink({
   href,
@@ -146,23 +151,29 @@ export function SideNav({
               <p className="text-xs text-muted-foreground">{PROJECT_STATUS_LABELS[project.status]}</p>
             </div>
             <nav className="grid grid-cols-1 gap-0.5" aria-label="Proje modülleri">
-              {PROJECT_MODULES.filter(
-                (module) => !module.capability || hasCapability(role, module.capability),
-              ).map((module) => {
-                const href = projectModuleHref(project.id, module.key);
-                const active = module.key ? pathname.startsWith(href) : pathname === href;
-                return (
-                  <NavLink
-                    key={module.key || "panel"}
-                    href={href}
-                    icon={PROJECT_ICONS[module.key] ?? GaugeIcon}
-                    label={module.label}
-                    phase={module.phase}
-                    active={active}
-                    onNavigate={onNavigate}
-                  />
-                );
-              })}
+              {groupModules(
+                PROJECT_MODULES.filter((module) => !module.capability || hasCapability(role, module.capability)),
+                PROJECT_GROUPS,
+              ).map((group) => (
+                <div key={group.label} className="grid grid-cols-1 gap-0.5">
+                  <GroupLabel>{group.label}</GroupLabel>
+                  {group.items.map((module) => {
+                    const href = projectModuleHref(project.id, module.key);
+                    const active = module.key ? pathname.startsWith(href) : pathname === href;
+                    return (
+                      <NavLink
+                        key={module.key || "panel"}
+                        href={href}
+                        icon={PROJECT_ICONS[module.key] ?? GaugeIcon}
+                        label={module.label}
+                        phase={module.phase}
+                        active={active}
+                        onNavigate={onNavigate}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
           </>
         ) : (
@@ -181,22 +192,24 @@ export function SideNav({
           Şirket geneli
         </h2>
         <nav className="grid grid-cols-1 gap-0.5" aria-label="Şirket geneli">
-          {COMPANY_MODULES.filter(
-            (module) => !module.capability || hasCapability(userRole, module.capability),
-          ).map((module) => (
-            <NavLink
-              key={module.key}
-              href={module.href}
-              icon={COMPANY_ICONS[module.key] ?? SettingsIcon}
-              label={module.label}
-              phase={module.phase}
-              active={
-                module.href === "/projects"
-                  ? pathname === "/projects"
-                  : pathname.startsWith(module.href)
-              }
-              onNavigate={onNavigate}
-            />
+          {groupModules(
+            COMPANY_MODULES.filter((module) => !module.capability || hasCapability(userRole, module.capability)),
+            COMPANY_GROUPS,
+          ).map((group) => (
+            <div key={group.label} className="grid grid-cols-1 gap-0.5">
+              <GroupLabel>{group.label}</GroupLabel>
+              {group.items.map((module) => (
+                <NavLink
+                  key={module.key}
+                  href={module.href}
+                  icon={COMPANY_ICONS[module.key] ?? SettingsIcon}
+                  label={module.label}
+                  phase={module.phase}
+                  active={module.href === "/projects" ? pathname === "/projects" : pathname.startsWith(module.href)}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </div>
           ))}
         </nav>
       </section>

@@ -59,9 +59,14 @@ Veritabanı kurmanız gerekmez, program kendi veritabanını klasörün içinde 
 | **`baslat.bat`** | Programı açar. İlk seferde gerekli paketleri indirir ve programı derler (birkaç dakika). Hazır olunca tarayıcı kendiliğinden açılır. |
 | **`demo.bat`** | Örnek verili deneme. Ayrı bir **demo veritabanına** dolu bir proje yükler: bölümler, harcamalar, bağlantı, taşeron hakedişi, kütüphane, bütçe. Gerçek verilerinize dokunmaz. |
 | **`guncelle.bat`** | GitHub'dan son sürümü alır, paketleri günceller ve programı yeniden derler. Sonra `baslat.bat` ile açın. |
+| **`yedekle.bat`** | Hemen bir yedek alır (`yedekler/` klasörüne). Program açıkken de çalışır. |
+| **`geri-yukle.bat`** | Seçtiğiniz yedeği geri yükler. **Önce programı kapatın.** |
 
 - Kapatmak için siyah pencerede **Ctrl + C**, sonra pencereyi kapatın. Veritabanı düzgünce kapanır.
-- `baslat.bat` ve `demo.bat` aynı anda açılmaz (ikisi de 3000 portunu kullanır).
+- `baslat.bat` ve `demo.bat` aynı anda açılmaz (ikisi de 3000 portunu kullanır). Program zaten açıksa
+  `baslat.bat` ikinci kez başlatmaz, yalnızca tarayıcıyı açar.
+- Program klasörünü **`C:\insaat`** gibi Türkçe karakter ve boşluk içermeyen bir yere koyun
+  (gömülü veritabanı bu tür yollarda sorun çıkarabilir).
 - Komut satırını tercih ederseniz: `npm run baslat`, `npm run demo`, `npm run guncelle`.
 
 ### Varsayılan giriş
@@ -94,7 +99,7 @@ program yine tarayıcıdan kullanılır.
 
 - **`.pgdata`** klasörü: veritabanı (gerçek veriler ve ayrıca demo veritabanı).
 - **`uploads`** klasörü: fiş / fatura fotoğrafları ve PDF'ler.
-- **Yedek:** Program kapalıyken bu iki klasörü birlikte harici diske veya buluta kopyalayın.
+- **Yedek:** Program her açılışta (ve açık kaldığı sürece günde bir) **otomatik yedek** alır → `yedekler/` klasörü. Ayrıntı: aşağıda “Yedek ve geri yükleme”.
   Bu klasörleri silmek bütün verileri siler.
 - İleride sunucuya (online) geçildiğinde veriler bu klasörlerden taşınır.
 
@@ -319,6 +324,36 @@ program yine tarayıcıdan kullanılır.
   taksit yazar; tıklayınca sözleşme veya satış formu açılır); bölümler ekranında renk = müteahhit / arsa
   sahibi.
 
+### Yedek ve geri yükleme
+
+- **Otomatik:** `baslat.bat` her açılışta o günün yedeği yoksa yedek alır; program günlerce açık
+  kalırsa saatte bir kontrol edip gün değişince yine alır. Yedek = tüm veriler + fiş / fatura
+  fotoğrafları, tek ZIP: `yedekler/yedek-2026-10-31_0915.zip`. Son 14 yedek tutulur, eskiler silinir.
+- **Elle:** `yedekle.bat` veya programda **Ayarlar → Yedekler → Şimdi yedek al** (oradan indirilebilir).
+- **Bilgisayar dışına:** Yedek aynı bilgisayardaysa disk bozulunca o da gider. Program klasöründe
+  `.env` adlı bir dosya oluşturup içine şu satırı yazarsanız yedekler OneDrive / Google Drive
+  klasörüne alınır (buluta kendiliğinden gider):
+  ```
+  BACKUP_DIR=C:\Users\KullaniciAdi\OneDrive\InsaatYedek
+  ```
+- **Geri yükleme:** Programı kapatın (pencerede Ctrl + C), **`geri-yukle.bat`** çalıştırın, listeden
+  yedeği seçin ve `EVET` yazın. Önce mevcut durumun yedeği alınır, sonra veriler yedektekiyle değiştirilir.
+
+### Güvenlik
+
+- Aynı e-postayla 15 dakikada 5 hatalı şifre denemesinde giriş 15 dakika kilitlenir (aynı bilgisayardan
+  20 denemede de). Kilitlenme değişiklik geçmişine yazılır.
+- **Ayarlar → Değişiklik geçmişi** (yönetici): kim, neyi, ne zaman ekledi / değiştirdi / sildi / onayladı.
+- Telefondan bağlanırken Windows güvenlik duvarı ilk açılışta izin sorar: **“Özel ağlar”** için izin verin.
+
+### Kullanım kolaylıkları
+
+- Menü başlıklar altında: Günlük işler, Satın alma, Bina ve maliyet, Satış, Finans ve rapor.
+- Giriş sonrası: şantiye şefi doğrudan **harcama girişine**, satış ekibi **satışlara** gelir (tek projesi varsa).
+- Proje panelinin üstünde role göre büyük düğmeler (Harcama gir, Malzeme geldi, Onay bekleyen, Satış
+  yap, Tahsilat gir) ve yeni projede **“Proje kurulumu”** adım listesi.
+- Kullanıcı menüsü → **Nasıl kullanılır?**: role göre adım adım kısa kılavuz.
+
 ### Telefona uygulama gibi ekleme
 
 Telefonda programı açtıktan sonra tarayıcı menüsünden **“Ana ekrana ekle”** (Android / Chrome)
@@ -351,7 +386,7 @@ Fiş fotoğrafı çekerken telefon kamerası doğrudan açılır; fotoğraflar y
   yazın; bu durumda gömülü veritabanı hiç başlatılmaz.
 - **Belge dosyaları** (fiş / fatura fotoğrafları, PDF) `uploads/` klasöründe tutulur.
   Başka bir klasör için `.env` dosyasına `UPLOAD_DIR` yazın.
-- **Yedek:** Program kapalıyken **`.pgdata` ve `uploads` klasörlerinin ikisini birlikte** kopyalayın.
+- **Yedek:** Otomatik günlük yedek `yedekler/` klasörüne alınır (aşağıya bakın); ek olarak program kapalıyken `.pgdata` ve `uploads` klasörlerini birlikte kopyalayabilirsiniz.
   Bu klasörleri silmek **bütün verileri / belgeleri siler**.
 
 ## Sorun giderme

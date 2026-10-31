@@ -37,3 +37,7 @@ src/generated/
 # Next.js / TypeScript
 next-env.d.ts
 *.tsbuildinfo
+
+# Yedekler (yedekle.bat / otomatik)
+yedekler/
+.pg-pw-*

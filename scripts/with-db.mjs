@@ -15,7 +15,6 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import net from "node:net";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -151,7 +150,9 @@ async function startEmbeddedPostgres() {
     log(`İlk çalıştırma: gömülü veritabanı oluşturuluyor (${path.relative(root, EMBEDDED.dir)}/) ...`);
     fs.mkdirSync(EMBEDDED.dir, { recursive: true });
     if (runAs) fs.chownSync(EMBEDDED.dir, runAs.uid, runAs.gid);
-    const passwordFile = path.join(os.tmpdir(), `pg-pw-${crypto.randomBytes(6).toString("hex")}`);
+    // Geçici şifre dosyası proje klasöründe: Windows'ta kullanıcı adındaki Türkçe karakterler
+    // (C:\Users\Şükrü\AppData\Local\Temp) initdb'yi bozabilir.
+    const passwordFile = path.join(root, `.pg-pw-${crypto.randomBytes(6).toString("hex")}`);
     fs.writeFileSync(passwordFile, `${EMBEDDED.password}\n`, { mode: 0o644 });
     try {
       const code = await run(
@@ -276,7 +277,9 @@ function resolvePackageBin(name) {
 }
 
 function runCommand([name, ...args], env) {
-  return spawn(process.execPath, [resolvePackageBin(name), ...args], { stdio: "inherit", env });
+  // Proje betikleri (ör. scripts/backup.mjs) doğrudan Node ile; diğerleri node_modules'taki paket komutu.
+  const entry = /\.(mjs|js)$/.test(name) ? path.join(root, name) : resolvePackageBin(name);
+  return spawn(process.execPath, [entry, ...args], { stdio: "inherit", env });
 }
 
 async function runStep(command, env, errorMessage) {

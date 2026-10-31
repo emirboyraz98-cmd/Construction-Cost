@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ListTreeIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { CheckCheckIcon, CircleCheckIcon, HandCoinsIcon, HandshakeIcon, ListTreeIcon, PencilIcon, PlusIcon, TruckIcon } from "lucide-react";
 import { InfoList } from "@/components/info-list";
 import { PageHeader } from "@/components/page-header";
 import { ApprovalBadge } from "@/components/expenses/badges";
@@ -24,7 +24,10 @@ import { projectConnections } from "@/server/connections";
 import { budgetTotals } from "@/server/budget";
 import { controlSummaries } from "@/server/control";
 import { listTotals } from "@/server/pricing";
+import { cn } from "@/lib/utils";
+import { db } from "@/server/db";
 import { salesSummaries } from "@/server/sales";
+import { projectSetupSteps } from "@/server/setup";
 import { listContracts } from "@/server/contracts";
 import { projectExpenseOverview } from "@/server/expenses";
 import { getProject, listProjectTeam } from "@/server/projects";
@@ -50,6 +53,16 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
   const priceList = hasCapability(role, "priceList.view") ? (await listTotals([projectId])).get(projectId) : undefined;
   const sales = hasCapability(role, "sales.view") ? (await salesSummaries([projectId])).get(projectId) : undefined;
   const team = hasCapability(role, "project.viewTeam") ? await listProjectTeam(projectId) : null;
+  const setup = await projectSetupSteps(projectId, role);
+  const setupLeft = setup?.filter((s) => !s.done) ?? [];
+  const pendingApprovals = hasCapability(role, "expense.approve") ? await db.expense.count({ where: { projectId, deletedAt: null, approvalStatus: "PENDING" } }) : 0;
+  const quick = [
+    canEnter && { href: `/projects/${project.id}/expenses/new`, label: "Harcama gir", icon: PlusIcon, primary: true },
+    canEnter && { href: `/projects/${project.id}/expenses/delivery`, label: "Malzeme geldi", icon: TruckIcon },
+    pendingApprovals > 0 && { href: `/projects/${project.id}/expenses?status=PENDING`, label: `Onay bekleyen (${pendingApprovals})`, icon: CheckCheckIcon },
+    hasCapability(role, "sales.manage") && { href: `/projects/${project.id}/sales/new`, label: "Satış yap", icon: HandshakeIcon },
+    hasCapability(role, "collection.manage") && sales && sales.sold > 0 && { href: `/projects/${project.id}/collections`, label: "Tahsilat gir", icon: HandCoinsIcon },
+  ].filter((q): q is { href: string; label: string; icon: typeof PlusIcon; primary?: boolean } => Boolean(q));
   const totalArea = totalConstructionArea(project.blocks);
   const floorArea = permittedFloorArea(project.landArea, project.floorAreaRatio);
   const footprint = permittedFootprint(project.landArea, project.groundCoverageRatio);
@@ -75,6 +88,43 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
       </PageHeader>
 
       <div className="grid grid-cols-1 gap-4">
+        {quick.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            {quick.map((q) => (
+              <Button key={q.href} asChild size="lg" variant={q.primary ? "default" : "outline"} className="h-12 justify-start sm:justify-center">
+                <Link href={q.href}>
+                  <q.icon />
+                  {q.label}
+                </Link>
+              </Button>
+            ))}
+          </div>
+        )}
+        {setup && setupLeft.length > 0 && (
+          <Card className="gap-3 border-sky-200 bg-sky-50/50">
+            <CardHeader>
+              <CardTitle>
+                Proje kurulumu: {setup.length - setupLeft.length} / {setup.length} adım tamam
+              </CardTitle>
+              <CardDescription>Sıradaki adımlar. Hepsi tamamlanınca bu kutu kendiliğinden kalkar.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ol className="grid grid-cols-1 gap-1.5 text-sm sm:grid-cols-2">
+                {setup.map((step, i) => (
+                  <li key={step.key}>
+                    <Link href={step.href} className={cn("flex items-start gap-2 rounded-md p-1.5 hover:bg-white", step.done && "text-muted-foreground")}>
+                      {step.done ? <CircleCheckIcon className="mt-0.5 size-4 shrink-0 text-emerald-600" /> : <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border border-sky-400 text-[10px] font-semibold text-sky-700">{i + 1}</span>}
+                      <span>
+                        <span className={cn("block font-medium", step.done && "line-through")}>{step.label}</span>
+                        {!step.done && <span className="block text-xs text-muted-foreground">{step.hint}</span>}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+        )}
         <Card className="py-4">
           <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {overview && !overview.ownOnly && (
@@ -137,14 +187,6 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
                 <CardDescription>Ödenmemiş (KDV dahil): {formatMoney(overview.unpaid)}</CardDescription>
               )}
               <CardAction className="flex gap-2">
-                {canEnter && (
-                  <Button asChild size="sm">
-                    <Link href={`/projects/${project.id}/expenses/new`}>
-                      <PlusIcon />
-                      Harcama gir
-                    </Link>
-                  </Button>
-                )}
                 <Button asChild size="sm" variant="ghost">
                   <Link href={`/projects/${project.id}/expenses`}>Tümü</Link>
                 </Button>

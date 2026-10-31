@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTransition } from "react";
-import { KeyRoundIcon, LogOutIcon, UsersIcon } from "lucide-react";
+import { CircleHelpIcon, KeyRoundIcon, LogOutIcon, UsersIcon } from "lucide-react";
 import { logoutAction } from "@/app/(app)/actions";
 import {
   DropdownMenu,
@@ -45,6 +45,12 @@ export function UserMenu({ user, canManageUsers }: { user: ShellUser; canManageU
           <p className="text-xs font-normal text-muted-foreground">{ROLE_LABELS[user.role]}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/help">
+            <CircleHelpIcon />
+            Nasıl kullanılır?
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/settings/account">
             <KeyRoundIcon />
