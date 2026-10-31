@@ -24,7 +24,7 @@ export default async function AccountantPage() {
     <>
       <PageHeader
         title="Muhasebeci paketi"
-        description="Dönemin onaylı fatura listesi (tedarikçi, vergi no, belge no, tarih, matrah, KDV, toplam), tedarikçi cari özetleri, avanslar ve belge görselleri tek ZIP dosyasında (PLAN 8.4)."
+        description="Ay sonunda mali müşavire gönderilecek paket: onaylı faturalar (Excel), tedarikçi özetleri ve belge fotoğrafları."
       />
       <PackageForm projects={projects.map((p) => ({ id: p.id, name: p.name }))} today={dateToDateInput(new Date())} />
     </>

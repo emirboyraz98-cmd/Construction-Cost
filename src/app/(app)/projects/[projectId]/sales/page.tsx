@@ -55,7 +55,7 @@ export default async function SalesPage({ params, searchParams }: PageProps<"/pr
     <>
       <PageHeader
         title="Satışlar"
-        description="Bölüm durumu, rezervasyon ve satış sözleşmeleri. Satışta bölümün fiyatı kilitlenir; fiyatlandırmada gerçek satış fiyatı kullanılır."
+        description="Hangi bölüm boş, rezerve veya satıldı; satış sözleşmeleri ve müşteriler."
         actions={
           <Button asChild variant="outline">
             <Link href={`/projects/${projectId}/sales/customers`}>

@@ -19,7 +19,7 @@ export default async function MatchPage() {
     <>
       <PageHeader
         title="Faturalardan fiyat"
-        description="Birim fiyatı girilmiş fatura satırlarını kütüphane kaynaklarıyla eşleştirin; son alım fiyatı kütüphaneye yazılır. Aynı açıklamalı satırlar bir sonraki sefer otomatik önerilir."
+        description="Fatura satırlarını kütüphane malzemeleriyle eşleştirin; son alım fiyatı kütüphaneye yazılır."
       />
       <LibraryTabs />
       {data.rows.length === 0 ? (

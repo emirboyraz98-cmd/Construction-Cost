@@ -16,7 +16,7 @@ export default async function BudgetImportPage({ params }: PageProps<"/projects/
     <>
       <PageHeader
         title="Excel'den metraj / bütçe"
-        description="Metraj cetveli veya keşif listesini toplu ekler. Her satır bir bütçe satırı olur (manuel miktar; birim fiyat varsa elle fiyat, yoksa fiyat sonra bütçe ekranında girilir). Maliyet kalemi kodla eşleşir (ör. 05.05)."
+        description="Keşif listesini veya metraj cetvelini Excel'den toplu ekleyin. Satırlar kalem koduyla (ör. 05.05) eşleşir."
       />
       <BudgetImport projectId={projectId} />
     </>

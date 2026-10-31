@@ -11,7 +11,7 @@ export default async function OfflinePage() {
     <>
       <PageHeader
         title="Bekleyen kayıtlar"
-        description="İnternet yokken girilen harcamalar bu telefonda bekler ve bağlantı gelince otomatik gönderilir. Hızlı giriş sayfası bir kez açıldıysa internetsiz de açılır (son açılıştaki kalem ve tedarikçi listesiyle)."
+        description="İnternet yokken girilen harcamalar burada bekler; bağlantı gelince kendiliğinden gönderilir."
       />
       <OutboxList owner={user.email} />
     </>

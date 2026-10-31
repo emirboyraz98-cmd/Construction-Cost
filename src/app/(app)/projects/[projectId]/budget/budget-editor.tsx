@@ -289,7 +289,7 @@ export function BudgetEditor({
                   options={[
                     { value: "MANUAL", label: "Manuel" },
                     { value: "FORMULA", label: "Formül" },
-                    { value: "PARAMETRIC", label: "Parametrik" },
+                    { value: "PARAMETRIC", label: "Katsayıyla (parametrik)" },
                   ]}
                 />
                 <div className="grid gap-3 sm:grid-cols-3">

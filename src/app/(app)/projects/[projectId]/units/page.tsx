@@ -37,7 +37,7 @@ export default async function UnitsPage({
     <>
       <PageHeader
         title="Bağımsız bölümler"
-        description="Kat kat bölümler, net / brüt alan ve sahiplik. Arsa sahibine verilecek bölümler burada işaretlenir; sözleşmedeki pay ile karşılaştırılır."
+        description="Satılabilen her birim (daire, dükkân, ofis). Arsa sahibine verilecek bölümleri burada işaretleyin."
         actions={
           <Button asChild variant="outline">
             <Link href={`/projects/${projectId}/land`}>Arsa sahipleri</Link>

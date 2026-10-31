@@ -29,7 +29,7 @@ export default async function BudgetPage({ params }: PageProps<"/projects/[proje
     <>
       <PageHeader
         title="Bütçe"
-        description="Kalem kalem miktar × birim fiyat. Toplam maliyet tüm binayı kapsar; satılabilir m² maliyeti müteahhide kalan alana bölünür (PLAN 7.3)."
+        description="Binanın tamamını yapmanın tahmini maliyeti: her kalem için miktar × birim fiyat (KDV hariç)."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
@@ -57,7 +57,7 @@ export default async function BudgetPage({ params }: PageProps<"/projects/[proje
               tone={metrics.contractorGross.isZero() ? "warn" : undefined}
             />
             <Link href={`/projects/${projectId}/control`} className="min-w-0 hover:underline">
-              <Figure label="Gerçekleşen (onaylı, KDV hariç)" value={formatMoney(budget.actualTotal)} note="Sapma ve EAC: Bütçe kontrolü →" />
+              <Figure label="Gerçekleşen (onaylı, KDV hariç)" value={formatMoney(budget.actualTotal)} note="Karşılaştırma: Bütçe kontrolü sekmesi" />
             </Link>
           </CardContent>
         </Card>

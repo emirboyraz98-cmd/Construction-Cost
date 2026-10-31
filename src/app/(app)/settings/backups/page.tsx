@@ -20,7 +20,7 @@ export default async function BackupsPage() {
   const today = new Date().toDateString();
   return (
     <>
-      <PageHeader title="Yedekler" description="Program her açılışta ve açık kaldığı sürece günde bir kez otomatik yedek alır (veritabanı + fiş / fatura fotoğrafları). Son yedekler saklanır, eskiler silinir." />
+      <PageHeader title="Yedekler" description="Program her gün kendiliğinden yedek alır (veriler ve fotoğraflar). Haftada bir yedeği harici diske kopyalayın." />
       <div className="grid max-w-3xl grid-cols-1 gap-4">
         <Card>
           <CardHeader>

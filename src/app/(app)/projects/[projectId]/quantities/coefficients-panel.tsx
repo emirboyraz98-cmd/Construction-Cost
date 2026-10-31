@@ -77,7 +77,7 @@ export function CoefficientsPanel({ projectId, coefficients, canEdit }: { projec
               <TableHead className="pl-4">Kalem / katsayı</TableHead>
               <TableHead className="text-right">Katsayı</TableHead>
               <TableHead className="text-right">Taban</TableHead>
-              <TableHead className="text-right">Parametrik miktar</TableHead>
+              <TableHead className="text-right">Hesaplanan miktar</TableHead>
               <TableHead className="text-right">Gerçekleşen</TableHead>
               <TableHead className="pr-4" />
             </TableRow>

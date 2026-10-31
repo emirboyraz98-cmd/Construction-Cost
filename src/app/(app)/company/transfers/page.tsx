@@ -17,7 +17,7 @@ export default async function TransfersPage() {
     <>
       <PageHeader
         title="Projeler arası malzeme transferi"
-        description="Bir şantiyede artan malzeme diğerine gönderildiğinde maliyeti de taşınır: gönderen projede eksi, alan projede artı maliyet satırı oluşur."
+        description="Bir şantiyede artan malzemeyi başka projeye gönderin; maliyeti de o projeye taşınır."
       />
       <div className="grid max-w-5xl grid-cols-1 gap-4">
         {options.projects.length >= 2 && <TransferForm options={options} today={dateToDateInput(new Date())} />}

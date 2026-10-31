@@ -170,7 +170,7 @@ export function FactorTables({ projectId, groups, canEdit, copySources }: { proj
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="font-medium">Katsayılar</h2>
-          <p className="text-sm text-muted-foreground">Tablolar 1,00 ile başlar. Katsayılar uygulandıktan sonra toplam fiyat hedef gelire eşitlenir (normalizasyon): kârı bozmaz, yalnızca dağılımı değiştirir.</p>
+          <p className="text-sm text-muted-foreground">Boş = 1,00 (etkisiz). Katsayılar toplam geliri değiştirmez; yalnızca gelirin bölümlere dağılımını değiştirir (program toplamı hedef gelire eşitler).</p>
         </div>
         {canEdit && copySources.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
@@ -267,7 +267,7 @@ export function PriceTable({ projectId, rows, canEdit, canApprove, hasList }: { 
               <th className="px-2 py-2 text-right font-medium">Net / brüt m²</th>
               <th className="px-2 py-2 text-right font-medium">Baz m²</th>
               <th className="px-2 py-2 text-right font-medium">Katsayı</th>
-              <th className="px-2 py-2 text-right font-medium">Normalizasyon öncesi</th>
+              <th className="px-2 py-2 text-right font-medium">Katsayılı fiyat</th>
               <th className="px-2 py-2 text-right font-medium">Fiyat (KDV hariç)</th>
               <th className="px-2 py-2 text-right font-medium">m² fiyatı</th>
               <th className="px-2 py-2 text-right font-medium">KDV</th>

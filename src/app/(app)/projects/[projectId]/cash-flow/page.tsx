@@ -29,7 +29,7 @@ export default async function CashFlowPage({ params }: PageProps<"/projects/[pro
     <>
       <PageHeader
         title="Nakit akışı"
-        description="Aylık nakit girişi ve çıkışı (KDV dahil). Geçmiş aylar gerçekleşen ödeme ve tahsilat; bundan sonrası vadesi gelen ödemeler, taksitler, iş programına yayılan kalan maliyet ve satış varsayımı."
+        description="Ay ay kasaya girecek ve çıkacak para (KDV dahil). Yeşil çizgi sıfırın altına inerse o ay dışarıdan para gerekir."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
@@ -105,7 +105,7 @@ export default async function CashFlowPage({ params }: PageProps<"/projects/[pro
           <h2 className="mb-2 font-medium">Aylık tablo</h2>
           <CashTable rows={flow.rows} />
           <p className="mt-2 text-xs text-muted-foreground">
-            Planlanan maliyet = tahmini tamamlanma maliyeti (EAC) − gerçekleşen − bağlantıyla sabitlenmiş açık miktar; iş programındaki aylara eşit yayılır, KDV eklenir. Bağlantı ödemeleri projeye tahsis payı oranında; hakediş net ödemesi (kesintiler sonrası). Vadesi geçmiş ödenmemiş kalemler bu aya yazılır.
+            Planlanan maliyet = tahmini toplam maliyet − gerçekleşen − bağlantıyla sabitlenmiş açık miktar; iş programındaki aylara eşit yayılır, KDV eklenir. Bağlantı ödemeleri projeye tahsis payı oranında; hakediş net ödemesi (kesintiler sonrası). Vadesi geçmiş ödenmemiş kalemler bu aya yazılır.
           </p>
         </div>
       </div>

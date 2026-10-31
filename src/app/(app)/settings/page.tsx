@@ -22,7 +22,7 @@ export default async function SettingsPage() {
       ? [{ href: "/settings/parameters", icon: PercentIcon, label: "Vergi, harç ve oran parametreleri", note: "KDV oranları; yıl / belediye bazında oranlar" }]
       : []),
     ...(hasCapability(user.role, "costTree.edit")
-      ? [{ href: "/settings/template", icon: ListTreeIcon, label: "Maliyet ağacı şablonu", note: "Yeni projelerin İKY ağacı: kalem ekle / pasifleştir" }]
+      ? [{ href: "/settings/template", icon: ListTreeIcon, label: "Maliyet ağacı şablonu", note: "Yeni projelerin maliyet kalemleri: ekle / pasifleştir" }]
       : []),
     ...(hasCapability(user.role, "backup.manage")
       ? [{ href: "/settings/backups", icon: DatabaseBackupIcon, label: "Yedekler", note: "Otomatik günlük yedekler, şimdi yedek al, indir" }]

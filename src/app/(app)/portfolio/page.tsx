@@ -62,7 +62,7 @@ export default async function PortfolioPage() {
     <>
       <PageHeader
         title="Portföy"
-        description="Yürüyen tüm projelerin özeti. Arşivdeki projeler Projeler listesinde."
+        description="Tüm projelerin özeti ve bu hafta yapılacaklar."
         actions={
           canCreate && (
             <Button asChild>

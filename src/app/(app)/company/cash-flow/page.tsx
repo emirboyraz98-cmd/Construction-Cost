@@ -24,7 +24,7 @@ export default async function CompanyCashPage() {
   const end = data.rows.at(-1)?.balance ?? data.settings.openingCash;
   return (
     <>
-      <PageHeader title="Konsolide nakit akışı" description="Tüm projelerin nakit akışı (her projenin kendi varsayımlarıyla) + projelere atanmamış bağlantı ödemeleri + genel merkez giderleri, takvim ayına göre (KDV dahil)." />
+      <PageHeader title="Konsolide nakit akışı" description="Tüm projelerin nakit akışı ve genel merkez giderleri, ay ay (KDV dahil)." />
       <div className="grid grid-cols-1 gap-4">
         <Card className="py-4">
           <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

@@ -141,7 +141,7 @@ export default async function ProjectPanelPage({ params }: PageProps<"/projects/
                   value={budgets.get(projectId) ?? 0}
                   note={
                     control
-                      ? `EAC ${formatMoney(control.eac)} · ${control.variance.isNegative() ? "aşım" : "sapma"} ${formatMoney(control.variance)}`
+                      ? `Tahmini toplam ${formatMoney(control.eac)} · ${control.variance.isNegative() ? "aşım" : "sapma"} ${formatMoney(control.variance)}`
                       : "Bütçe ekranı"
                   }
                 />

@@ -16,7 +16,7 @@ export default async function CustomersPage({ params }: PageProps<"/projects/[pr
   const { customers, canManage } = await listCustomers(projectId);
   return (
     <>
-      <PageHeader title="Müşteriler" description="Projenin müşterileri. Kimlik ve iletişim bilgileri yalnızca satış, muhasebe ve yönetici rollerine görünür (KVKK)." />
+      <PageHeader title="Müşteriler" description="Bölüm satın alan veya rezerve eden kişiler. Kimlik bilgilerini yalnızca satış, muhasebe ve yönetici görür." />
       <CustomerTable
         projectId={projectId}
         canManage={canManage}

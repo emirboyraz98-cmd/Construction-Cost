@@ -31,7 +31,7 @@ export default async function LibraryPage({ searchParams }: PageProps<"/company/
     <>
       <PageHeader
         title="Malzeme & fiyat kütüphanesi"
-        description="Malzeme, işçilik, makine ve hizmetler. Bütçede fiyat önceliği: geçerli bağlantı fiyatı → son alım (fatura) → teklif → piyasa."
+        description="Malzeme, işçilik ve makine fiyatları. Bütçe bu fiyatları kullanır; fiyat değişince bütçe güncellenir."
         actions={canManage && <NewResourceButton suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))} />}
       />
       <LibraryTabs />

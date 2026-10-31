@@ -38,7 +38,7 @@ export default async function SharedInvoicePage() {
     <>
       <PageHeader
         title="Ortak fatura"
-        description="Genel merkez gideri, ortak reklam veya birden fazla şantiyeye gelen tek fatura: seçilen projelere dağıtım anahtarıyla bölünür (PLAN 5.1)."
+        description="Birden fazla projeyi ilgilendiren bir faturayı (ör. vinç kirası) projelere bölerek girin."
       />
       <SharedInvoiceForm
         today={dateToDateInput(new Date())}

@@ -87,7 +87,7 @@ export default async function CollectionsPage({ params }: PageProps<"/projects/[
     <>
       <PageHeader
         title="Tahsilatlar"
-        description="Taksit takvimi, geciken ve yaklaşan taksitler, portföydeki çek / senetler. Dövizli sözleşmelerde TL karşılıkları sözleşme kuruyla tahmindir."
+        description="Müşteri taksitleri: geciken, yaklaşan ve portföydeki çek / senetler."
         actions={
           <Button asChild variant="outline">
             <a href={`/api/projects/${projectId}/collections/export`}>

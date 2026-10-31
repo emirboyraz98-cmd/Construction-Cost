@@ -34,7 +34,7 @@ export default async function PayablesPage({ searchParams }: PageProps<"/company
 
   return (
     <>
-      <PageHeader title="Vade listesi" description="Ödenmemiş harcama ve avanslar, bağlantı ödeme planı ve onaylı hakedişlerin net ödemesi; vadeye göre. Proje seçilince şirket geneli bağlantı ödemeleri gizlenir." />
+      <PageHeader title="Vade listesi" description="Ödenmemiş tüm borçlar vade sırasıyla. Ödeyince “Ödendi” işaretleyin." />
       <form className="mb-4 flex flex-wrap items-end gap-3">
         <div className="flex gap-1 rounded-lg bg-muted p-1 text-sm">
           {(Object.keys(VIEWS) as (keyof typeof VIEWS)[]).map((key) => (

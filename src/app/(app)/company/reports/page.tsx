@@ -18,7 +18,7 @@ export default async function ReportsPage() {
   const data = await getProjectComparison();
   return (
     <>
-      <PageHeader title="Projeler arası karşılaştırma" description="m² maliyetleri, bütçe ve tahmini tamamlanma maliyeti, gelir, beklenen kâr ve ortak malzemelerin birim fiyatları. Kâr KDV hariç; finansman maliyeti dahil." />
+      <PageHeader title="Projeler arası karşılaştırma" description="Projelerin m² maliyeti, bütçe, gelir ve kârları yan yana (KDV hariç)." />
       <div className="grid grid-cols-1 gap-4">
         <Card className="gap-0 overflow-x-auto py-0">
           <table className="w-full min-w-[1100px] text-sm">
@@ -27,9 +27,9 @@ export default async function ReportsPage() {
                 <th className="px-4 py-2 font-medium">Proje</th>
                 <th className="px-2 py-2 text-right font-medium">İnşaat alanı</th>
                 <th className="px-2 py-2 text-right font-medium">Bütçe</th>
-                <th className="px-2 py-2 text-right font-medium">EAC</th>
-                <th className="px-2 py-2 text-right font-medium">İnşaat m² (EAC)</th>
-                <th className="px-2 py-2 text-right font-medium">Müteahhit m² (EAC)</th>
+                <th className="px-2 py-2 text-right font-medium">Tahmini toplam</th>
+                <th className="px-2 py-2 text-right font-medium">İnşaat m² (tahmini)</th>
+                <th className="px-2 py-2 text-right font-medium">Müteahhit m² (tahmini)</th>
                 <th className="px-2 py-2 text-right font-medium">Gelir</th>
                 <th className="px-2 py-2 text-right font-medium">Beklenen kâr</th>
                 <th className="px-4 py-2 text-right font-medium">En yüksek nakit ihtiyacı</th>

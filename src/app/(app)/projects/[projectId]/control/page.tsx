@@ -32,7 +32,7 @@ export default async function ControlPage({ params, searchParams }: PageProps<"/
     <>
       <PageHeader
         title="Bütçe kontrolü"
-        description="Bütçe / gerçekleşen / sapma / tamamlanma ve tahmini tamamlanma maliyeti (EAC = gerçekleşen + kalan iş × güncel birim fiyat). Gerçekleşen: onaylı harcama, çekiş, hakediş ve transfer (KDV hariç)."
+        description="Bütçe ile harcananın karşılaştırması ve iş bitince toplam maliyetin ne olacağı tahmini (KDV hariç)."
         actions={
           <Button asChild variant="outline">
             <a href={`/api/projects/${projectId}/control/export${data.baseline ? `?baz=${data.baseline.id}` : ""}`}>
@@ -55,10 +55,10 @@ export default async function ControlPage({ params, searchParams }: PageProps<"/
             <Figure label={t.hasBaseline ? "Baz bütçe" : "Referans (güncel bütçe)"} value={formatMoney(t.reference)} note={t.hasBaseline ? data.baseline?.name : "Baz bütçe dondurulmamış"} />
             <Figure label="Güncel bütçe" value={formatMoney(t.budget)} note="Canlı fiyat ve metrajla" />
             <Figure label="Gerçekleşen" value={formatMoney(t.actual)} />
-            <Figure label="Tamamlanma" value={t.progress ? `%${formatNumber(t.progress, 1)}` : "—"} note="Kazanılmış değer / güncel bütçe" />
-            <Figure label="Tahmini tamamlanma (EAC)" value={formatMoney(t.eac)} />
+            <Figure label="Tamamlanma" value={t.progress ? `%${formatNumber(t.progress, 1)}` : "—"} note="Yapılan işin bütçedeki payı" />
+            <Figure label="Tahmini toplam maliyet (EAC)" value={formatMoney(t.eac)} />
             <Figure
-              label="Sapma (referans − EAC)"
+              label="Sapma (bütçe − tahmini)"
               value={formatMoney(variance)}
               tone={variance.isNegative() ? "danger" : undefined}
               note={variance.isNegative() ? "Aşım bekleniyor" : "Bütçe içinde"}
@@ -66,7 +66,7 @@ export default async function ControlPage({ params, searchParams }: PageProps<"/
             <Figure
               label="Müteahhit m² maliyeti"
               value={data.m2.eacContractor ? formatMoney(data.m2.eacContractor) : "—"}
-              note={data.m2.referenceContractor ? `EAC ile; referans ${formatMoney(data.m2.referenceContractor)}` : "Bağımsız bölüm girilmemiş"}
+              note={data.m2.referenceContractor ? `Tahmini maliyetle; bütçede ${formatMoney(data.m2.referenceContractor)}` : "Bağımsız bölüm girilmemiş"}
               tone={data.m2.eacContractor && data.m2.referenceContractor && data.m2.eacContractor.gt(data.m2.referenceContractor) ? "warn" : undefined}
             />
           </CardContent>

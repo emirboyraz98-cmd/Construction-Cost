@@ -24,7 +24,7 @@ export default async function RatesPage() {
     <>
       <PageHeader
         title="Döviz kurları"
-        description="Dövizli harcamada, harcama tarihindeki (yoksa önceki günlerdeki) döviz alış kuru öneri olarak gelir; formda değiştirilebilir."
+        description="Dövizli harcama ve bağlantılarda kullanılacak kurlar. TCMB'den getirin veya elle girin."
       />
       <RatesPanel today={dateToDateInput(new Date())} />
       <Card className="mt-4 py-0">

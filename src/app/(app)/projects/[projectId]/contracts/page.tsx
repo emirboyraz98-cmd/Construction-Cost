@@ -23,7 +23,7 @@ export default async function ContractsPage({ params }: PageProps<"/projects/[pr
     <>
       <PageHeader
         title="Taşeron sözleşmeleri"
-        description="Birim fiyatlı sözleşmeler ve hakedişler: kümülatif miktar → dönem tutarı → kesintiler → net ödeme."
+        description="Taşeron sözleşmeleri ve her dönem yapılan işin hesabı (hakediş)."
         actions={
           perms.manage && (
             <Button asChild>

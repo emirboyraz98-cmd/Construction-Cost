@@ -22,7 +22,7 @@ export default async function ParametersPage() {
     <>
       <PageHeader
         title="Vergi, harç ve oran parametreleri"
-        description="Oranlar programın içine yazılmaz; buradan yönetilir. Harcama girişindeki KDV seçenekleri harcama yılının “KDV oranı” kayıtlarından gelir. Değerleri muhasebecinizle teyit edin."
+        description="KDV ve diğer oranlar burada tutulur. Değerleri muhasebecinizle teyit edin."
       />
       <ParametersManager
         year={new Date().getUTCFullYear()}

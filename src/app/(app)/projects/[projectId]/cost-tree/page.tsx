@@ -30,7 +30,7 @@ export default async function CostTreePage({ params }: PageProps<"/projects/[pro
     <>
       <PageHeader
         title="Bütçe / Maliyet ağacı"
-        description="Projenin iş kırılım yapısı (İKY). Harcamalar ve bütçe satırları bu kalemlere bağlanır; miktar ve birim fiyatlar Bütçe ekranında girilir."
+        description="Harcama türlerinin gruplanmış listesi. Her harcama ve bütçe satırı bir kaleme bağlanır."
       />
       <CostTree projectId={projectId} items={items} canEdit={hasCapability(role, "costTree.edit")} />
     </>

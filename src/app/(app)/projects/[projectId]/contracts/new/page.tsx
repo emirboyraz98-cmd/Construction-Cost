@@ -20,7 +20,7 @@ export default async function NewContractPage({ params }: PageProps<"/projects/[
   const vatRates = vat.map((v) => v.value);
   return (
     <>
-      <PageHeader title="Yeni taşeron sözleşmesi" description="Birim fiyatlar ve hakediş şartları (teminat, avans mahsubu, KDV tevkifatı)." />
+      <PageHeader title="Yeni taşeron sözleşmesi" description="Taşeronla anlaşılan işler, birim fiyatlar ve kesinti oranları." />
       <ContractForm
         projectId={projectId}
         contractId={null}

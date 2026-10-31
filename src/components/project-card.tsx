@@ -105,7 +105,7 @@ export function ProjectCard({
             )}
             {control && (
               <>
-                <SpendFigure label="Tahmini tamamlanma (EAC)" value={control.eac} note={control.progress ? `%${formatNumber(control.progress, 1)} tamamlandı` : undefined} />
+                <SpendFigure label="Tahmini toplam maliyet (EAC)" value={control.eac} note={control.progress ? `%${formatNumber(control.progress, 1)} tamamlandı` : undefined} />
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Sapma</p>
                   <p className={Number(control.variance.toString()) < 0 ? "font-medium text-destructive tabular-nums" : "font-medium tabular-nums"}>{formatMoney(control.variance)}</p>

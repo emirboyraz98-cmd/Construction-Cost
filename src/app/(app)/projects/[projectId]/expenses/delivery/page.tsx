@@ -19,7 +19,7 @@ export default async function DeliveryPage({ params }: PageProps<"/projects/[pro
     <>
       <PageHeader
         title="Malzeme geldi"
-        description="Bağlantılı malzemenin teslimatı (çekiş). Maliyet projeye bağlantı fiyatıyla yazılır; ofis onaylar."
+        description="Bağlantıdan gelen malzemeyi girin: hangi bağlantı, kaç birim, irsaliye no. Tutar kendiliğinden hesaplanır."
       />
       {data.options.length === 0 ? (
         <NoAccess text="Bu proje için çekilebilecek aktif bağlantı yok. Satın alma, bağlantıyı projeye tahsis etmeli veya havuzda miktar bırakmalı." />

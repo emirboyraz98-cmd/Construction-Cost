@@ -37,7 +37,7 @@ export default async function SuppliersPage({ searchParams }: PageProps<"/compan
     <>
       <PageHeader
         title="Tedarikçiler / taşeronlar"
-        description="Şirket geneli liste; cari tutarlar yetkili olduğunuz projelerdeki harcamalardan (TL, KDV dahil)."
+        description="Malzeme aldığınız firmalar ve taşeronlar; ne alındı, ne ödendi (KDV dahil)."
         actions={
           canManage && (
             <Button asChild>

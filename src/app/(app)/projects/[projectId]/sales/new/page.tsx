@@ -22,7 +22,7 @@ export default async function NewSalePage({ params, searchParams }: PageProps<"/
   const customerName = new Map(data.customers.map((c) => [c.id, c.name]));
   return (
     <>
-      <PageHeader title="Yeni satış" description="Satış sözleşmesi ve ödeme planı. Kaydedilince bölümün fiyatı kilitlenir ve rezervasyon satışa dönüşür." />
+      <PageHeader title="Yeni satış" description="Bölüm, müşteri, fiyat ve ödeme planı. Kaydedince bölümün fiyatı kilitlenir." />
       <SaleForm
         projectId={projectId}
         today={dateToDateInput(new Date())}

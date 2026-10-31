@@ -20,7 +20,7 @@ export default async function SchedulePage({ params }: PageProps<"/projects/[pro
   const current = cal.currentMonth - cal.startMonth + 1;
   return (
     <>
-      <PageHeader title="İş programı" description={`Maliyet kalemlerinin harcanacağı aylar (${monthLabel(cal.startMonth)} – ${monthLabel(cal.endMonth)}, ${cal.duration} ay). Nakit akışında kalan maliyet bu aylara eşit dağıtılır; programı olmayan kalem üst kaleminin, o da yoksa tüm projenin aralığını kullanır.`} />
+      <PageHeader title="İş programı" description={`Hangi işin hangi aylarda yapılacağı (${monthLabel(cal.startMonth)} – ${monthLabel(cal.endMonth)}, ${cal.duration} ay). Nakit akışı kalan maliyeti bu aylara dağıtır.`} />
       {cal.warnings.length > 0 && (
         <ul className="mb-4 grid grid-cols-1 gap-1 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           {cal.warnings.map((w) => (

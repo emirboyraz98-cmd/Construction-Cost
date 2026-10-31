@@ -18,7 +18,7 @@ export default async function NewConnectionPage() {
   const vatRates = vat.map((v) => v.value);
   return (
     <>
-      <PageHeader title="Yeni malzeme bağlantısı" description="Tedarikçiyle önceden sabitlenen miktar ve fiyat (PLAN 9). Proje tahsisi kayıttan sonra yapılır." />
+      <PageHeader title="Yeni malzeme bağlantısı" description="Tedarikçiyle önceden anlaşılan miktar ve fiyat. Projelere dağıtım kayıttan sonra yapılır." />
       <ConnectionForm
         connectionId={null}
         options={{ suppliers: options.suppliers, costItems: options.costItems, resources: options.resources, vatRates }}

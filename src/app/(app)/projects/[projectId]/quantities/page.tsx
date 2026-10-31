@@ -24,7 +24,7 @@ export default async function QuantitiesPage({ params }: PageProps<"/projects/[p
     <>
       <PageHeader
         title="Metraj"
-        description="Üç seviye: parametrik (alan × katsayı), formül (proje değişkenleriyle) ve manuel. Seviye her bütçe satırında seçilir ve raporda görünür."
+        description="İşlerin miktarı: kaç m³ beton, kaç ton demir, kaç m² sıva. Hazır oranlarla (katsayı) alandan hızlıca hesaplanır."
         actions={
           <Button asChild variant="outline">
             <Link href={`/projects/${projectId}/budget`}>Bütçe</Link>
@@ -46,7 +46,7 @@ export default async function QuantitiesPage({ params }: PageProps<"/projects/[p
           <CardHeader>
             <CardTitle>Parametrik katsayılar</CardTitle>
             <CardDescription>
-              Başlangıç değerleri PLAN 6&apos;daki aralıkların ortasıdır; projeye göre düzenleyin. Gerçekleşen katsayı = onaylı harcama / çekiş miktarı (aynı kalem ve birim) ÷ taban;
+              Başlangıç değerleri tipik aralıkların ortasıdır; projenize göre düzeltin. Gerçekleşen katsayı = onaylı harcama / çekiş miktarı (aynı kalem ve birim) ÷ taban;
               sonraki projeler için kalibrasyonda kullanın.
             </CardDescription>
           </CardHeader>

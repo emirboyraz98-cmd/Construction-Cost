@@ -121,7 +121,7 @@ export default async function PricingPage({ params }: PageProps<"/projects/[proj
     <>
       <PageHeader
         title="Fiyatlandırma"
-        description="Maliyet + reklam payı → kâr yöntemi ve komisyonla baz m² fiyatı → kullanım tipi oranı ve katsayılarla bölüm fiyatı → toplam hedef gelire normalizasyon (PLAN 7.4–7.6). Fiyatlar KDV hariçtir; KDV ayrıca gösterilir."
+        description="Maliyete kâr ve komisyon eklenir, katsayılarla bölümlere dağıtılır, liste onaylanır. Fiyatlar KDV hariç."
         actions={
           <div className="flex flex-wrap gap-2">
             <ExportButtons projectId={projectId} draft />
@@ -169,7 +169,7 @@ export default async function PricingPage({ params }: PageProps<"/projects/[proj
                 <Figure
                   label="Kilitli bölümler"
                   value={formatMoney(priced.lockedTotal)}
-                  note={data.requiredChange ? `Kalanlarda onaylı listeye göre ${Number(data.requiredChange) > 0 ? "+" : ""}%${formatNumber(data.requiredChange, 2)}` : priced.normalization ? `Normalizasyon × ${formatNumber(priced.normalization, 4)}` : undefined}
+                  note={data.requiredChange ? `Kalanlarda onaylı listeye göre ${Number(data.requiredChange) > 0 ? "+" : ""}%${formatNumber(data.requiredChange, 2)}` : priced.normalization ? `Hedefe eşitleme × ${formatNumber(priced.normalization, 4)}` : undefined}
                 />
               </>
             )}

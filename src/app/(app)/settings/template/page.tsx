@@ -17,7 +17,7 @@ export default async function TemplatePage() {
     <>
       <PageHeader
         title="Maliyet ağacı şablonu"
-        description="Yeni projeler bu İKY ağacıyla açılır. Buradaki değişiklik mevcut projeleri etkilemez (projedeki ağaç, proje → Maliyet ağacı ekranından düzenlenir). Kullanılmayan kalemleri pasifleştirin; şirkete özel kalemleri ekleyin."
+        description="Yeni projeler bu maliyet kalemleriyle açılır; mevcut projeler etkilenmez. Kullanmadığınız kalemleri pasif yapın."
       />
       <CostTreeActionsProvider add={addTemplateItemAction} setActive={setTemplateItemActiveAction}>
         <CostTree projectId="sablon" items={items} canEdit />

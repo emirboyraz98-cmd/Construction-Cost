@@ -34,7 +34,7 @@ export default async function ConnectionsPage({ searchParams }: PageProps<"/comp
     <>
       <PageHeader
         title="Malzeme bağlantıları"
-        description="Önceden sabitlenen miktar ve fiyatlar: toplam / çekilen / kalan, proje tahsisi, ödeme planı ve avans bakiyesi."
+        description="Tedarikçilerle önceden yapılan miktar ve fiyat anlaşmaları: ne kadar çekildi, ne kadar kaldı, ne ödendi."
         actions={
           canManage && (
             <Button asChild>

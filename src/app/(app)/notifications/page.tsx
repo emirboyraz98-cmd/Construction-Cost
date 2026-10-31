@@ -14,7 +14,7 @@ export default async function NotificationsPage() {
   const items = await getNotifications();
   return (
     <>
-      <PageHeader title="Bildirimler" description="Rolünüze ve projelerinize göre bekleyen işler ve uyarılar. İş tamamlanınca (onaylandı, ödendi, tahsil edildi) listeden kendiliğinden düşer." />
+      <PageHeader title="Bildirimler" description="Sizi bekleyen işler. İş bitince listeden kendiliğinden düşer." />
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Bekleyen iş veya uyarı yok.</p>
       ) : (

@@ -105,7 +105,7 @@ export default async function ScenariosPage({ params }: PageProps<"/projects/[pr
     <>
       <PageHeader
         title="Senaryolar"
-        description="Varsayımlar değişince maliyet, gelir, finansman, kâr, hedef kâr için gereken m² fiyatı ve en yüksek nakit ihtiyacı (PLAN 7.9). Tutarlar KDV hariç; nakit ihtiyacı KDV dahil nakit akışından."
+        description="“Ya şöyle olursa?”: fiyatlar artar, inşaat uzar veya satış yavaşlarsa kâr ve nakit nasıl değişir (KDV hariç)."
         actions={data.canManage ? <NewScenarioButton projectId={projectId} /> : undefined}
       />
       <div className="grid grid-cols-1 gap-4">
@@ -141,7 +141,7 @@ export default async function ScenariosPage({ params }: PageProps<"/projects/[pr
               />
               <tr>
                 <td colSpan={7} className="bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground">
-                  Duyarlılık (PLAN 7.9 örnekleri, baza göre)
+                  Hazır örnekler (baza göre)
                 </td>
               </tr>
               {data.sensitivities.map((x) => (

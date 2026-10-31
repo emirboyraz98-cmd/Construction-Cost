@@ -167,7 +167,7 @@ export function ControlTable({ projectId, rows, hasBaseline, canEdit }: { projec
               <th className="px-2 py-2 text-right font-medium">Güncel bütçe</th>
               <th className="px-2 py-2 text-right font-medium">Gerçekleşen</th>
               <th className="px-2 py-2 text-right font-medium">Tamamlanma</th>
-              <th className="px-2 py-2 text-right font-medium">EAC</th>
+              <th className="px-2 py-2 text-right font-medium">Tahmini toplam</th>
               <th className="px-4 py-2 text-right font-medium">Sapma</th>
             </tr>
           </thead>
@@ -221,7 +221,7 @@ export function ControlTable({ projectId, rows, hasBaseline, canEdit }: { projec
           <DialogHeader>
             <DialogTitle>Tamamlanma yüzdesi</DialogTitle>
             <DialogDescription>
-              {editing?.code} {editing?.name}. Boş bırakılırsa miktardan hesaplanır (bütçe ve harcama birimi aynıysa). EAC = gerçekleşen + güncel bütçe × (1 − tamamlanma).
+              {editing?.code} {editing?.name}. Boş bırakılırsa miktardan hesaplanır (bütçe ve harcama birimi aynıysa). Tahmini toplam = gerçekleşen + güncel bütçe × (1 − tamamlanma).
             </DialogDescription>
           </DialogHeader>
           <FormError message={error} />
