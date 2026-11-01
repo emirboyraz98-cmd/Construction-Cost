@@ -30,3 +30,14 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Prisma tarafından üretilen istemci (npm install sırasında yeniden üretilir)
+src/generated/
+
+# Next.js / TypeScript
+next-env.d.ts
+*.tsbuildinfo
+
+# Yedekler (yedekle.bat / otomatik)
+yedekler/
+.pg-pw-*

@@ -1,0 +1,1630 @@
+// Veri modeli — PLAN.md Bölüm 12 (Faz 0 tabloları).
+// Tablo ve alan adları İngilizce; açıklamalar Türkçe.
+// Para ve oran alanları her zaman Decimal (asla Float değil).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Kullanıcı rolleri (PLAN.md Bölüm 2).
+enum Role {
+  yonetici
+  teknik_ofis
+  santiye_sefi
+  muhasebe
+  satin_alma
+  satis
+  dis_muhasebeci
+}
+
+/// Proje tipi: konut (apartman), villa/müstakil, ticari, karma, çok bloklu site.
+enum ProjectType {
+  RESIDENTIAL
+  VILLA
+  COMMERCIAL
+  MIXED
+  SITE
+}
+
+/// Proje durumu: Fizibilite → Ruhsat → İnşaat → Satış → Tamamlandı → Arşiv.
+enum ProjectStatus {
+  FEASIBILITY
+  PERMIT
+  CONSTRUCTION
+  SALES
+  COMPLETED
+  ARCHIVED
+}
+
+/// Arsa modeli: kat karşılığı, satın alma veya karma.
+enum LandModel {
+  FLAT_FOR_LAND
+  PURCHASE
+  MIXED
+}
+
+/// Kullanıcı. `role` ana roldür; yönetici tüm projeleri görür, diğerleri yalnızca
+/// ProjectPermission ile yetkilendirildikleri projeleri.
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  role         Role
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions         Session[]
+  permissions      ProjectPermission[]
+  tabs             UserTab[]
+  auditLogs        AuditLog[]
+  createdProjects  Project[]             @relation("ProjectCreatedBy")
+  createdExpenses  Expense[]             @relation("ExpenseCreatedBy")
+  approvedExpenses Expense[]             @relation("ExpenseApprovedBy")
+  documents        Document[]
+  expenseImports   ExpenseImport[]
+  connections      Connection[]          @relation("ConnectionCreatedBy")
+  contracts        SubcontractContract[] @relation("ContractCreatedBy")
+  progressBillings ProgressBilling[]     @relation("ProgressBillingCreatedBy")
+  approvedBillings ProgressBilling[]     @relation("ProgressBillingApprovedBy")
+  transfers        MaterialTransfer[]    @relation("TransferCreatedBy")
+  machines         Machine[]             @relation("MachineCreatedBy")
+  machineEntries   MachineEntry[]        @relation("MachineEntryCreatedBy")
+  machineUsages    MachineUsage[]        @relation("MachineUsageCreatedBy")
+  pricingSettings  PricingSetting[]      @relation("PricingSettingUpdatedBy")
+  priceLists       PriceList[]           @relation("PriceListApprovedBy")
+  saleContracts    SaleContract[]        @relation("SaleContractCreatedBy")
+  collections      Collection[]          @relation("CollectionCreatedBy")
+}
+
+/// Oturum. `id`, tarayıcıdaki çerez değerinin SHA-256 özetidir; düz token saklanmaz.
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Kullanıcı–proje–rol: kullanıcının hangi projeyi hangi rolle gördüğü.
+model ProjectPermission {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  role      Role
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+}
+
+/// Proje (PLAN.md Bölüm 5.2). Projeler silinmez; durum "Arşiv" yapılır.
+model Project {
+  id                  String        @id @default(cuid())
+  name                String
+  type                ProjectType
+  status              ProjectStatus @default(FEASIBILITY)
+  address             String?
+  /// Tapu ada numarası
+  landBlockNo         String?
+  /// Tapu parsel numarası
+  landParcelNo        String?
+  /// Arsa alanı (m²)
+  landArea            Decimal?      @db.Decimal(14, 2)
+  /// Emsal (KAKS)
+  floorAreaRatio      Decimal?      @db.Decimal(8, 4)
+  /// TAKS
+  groundCoverageRatio Decimal?      @db.Decimal(8, 4)
+  landModel           LandModel
+  startDate           DateTime?     @db.Date
+  durationMonths      Int?
+  createdById         String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  createdBy             User?                   @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  blocks                Block[]
+  units                 Unit[]
+  landowners            Landowner[]
+  budgetLines           BudgetLine[]
+  coefficients          ParametricCoefficient[]
+  baselines             BudgetBaseline[]
+  progressEstimates     CostItemProgress[]
+  costItems             CostItem[]
+  permissions           ProjectPermission[]
+  tabs                  UserTab[]
+  auditLogs             AuditLog[]
+  expenses              Expense[]
+  expenseImports        ExpenseImport[]
+  connectionAllocations ConnectionAllocation[]
+  contracts             SubcontractContract[]
+  progressBillings      ProgressBilling[]
+  transfersOut          MaterialTransfer[]      @relation("TransferFrom")
+  transfersIn           MaterialTransfer[]      @relation("TransferTo")
+  machineEntries        MachineEntry[]
+  machineUsages         MachineUsage[]
+  pricingSetting        PricingSetting?
+  pricingFactors        PricingFactor[]
+  priceLists            PriceList[]
+  customers             Customer[]
+  reservations          Reservation[]
+  saleContracts         SaleContract[]
+  cashFlowSetting       CashFlowSetting?
+  scheduleEntries       ScheduleEntry[]
+  scenarios             Scenario[]
+
+  @@index([status])
+}
+
+/// Blok (PLAN.md Bölüm 5.4). Villa projelerinde her villa bir bloktur.
+model Block {
+  id               String   @id @default(cuid())
+  projectId        String
+  name             String
+  floorCount       Int?
+  basementCount    Int?
+  /// Kat yüksekliği (m)
+  floorHeight      Decimal? @db.Decimal(6, 2)
+  /// Blok inşaat alanı (m²)
+  constructionArea Decimal? @db.Decimal(14, 2)
+  elevatorCount    Int?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  expenses    Expense[]
+  units       Unit[]
+  budgetLines BudgetLine[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+/// Varsayılan İKY (iş kırılım yapısı) şablonu — PLAN.md Bölüm 3.
+/// Yeni proje açılırken projeye CostItem olarak kopyalanır.
+model CostItemTemplate {
+  id          String   @id @default(cuid())
+  parentId    String?
+  code        String   @unique
+  name        String
+  unit        String?
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent    CostItemTemplate?  @relation("CostItemTemplateTree", fields: [parentId], references: [id], onDelete: NoAction)
+  children  CostItemTemplate[] @relation("CostItemTemplateTree")
+  costItems CostItem[]
+
+  @@index([parentId])
+}
+
+/// Projeye ait maliyet kalemi (proje bazlı İKY ağacı). Kalemler silinmez, pasifleştirilir.
+/// Sonraki fazlarda blok, temin şekli, miktar, birim fiyat vb. alanlar eklenecek.
+model CostItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  parentId    String?
+  /// Şablondan geldiyse şablon kalemi; kullanıcı eklediyse boş
+  templateId  String?
+  code        String
+  name        String
+  unit        String?
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project           Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent            CostItem?            @relation("CostItemTree", fields: [parentId], references: [id], onDelete: NoAction)
+  children          CostItem[]           @relation("CostItemTree")
+  contractItems     ContractItem[]
+  budgetLines       BudgetLine[]
+  baselineLines     BudgetBaselineLine[]
+  progressEstimates CostItemProgress[]
+  template          CostItemTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  expenses          Expense[]
+  machineUsages     MachineUsage[]
+  scheduleEntries   ScheduleEntry[]
+
+  @@unique([projectId, code])
+  @@index([projectId, parentId])
+}
+
+/// Kullanıcının açık proje sekmeleri ve sırası (PLAN.md Bölüm 5.1).
+model UserTab {
+  userId    String
+  projectId String
+  position  Int
+  openedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([userId, position])
+}
+
+/// Değişiklik geçmişi: kim, neyi, ne zaman değiştirdi.
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String?
+  projectId String?
+  /// ör. "create", "update", "deactivate", "activate", "login"
+  action    String
+  /// Etkilenen tablo, ör. "Project", "CostItem"
+  entity    String
+  entityId  String?
+  /// Alan bazında { alan: { old, new } } veya oluşturulan kaydın özeti
+  changes   Json?
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([entity, entityId])
+}
+
+/// Vergi, harç ve yapı denetim parametreleri (yıl / belediye / tür / değer).
+/// Oranlar koda gömülmez, buradan okunur. Faz 0'da boş gelir.
+model Parameter {
+  id           String   @id @default(cuid())
+  year         Int
+  /// Boş ise tüm belediyeler için geçerli
+  municipality String?
+  /// Parametre türü, ör. "yapi_ruhsati_harci"
+  kind         String
+  value        Decimal  @db.Decimal(18, 6)
+  /// ör. "%", "TL/m²"
+  unit         String?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([year, kind])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 1 – Harcama girişi (PLAN.md Bölüm 8)
+// ---------------------------------------------------------------------------
+
+enum Currency {
+  TRY
+  USD
+  EUR
+  GBP
+}
+
+/// Tedarikçi, taşeron veya ikisi birden.
+enum SupplierKind {
+  SUPPLIER
+  SUBCONTRACTOR
+  BOTH
+}
+
+/// Tedarikçi / taşeron (şirket geneli; projeye bağlı değil).
+model Supplier {
+  id        String       @id @default(cuid())
+  name      String
+  /// Vergi kimlik no veya TC kimlik no
+  taxNumber String?
+  taxOffice String?
+  kind      SupplierKind @default(SUPPLIER)
+  phone     String?
+  email     String?
+  address   String?
+  iban      String?
+  notes     String?
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  expenses       Expense[]
+  connections    Connection[]
+  contracts      SubcontractContract[]
+  resources      Resource[]
+  resourcePrices ResourcePrice[]
+
+  @@index([name])
+  @@index([taxNumber])
+}
+
+enum RateSource {
+  TCMB
+  MANUAL
+}
+
+/// Döviz kuru (şirket geneli). Gün ve para birimi başına bir kayıt; elle girilen TCMB'nin yerini alır.
+model ExchangeRate {
+  id        String     @id @default(cuid())
+  date      DateTime   @db.Date
+  currency  Currency
+  /// Döviz alış
+  buying    Decimal    @db.Decimal(18, 6)
+  /// Döviz satış
+  selling   Decimal    @db.Decimal(18, 6)
+  source    RateSource
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([date, currency])
+}
+
+/// Kaydın türü; neyin maliyet, neyin borç olduğunu belirler (src/lib/expenses/kinds.ts):
+/// EXPENSE fatura/fiş (maliyet + borç), ADVANCE avans (borç, maliyet değil),
+/// DELIVERY bağlantı çekişi (maliyet, bağlantı fiyatıyla; ödeme bağlantı planından),
+/// PROGRESS taşeron hakedişinin maliyeti (borç hakediş kaydında),
+/// TRANSFER projeler arası malzeme transferi (kaynakta eksi, hedefte artı maliyet).
+enum ExpenseKind {
+  EXPENSE
+  ADVANCE
+  DELIVERY
+  PROGRESS
+  TRANSFER
+  /// İş makinesinin projede çalışması (iç maliyet; nakit çıkışı makine hareketlerindedir)
+  MACHINE
+}
+
+enum DocumentType {
+  INVOICE
+  DELIVERY_NOTE
+  RECEIPT
+  PROGRESS_BILLING
+  VOUCHER
+  NONE
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  PROMISSORY_NOTE
+  CREDIT_CARD
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Harcama kaydı. Tutarlar orijinal para biriminde ve TL karşılığı olarak (işlem kuruyla) saklanır.
+/// Birden fazla projeyi ilgilendiren fatura, her proje için bir satıra bölünür; satırlar
+/// `splitGroupId` ile birbirine bağlıdır (PLAN'daki HarcamaDağılımı).
+model Expense {
+  id                String         @id @default(cuid())
+  projectId         String
+  blockId           String?
+  costItemId        String?
+  supplierId        String?
+  kind              ExpenseKind    @default(EXPENSE)
+  date              DateTime       @db.Date
+  description       String?
+  quantity          Decimal?       @db.Decimal(18, 4)
+  unit              String?
+  /// Birim fiyat (KDV hariç, orijinal para birimi)
+  unitPrice         Decimal?       @db.Decimal(18, 4)
+  currency          Currency       @default(TRY)
+  /// İşlem kuru (TL için 1)
+  exchangeRate      Decimal        @default(1) @db.Decimal(18, 6)
+  /// KDV oranı (yüzde, ör. 20)
+  vatRate           Decimal        @default(0) @db.Decimal(5, 2)
+  /// Matrah (KDV hariç), orijinal para birimi
+  netAmount         Decimal        @db.Decimal(18, 2)
+  vatAmount         Decimal        @db.Decimal(18, 2)
+  totalAmount       Decimal        @db.Decimal(18, 2)
+  netAmountTry      Decimal        @db.Decimal(18, 2)
+  vatAmountTry      Decimal        @db.Decimal(18, 2)
+  totalAmountTry    Decimal        @db.Decimal(18, 2)
+  documentType      DocumentType
+  documentNo        String?
+  paymentStatus     PaymentStatus  @default(UNPAID)
+  paymentMethod     PaymentMethod?
+  dueDate           DateTime?      @db.Date
+  paidAt            DateTime?      @db.Date
+  approvalStatus    ApprovalStatus @default(PENDING)
+  approvalNote      String?
+  approvedById      String?
+  approvedAt        DateTime?
+  createdById       String
+  /// Projelere bölünmüş faturanın ortak kimliği ve bu satırın payı (0–1)
+  splitGroupId      String?
+  splitRatio        Decimal?       @db.Decimal(9, 6)
+  importId          String?
+  /// Bağlantı çekişi (DELIVERY) veya bağlantıya bağlanan avans
+  connectionId      String?
+  connectionItemId  String?
+  /// Taşeron sözleşmesine bağlanan avans veya hakediş maliyeti (PROGRESS)
+  contractId        String?
+  progressBillingId String?
+  transferId        String?
+  /// Makine puantajından gelen iç maliyet (MACHINE)
+  machineUsageId    String?        @unique
+  /// Kütüphane malzemesi (fatura fiyatı kütüphaneye buradan yansır)
+  resourceId        String?
+  /// Silinen kayıt (kayıt tutulur, listelerde görünmez)
+  deletedAt         DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  project         Project              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  block           Block?               @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  costItem        CostItem?            @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+  supplier        Supplier?            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy       User                 @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedBy      User?                @relation("ExpenseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  import          ExpenseImport?       @relation(fields: [importId], references: [id], onDelete: SetNull)
+  connection      Connection?          @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  connectionItem  ConnectionItem?      @relation(fields: [connectionItemId], references: [id], onDelete: Restrict)
+  contract        SubcontractContract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  progressBilling ProgressBilling?     @relation(fields: [progressBillingId], references: [id], onDelete: Restrict)
+  transfer        MaterialTransfer?    @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  machineUsage    MachineUsage?        @relation(fields: [machineUsageId], references: [id], onDelete: Restrict)
+  resource        Resource?            @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  documents       Document[]
+
+  @@index([projectId, date])
+  @@index([projectId, approvalStatus])
+  @@index([projectId, costItemId])
+  @@index([supplierId, documentNo])
+  @@index([paymentStatus, dueDate])
+  @@index([splitGroupId])
+  @@index([connectionItemId])
+  @@index([connectionId])
+  @@index([contractId])
+  @@index([progressBillingId])
+  @@index([resourceId])
+}
+
+/// Belge (fiş/fatura fotoğrafı, PDF). Dosyanın kendisi depolama alanında (`uploads/`) durur.
+model Document {
+  id                  String   @id @default(cuid())
+  /// Bağlı olduğu kayıt: harcama, bağlantı (sözleşme/teklif), bağlantı faturası,
+  /// taşeron sözleşmesi veya hakediş (biri dolu olur).
+  expenseId           String?
+  connectionId        String?
+  connectionInvoiceId String?
+  contractId          String?
+  progressBillingId   String?
+  fileName            String
+  mimeType            String
+  size                Int
+  /// Depolamadaki dosya. Projelere bölünmüş faturada aynı dosya her satıra bağlanır.
+  storageKey          String
+  uploadedById        String?
+  createdAt           DateTime @default(now())
+
+  expense           Expense?             @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  connection        Connection?          @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  connectionInvoice ConnectionInvoice?   @relation(fields: [connectionInvoiceId], references: [id], onDelete: Cascade)
+  contract          SubcontractContract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  progressBilling   ProgressBilling?     @relation(fields: [progressBillingId], references: [id], onDelete: Cascade)
+  uploadedBy        User?                @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([expenseId])
+  @@index([connectionId])
+  @@index([connectionInvoiceId])
+  @@index([contractId])
+  @@index([progressBillingId])
+  @@index([storageKey])
+}
+
+/// Excel / tablo modundan toplu giriş; hangi kayıtların birlikte aktarıldığı izlenir.
+model ExpenseImport {
+  id          String   @id @default(cuid())
+  projectId   String
+  fileName    String?
+  rowCount    Int
+  createdById String
+  createdAt   DateTime @default(now())
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  expenses  Expense[]
+}
+
+// ─── Faz 2: malzeme bağlantıları (PLAN.md Bölüm 9) ───────────────────────────────
+
+enum ConnectionStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+/// Fiyat tipi: sabit; döviz bazlı (çekiş günü kuru / ödeme günü kuru); belli tarihe kadar sabit.
+enum ConnectionPriceType {
+  FIXED
+  FX_AT_DELIVERY
+  FX_AT_PAYMENT
+  FIXED_UNTIL
+}
+
+/// Malzeme bağlantısı (şirket geneli). Kalemler, tahsisler, çekişler (Expense.kind = DELIVERY),
+/// ödeme planı ve faturalar buna bağlıdır. Tüm kalem ve ödemeler bağlantının para birimindedir.
+model Connection {
+  id                String              @id @default(cuid())
+  no                String              @unique
+  date              DateTime            @db.Date
+  supplierId        String
+  status            ConnectionStatus    @default(ACTIVE)
+  priceType         ConnectionPriceType @default(FIXED)
+  currency          Currency            @default(TRY)
+  /// FIXED_UNTIL: bu tarihe kadar bağlantı fiyatı, sonrası çekiş günündeki güncel fiyat
+  priceFixedUntil   DateTime?           @db.Date
+  /// Bağlantının / fiyatın geçerlilik sonu
+  validUntil        DateTime?           @db.Date
+  /// Son çekiş tarihi
+  lastDrawDate      DateTime?           @db.Date
+  deliveryPlace     String?
+  transportIncluded Boolean             @default(true)
+  unloadingIncluded Boolean             @default(false)
+  notes             String?
+  createdById       String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  supplier  Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy User                @relation("ConnectionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  items     ConnectionItem[]
+  payments  ConnectionPayment[]
+  invoices  ConnectionInvoice[]
+  expenses  Expense[]
+  documents Document[]
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+/// Bağlantı kalemi: malzeme, miktar, birim fiyat (KDV hariç). Maliyet kalemi İKY koduyla tutulur;
+/// çekişte projedeki aynı kodlu kaleme yazılır (projeler arası ortak).
+model ConnectionItem {
+  id           String  @id @default(cuid())
+  connectionId String
+  sortOrder    Int     @default(0)
+  description  String
+  costItemCode String
+  unit         String
+  quantity     Decimal @db.Decimal(18, 4)
+  unitPrice    Decimal @db.Decimal(18, 4)
+  vatRate      Decimal @db.Decimal(5, 2)
+  /// Kütüphane malzemesi: aktif bağlantı fiyatı bütçede öncelikli fiyat olur (PLAN 9.6)
+  resourceId   String?
+
+  connection   Connection              @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  allocations  ConnectionAllocation[]
+  draws        Expense[]
+  invoiceLines ConnectionInvoiceLine[]
+  resource     Resource?               @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  @@index([connectionId])
+}
+
+/// Proje tahsisi. Kalem miktarının tahsis edilmeyen kısmı "atanmamış – şirket geneli" havuzdur.
+/// Değişiklik geçmişi AuditLog'da (entity = "ConnectionAllocation").
+model ConnectionAllocation {
+  id        String   @id @default(cuid())
+  itemId    String
+  projectId String
+  quantity  Decimal  @db.Decimal(18, 4)
+  updatedAt DateTime @updatedAt
+
+  item    ConnectionItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@unique([itemId, projectId])
+  @@index([projectId])
+}
+
+/// Bağlantı ödeme planı satırı (avans, taksit, çek/senet). Tutar KDV dahil, bağlantı para biriminde.
+model ConnectionPayment {
+  id            String         @id @default(cuid())
+  connectionId  String
+  dueDate       DateTime       @db.Date
+  amount        Decimal        @db.Decimal(18, 2)
+  description   String?
+  paymentMethod PaymentMethod?
+  /// Çek / senet no
+  instrumentNo  String?
+  paymentStatus PaymentStatus  @default(UNPAID)
+  paidAt        DateTime?      @db.Date
+  /// Ödeme kuru (TL için 1); ödenmemişte tahmini
+  exchangeRate  Decimal        @default(1) @db.Decimal(18, 6)
+  amountTry     Decimal        @db.Decimal(18, 2)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId])
+  @@index([paymentStatus, dueDate])
+}
+
+/// Tedarikçiden gelen ve bağlantıya bağlanan fatura. Maliyet çekişle oluştuğu için fatura maliyete
+/// tekrar yazılmaz; miktar ve fiyat bağlantıyla karşılaştırılır, muhasebeci paketine girer.
+model ConnectionInvoice {
+  id             String   @id @default(cuid())
+  connectionId   String
+  date           DateTime @db.Date
+  documentNo     String
+  exchangeRate   Decimal  @default(1) @db.Decimal(18, 6)
+  netAmount      Decimal  @db.Decimal(18, 2)
+  vatAmount      Decimal  @db.Decimal(18, 2)
+  totalAmount    Decimal  @db.Decimal(18, 2)
+  totalAmountTry Decimal  @db.Decimal(18, 2)
+  notes          String?
+  createdById    String
+  createdAt      DateTime @default(now())
+
+  connection Connection              @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  lines      ConnectionInvoiceLine[]
+  documents  Document[]
+
+  @@index([connectionId])
+  @@index([date])
+}
+
+model ConnectionInvoiceLine {
+  id        String  @id @default(cuid())
+  invoiceId String
+  itemId    String
+  quantity  Decimal @db.Decimal(18, 4)
+  unitPrice Decimal @db.Decimal(18, 4)
+  vatRate   Decimal @db.Decimal(5, 2)
+
+  invoice ConnectionInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  item    ConnectionItem    @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@index([invoiceId])
+  @@index([itemId])
+}
+
+// ─── Faz 2: taşeron sözleşmeleri ve hakediş (PLAN.md 4.2, 8.2) ─────────────────────
+
+enum ContractStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+/// Temin şekli: malzemeli taşeron (anahtar teslim) veya malzeme bizden + taşeron işçilik.
+enum SupplyMethod {
+  TURNKEY
+  LABOR_ONLY
+  OWN_TEAM
+}
+
+model SubcontractContract {
+  id                 String         @id @default(cuid())
+  projectId          String
+  supplierId         String
+  no                 String
+  date               DateTime       @db.Date
+  title              String
+  scope              String?
+  supplyMethod       SupplyMethod   @default(TURNKEY)
+  /// KDV oranı (%)
+  vatRate            Decimal        @db.Decimal(5, 2)
+  /// KDV tevkifatı: KDV'nin tevkif edilen yüzdesi (ör. 4/10 için 40); muhasebeciyle belirlenir
+  vatWithholdingRate Decimal        @default(0) @db.Decimal(5, 2)
+  /// Teminat kesintisi (hakediş brütünün %'si)
+  retentionRate      Decimal        @default(0) @db.Decimal(5, 2)
+  /// Avans mahsup oranı (hakediş brütünün %'si; avans bakiyesiyle sınırlı)
+  advanceOffsetRate  Decimal        @default(0) @db.Decimal(5, 2)
+  status             ContractStatus @default(ACTIVE)
+  startDate          DateTime?      @db.Date
+  endDate            DateTime?      @db.Date
+  notes              String?
+  createdById        String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  supplier  Supplier          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy User              @relation("ContractCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  items     ContractItem[]
+  billings  ProgressBilling[]
+  expenses  Expense[]
+  documents Document[]
+
+  @@unique([projectId, no])
+  @@index([supplierId])
+}
+
+/// Sözleşme birim fiyat satırı (KDV hariç, TL).
+model ContractItem {
+  id          String  @id @default(cuid())
+  contractId  String
+  sortOrder   Int     @default(0)
+  costItemId  String
+  description String
+  unit        String
+  quantity    Decimal @db.Decimal(18, 4)
+  unitPrice   Decimal @db.Decimal(18, 4)
+
+  contract SubcontractContract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  costItem CostItem              @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+  lines    ProgressBillingLine[]
+
+  @@index([contractId])
+}
+
+/// Hakediş durumu: taslak (şantiye/teknik ofis hazırlar) → onay bekliyor → onaylandı.
+enum ProgressBillingStatus {
+  DRAFT
+  PENDING
+  APPROVED
+}
+
+/// Hakediş: kümülatif miktarlar → bu dönem brüt → kesintiler → net ödeme.
+/// Onayda maliyet kalemi başına PROGRESS türünde harcama satırları oluşturulur (brüt − malzeme mahsubu).
+model ProgressBilling {
+  id                 String                @id @default(cuid())
+  contractId         String
+  projectId          String
+  seq                Int
+  date               DateTime              @db.Date
+  periodStart        DateTime?             @db.Date
+  periodEnd          DateTime?             @db.Date
+  status             ProgressBillingStatus @default(DRAFT)
+  /// Bu dönem brüt iş tutarı (KDV hariç)
+  grossAmount        Decimal               @db.Decimal(18, 2)
+  vatRate            Decimal               @db.Decimal(5, 2)
+  vatAmount          Decimal               @db.Decimal(18, 2)
+  vatWithheld        Decimal               @db.Decimal(18, 2)
+  retention          Decimal               @db.Decimal(18, 2)
+  advanceOffset      Decimal               @db.Decimal(18, 2)
+  materialOffset     Decimal               @db.Decimal(18, 2)
+  otherDeductions    Decimal               @db.Decimal(18, 2)
+  otherDeductionNote String?
+  /// Net ödenecek
+  payableAmount      Decimal               @db.Decimal(18, 2)
+  dueDate            DateTime?             @db.Date
+  paymentStatus      PaymentStatus         @default(UNPAID)
+  paymentMethod      PaymentMethod?
+  paidAt             DateTime?             @db.Date
+  notes              String?
+  rejectionNote      String?
+  approvedById       String?
+  approvedAt         DateTime?
+  createdById        String
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  contract   SubcontractContract   @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  project    Project               @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdBy  User                  @relation("ProgressBillingCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedBy User?                 @relation("ProgressBillingApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  lines      ProgressBillingLine[]
+  expenses   Expense[]
+  documents  Document[]
+
+  @@unique([contractId, seq])
+  @@index([projectId, status])
+  @@index([paymentStatus, dueDate])
+}
+
+model ProgressBillingLine {
+  id                 String  @id @default(cuid())
+  billingId          String
+  contractItemId     String
+  /// Bu hakedişe kadar yapılan toplam miktar
+  cumulativeQuantity Decimal @db.Decimal(18, 4)
+  /// Önceki hakedişlerin toplamı
+  previousQuantity   Decimal @db.Decimal(18, 4)
+  amount             Decimal @db.Decimal(18, 2)
+
+  billing      ProgressBilling @relation(fields: [billingId], references: [id], onDelete: Cascade)
+  contractItem ContractItem    @relation(fields: [contractItemId], references: [id], onDelete: Restrict)
+
+  @@unique([billingId, contractItemId])
+}
+
+// ─── Faz 2: projeler arası malzeme transferi (PLAN.md 5.1) ─────────────────────────
+
+/// Bir şantiyede artan malzemenin diğerine gönderilmesi. Kaynak projede eksi, hedef projede artı
+/// tutarlı iki TRANSFER harcama satırı oluşturulur; maliyet böylece projeler arasında taşınır.
+model MaterialTransfer {
+  id            String    @id @default(cuid())
+  date          DateTime  @db.Date
+  fromProjectId String
+  toProjectId   String
+  description   String
+  costItemCode  String
+  quantity      Decimal?  @db.Decimal(18, 4)
+  unit          String?
+  /// Aktarılan maliyet (TL, KDV hariç)
+  amount        Decimal   @db.Decimal(18, 2)
+  notes         String?
+  createdById   String
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  fromProject Project   @relation("TransferFrom", fields: [fromProjectId], references: [id], onDelete: Restrict)
+  toProject   Project   @relation("TransferTo", fields: [toProjectId], references: [id], onDelete: Restrict)
+  createdBy   User      @relation("TransferCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  expenses    Expense[]
+
+  @@index([fromProjectId])
+  @@index([toProjectId])
+}
+
+// ─── Faz 3: bağımsız bölümler ve arsa (PLAN.md 5.3, 5.5) ──────────────────────────
+
+enum UsageType {
+  RESIDENTIAL
+  SHOP
+  OFFICE
+  STORAGE
+}
+
+enum UnitOwner {
+  CONTRACTOR
+  LANDOWNER
+}
+
+/// Kat karşılığı arsa sahibi; pay oranı sözleşmedeki yüzde (ör. 45).
+model Landowner {
+  id             String   @id @default(cuid())
+  projectId      String
+  name           String
+  sharePercent   Decimal  @db.Decimal(7, 4)
+  /// Aylık kira yardımı (TL)
+  monthlyRentAid Decimal? @db.Decimal(18, 2)
+  phone          String?
+  email          String?
+  notes          String?
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  units   Unit[]
+
+  @@index([projectId])
+}
+
+/// Bağımsız bölüm. Kat: bodrum için eksi (−1), zemin 0.
+model Unit {
+  id              String    @id @default(cuid())
+  projectId       String
+  blockId         String
+  floor           Int
+  doorNo          String
+  usageType       UsageType @default(RESIDENTIAL)
+  layout          String?
+  netArea         Decimal   @db.Decimal(10, 2)
+  grossArea       Decimal   @db.Decimal(10, 2)
+  commonAreaShare Decimal?  @db.Decimal(10, 2)
+  facade          String?
+  view            String?
+  /// Balkon / teras / bahçe alanı (m²)
+  extraArea       Decimal?  @db.Decimal(10, 2)
+  owner           UnitOwner @default(CONTRACTOR)
+  landownerId     String?
+  notes           String?
+  /// Onaylı fiyat listesindeki fiyat (KDV hariç, TL)
+  listPrice       Decimal?  @db.Decimal(18, 2)
+  listVatRate     Decimal?  @db.Decimal(5, 2)
+  /// Kilitli fiyat yeniden fiyatlamada değişmez (satılmış bölüm, PLAN 7.6)
+  priceLocked     Boolean   @default(false)
+  /// Elle girilen satış KDV oranı; boşsa parametre kuralı
+  vatRateOverride Decimal?  @db.Decimal(5, 2)
+  /// Teslim tarihi (satılan ve arsa sahibi bölümleri)
+  handoverDate    DateTime? @db.Date
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  block         Block           @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  landowner     Landowner?      @relation(fields: [landownerId], references: [id], onDelete: SetNull)
+  priceLines    PriceListLine[]
+  reservations  Reservation[]
+  saleContracts SaleContract[]
+
+  @@unique([blockId, doorNo])
+  @@index([projectId])
+}
+
+// ─── Faz 3: malzeme / kaynak kütüphanesi ve reçeteler (PLAN.md 4) ─────────────────
+
+enum ResourceType {
+  MATERIAL
+  LABOR
+  EQUIPMENT
+  SERVICE
+}
+
+/// Elle girilen fiyat kaynağı. Fatura fiyatları harcamalardan, bağlantı fiyatları bağlantılardan okunur.
+enum PriceSource {
+  QUOTE
+  MARKET
+}
+
+/// Kaynak (malzeme, işçilik, makine, hizmet) — şirket geneli.
+model Resource {
+  id                String       @id @default(cuid())
+  code              String       @unique
+  name              String
+  type              ResourceType @default(MATERIAL)
+  category          String?
+  unit              String
+  /// Fire oranı (%)
+  wastePercent      Decimal      @default(0) @db.Decimal(5, 2)
+  currency          Currency     @default(TRY)
+  spec              String?
+  defaultSupplierId String?
+  active            Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  defaultSupplier Supplier?        @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
+  prices          ResourcePrice[]
+  recipeLines     RecipeLine[]
+  expenses        Expense[]
+  connectionItems ConnectionItem[]
+  budgetLines     BudgetLine[]
+
+  @@index([name])
+}
+
+/// Teklif veya piyasa araştırması fiyatı (KDV hariç).
+model ResourcePrice {
+  id          String      @id @default(cuid())
+  resourceId  String
+  date        DateTime    @db.Date
+  price       Decimal     @db.Decimal(18, 4)
+  currency    Currency    @default(TRY)
+  source      PriceSource
+  supplierId  String?
+  note        String?
+  createdById String?
+  createdAt   DateTime    @default(now())
+
+  resource Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([resourceId, date])
+}
+
+/// Birim fiyat analizi: 1 birim iş için kaynak miktarları (ör. 1 m² seramik).
+model Recipe {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  unit        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lines       RecipeLine[]
+  budgetLines BudgetLine[]
+}
+
+model RecipeLine {
+  id         String  @id @default(cuid())
+  recipeId   String
+  resourceId String
+  quantity   Decimal @db.Decimal(18, 6)
+  sortOrder  Int     @default(0)
+
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+
+  @@index([recipeId])
+}
+
+// ─── Faz 3: metraj ve bütçe (PLAN.md 6, 7.1–7.3) ──────────────────────────────────
+
+enum QuantitySource {
+  PARAMETRIC
+  FORMULA
+  MANUAL
+}
+
+enum BudgetPriceSource {
+  RECIPE
+  RESOURCE
+  MANUAL
+}
+
+/// Parametrik katsayının tabanı.
+enum CoefficientBasis {
+  CONSTRUCTION_AREA
+  SELLABLE_GROSS
+  SELLABLE_NET
+  LAND_AREA
+  UNIT_COUNT
+}
+
+/// Parametrik metraj katsayısı. projectId boş: şablon (projede ilk kullanımda kopyalanır).
+model ParametricCoefficient {
+  id           String           @id @default(cuid())
+  projectId    String?
+  costItemCode String
+  name         String
+  basis        CoefficientBasis @default(CONSTRUCTION_AREA)
+  coefficient  Decimal          @db.Decimal(18, 6)
+  unit         String
+  note         String?
+  sortOrder    Int              @default(0)
+
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  budgetLines BudgetLine[]
+
+  @@index([projectId])
+}
+
+/// Bütçe satırı: maliyet kalemi (isteğe bağlı blok) için miktar × birim fiyat × (1 + fire).
+/// Reçete / kaynak fiyatlı satırların birim fiyatı kütüphaneden canlı hesaplanır; elle girilen fiyat saklanır.
+model BudgetLine {
+  id             String            @id @default(cuid())
+  projectId      String
+  costItemId     String
+  blockId        String?
+  description    String?
+  supplyMethod   SupplyMethod?
+  quantity       Decimal           @db.Decimal(18, 4)
+  quantitySource QuantitySource    @default(MANUAL)
+  formula        String?
+  coefficientId  String?
+  unit           String?
+  priceSource    BudgetPriceSource @default(MANUAL)
+  recipeId       String?
+  resourceId     String?
+  /// Elle girilen birim fiyat (KDV hariç, satırın para biriminde)
+  unitPrice      Decimal?          @db.Decimal(18, 4)
+  currency       Currency          @default(TRY)
+  wastePercent   Decimal           @default(0) @db.Decimal(5, 2)
+  priceNote      String?
+  sortOrder      Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costItem    CostItem               @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+  block       Block?                 @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  coefficient ParametricCoefficient? @relation(fields: [coefficientId], references: [id], onDelete: SetNull)
+  recipe      Recipe?                @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  resource    Resource?              @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, costItemId])
+}
+
+// ─── Faz 4: bütçe kontrolü (PLAN.md 8.3, 9.6) ─────────────────────────────────────
+
+/**
+ * Bütçenin onaylanmış (dondurulmuş) hali; sapma bu referansa göre hesaplanır.
+ */
+model BudgetBaseline {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  note        String?
+  total       Decimal  @db.Decimal(18, 2)
+  createdById String
+  createdAt   DateTime @default(now())
+
+  project Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lines   BudgetBaselineLine[]
+
+  @@index([projectId, createdAt])
+}
+
+/**
+ * Baz bütçe anındaki satır değerleri (canlı fiyat ve miktarların o günkü karşılığı).
+ */
+model BudgetBaselineLine {
+  id           String   @id @default(cuid())
+  baselineId   String
+  costItemId   String
+  blockId      String?
+  description  String?
+  quantity     Decimal  @db.Decimal(18, 4)
+  unit         String?
+  unitPriceTry Decimal? @db.Decimal(18, 4)
+  amount       Decimal  @db.Decimal(18, 2)
+
+  baseline BudgetBaseline @relation(fields: [baselineId], references: [id], onDelete: Cascade)
+  costItem CostItem       @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+
+  @@index([baselineId])
+}
+
+/**
+ * Kalemin elle girilen tamamlanma yüzdesi (miktardan hesaplanamayan işler için).
+ */
+model CostItemProgress {
+  id          String   @id @default(cuid())
+  projectId   String
+  costItemId  String
+  percent     Decimal  @db.Decimal(5, 2)
+  note        String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costItem CostItem @relation(fields: [costItemId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, costItemId])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 5 – Fiyatlandırma (PLAN.md 7.4–7.6)
+// ---------------------------------------------------------------------------
+
+enum ProfitMethod {
+  /// Satış üzerinden marj
+  MARGIN
+  /// Maliyet üzerine ekleme
+  MARKUP
+}
+
+enum PricingCostBasis {
+  /// Güncel bütçe
+  BUDGET
+  /// Tahmini tamamlanma maliyeti (bütçe kontrolü)
+  EAC
+  /// Elle girilen toplam maliyet (fizibilite)
+  MANUAL
+}
+
+enum PricingFactorKind {
+  /// Kullanım tipi oranı (ör. dükkân = konut × 1,8)
+  USAGE
+  FLOOR
+  FACADE
+  VIEW
+  LAYOUT
+}
+
+model PricingSetting {
+  projectId          String           @id
+  profitMethod       ProfitMethod     @default(MARGIN)
+  profitPercent      Decimal          @default(0) @db.Decimal(6, 2)
+  commissionPercent  Decimal          @default(0) @db.Decimal(6, 2)
+  /// Boşsa bütçenin 14 grubu (14.06 komisyon hariç)
+  advertisingBudget  Decimal?         @db.Decimal(18, 2)
+  costBasis          PricingCostBasis @default(BUDGET)
+  manualCost         Decimal?         @db.Decimal(18, 2)
+  roundingStep       Decimal          @default(10000) @db.Decimal(14, 2)
+  /// Bahçe / teras ek alanının brüt m²'ye eklenme oranı (0 = fiyata katılmaz)
+  extraAreaFactor    Decimal          @default(0) @db.Decimal(6, 4)
+  /// Konutlar indirimli KDV şartlarını sağlıyor mu (muhasebeciyle teyit edilir)
+  reducedVatEligible Boolean          @default(true)
+  updatedById        String?
+  updatedAt          DateTime         @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  updatedBy User?   @relation("PricingSettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model PricingFactor {
+  id        String            @id @default(cuid())
+  projectId String
+  kind      PricingFactorKind
+  /// Kat numarası, cephe, manzara, tip veya kullanım tipi
+  key       String
+  value     Decimal           @db.Decimal(8, 4)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, kind, key])
+}
+
+/// Onaylanan fiyat listesi sürümü (o anki girdi ve fiyatlarla).
+model PriceList {
+  id                String           @id @default(cuid())
+  projectId         String
+  name              String
+  note              String?
+  costBasis         PricingCostBasis
+  cost              Decimal          @db.Decimal(18, 2)
+  advertising       Decimal          @db.Decimal(18, 2)
+  commissionPercent Decimal          @db.Decimal(6, 2)
+  profitMethod      ProfitMethod
+  profitPercent     Decimal          @db.Decimal(6, 2)
+  baseM2            Decimal          @db.Decimal(14, 2)
+  targetRevenue     Decimal          @db.Decimal(18, 2)
+  total             Decimal          @db.Decimal(18, 2)
+  approvedById      String?
+  approvedAt        DateTime         @default(now())
+
+  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approvedBy User?           @relation("PriceListApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  lines      PriceListLine[]
+
+  @@index([projectId, approvedAt])
+}
+
+model PriceListLine {
+  id          String   @id @default(cuid())
+  priceListId String
+  unitId      String
+  price       Decimal  @db.Decimal(18, 2)
+  vatRate     Decimal? @db.Decimal(5, 2)
+  locked      Boolean  @default(false)
+
+  priceList PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  unit      Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([priceListId, unitId])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 6 – Satış ve tahsilat (PLAN.md Bölüm 10)
+// ---------------------------------------------------------------------------
+
+/// Müşteri (projeye bağlı; kimlik bilgileri yalnızca satış yetkisi olanlara görünür — KVKK).
+model Customer {
+  id         String   @id @default(cuid())
+  projectId  String
+  name       String
+  /// T.C. kimlik veya vergi numarası
+  identityNo String?
+  taxOffice  String?
+  phone      String?
+  email      String?
+  address    String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  contracts    SaleContract[]
+
+  @@index([projectId, name])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CANCELLED
+  /// Satışa dönüştü
+  CONVERTED
+}
+
+/// Süreli rezervasyon / opsiyon; süresi dolan okunurken boşa düşmüş sayılır.
+model Reservation {
+  id          String            @id @default(cuid())
+  projectId   String
+  unitId      String
+  customerId  String
+  startDate   DateTime          @db.Date
+  expiresAt   DateTime          @db.Date
+  /// Kapora (TL)
+  deposit     Decimal?          @db.Decimal(18, 2)
+  /// Teklif edilen fiyat (KDV hariç)
+  quotedPrice Decimal?          @db.Decimal(18, 2)
+  status      ReservationStatus @default(ACTIVE)
+  note        String?
+  createdById String?
+  createdAt   DateTime          @default(now())
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([projectId, status])
+  @@index([unitId])
+}
+
+enum SaleStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model SaleContract {
+  id               String     @id @default(cuid())
+  projectId        String
+  unitId           String
+  customerId       String
+  contractNo       String?
+  date             DateTime   @db.Date
+  currency         Currency   @default(TRY)
+  /// Döviz bazlı satışta sözleşme tarihindeki kur (TL)
+  exchangeRate     Decimal    @default(1) @db.Decimal(18, 6)
+  /// Liste fiyatı, indirim ve satış fiyatı KDV hariç, sözleşme para biriminde
+  listPrice        Decimal    @db.Decimal(18, 2)
+  discount         Decimal    @default(0) @db.Decimal(18, 2)
+  salePrice        Decimal    @db.Decimal(18, 2)
+  vatRate          Decimal    @db.Decimal(5, 2)
+  vatAmount        Decimal    @db.Decimal(18, 2)
+  totalAmount      Decimal    @db.Decimal(18, 2)
+  /// Satış fiyatının TL karşılığı (KDV hariç) — fiyatlandırmada kilitli fiyat
+  salePriceTry     Decimal    @db.Decimal(18, 2)
+  agent            String?
+  /// Emlakçı komisyonu (TL)
+  commissionAmount Decimal?   @db.Decimal(18, 2)
+  status           SaleStatus @default(ACTIVE)
+  cancelledAt      DateTime?
+  cancelReason     String?
+  notes            String?
+  createdById      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unit         Unit          @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy    User?         @relation("SaleContractCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  installments Installment[]
+  collections  Collection[]
+
+  @@index([projectId, status])
+  @@index([unitId])
+}
+
+enum InstallmentKind {
+  DOWN_PAYMENT
+  INSTALLMENT
+  INTERIM
+  KEY_DELIVERY
+  BANK_LOAN
+}
+
+/// Ödeme planı satırı (KDV dahil, sözleşme para biriminde).
+model Installment {
+  id         String          @id @default(cuid())
+  contractId String
+  dueDate    DateTime        @db.Date
+  amount     Decimal         @db.Decimal(18, 2)
+  kind       InstallmentKind @default(INSTALLMENT)
+  note       String?
+  sortOrder  Int             @default(0)
+
+  contract SaleContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId, dueDate])
+  @@index([dueDate])
+}
+
+enum ChequeStatus {
+  /// Portföyde (vadesi gelmedi / tahsil edilmedi)
+  PENDING
+  CLEARED
+  BOUNCED
+}
+
+/// Tahsilat; vade sırasına göre taksitlere dağıtılır. Çek / senet tahsil edilince sayılır.
+model Collection {
+  id            String        @id @default(cuid())
+  contractId    String
+  date          DateTime      @db.Date
+  amount        Decimal       @db.Decimal(18, 2)
+  exchangeRate  Decimal       @default(1) @db.Decimal(18, 6)
+  amountTry     Decimal       @db.Decimal(18, 2)
+  method        PaymentMethod
+  documentNo    String?
+  /// Çek / senet vadesi ve durumu
+  chequeDueDate DateTime?     @db.Date
+  chequeStatus  ChequeStatus?
+  bank          String?
+  note          String?
+  createdById   String?
+  createdAt     DateTime      @default(now())
+
+  contract  SaleContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdBy User?        @relation("CollectionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([contractId, date])
+}
+
+// ---------------------------------------------------------------------------
+// Faz 7 – Nakit akışı ve senaryolar (PLAN.md 7.8, 7.9)
+// ---------------------------------------------------------------------------
+
+/// İş programı: maliyet kaleminin harcanacağı aylar (proje başlangıcına göre 1. ay = başlangıç ayı).
+model ScheduleEntry {
+  id         String @id @default(cuid())
+  projectId  String
+  costItemId String
+  startMonth Int
+  endMonth   Int
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costItem CostItem @relation(fields: [costItemId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, costItemId])
+}
+
+/// Projenin nakit akışı varsayımları (baz senaryo).
+model CashFlowSetting {
+  projectId               String   @id
+  openingCash             Decimal  @default(0) @db.Decimal(18, 2)
+  /// Planlanan (KDV hariç) maliyete eklenecek ortalama KDV oranı; boşsa parametre tablosundaki genel oran
+  costVatPercent          Decimal? @db.Decimal(5, 2)
+  monthlyInflationPercent Decimal  @default(0) @db.Decimal(6, 3)
+  /// Dövizli bütçe satırları ve dövizli bağlantı ödemeleri için kur değişimi (%)
+  fxChangePercent         Decimal  @default(0) @db.Decimal(6, 2)
+  /// Nakit açığına uygulanan aylık finansman maliyeti (%)
+  monthlyInterestPercent  Decimal  @default(0) @db.Decimal(6, 3)
+  /// Satılmamış bölümler: ayda satılacak bölüm sayısı, başlangıç ayı (proje ayı), peşinat ve taksit
+  salesPerMonth           Decimal  @default(0) @db.Decimal(6, 2)
+  salesStartMonth         Int?
+  downPaymentPercent      Decimal  @default(100) @db.Decimal(5, 2)
+  installmentMonths       Int      @default(0)
+  updatedById             String?
+  updatedAt               DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+/// Şirket geneli nakit varsayımları (tek satır, id = "default").
+model CompanyCashSetting {
+  id              String   @id @default("default")
+  openingCash     Decimal  @default(0) @db.Decimal(18, 2)
+  /// Genel merkez giderleri (aylık, KDV dahil)
+  monthlyOverhead Decimal  @default(0) @db.Decimal(18, 2)
+  updatedAt       DateTime @updatedAt
+}
+
+/// Senaryo: baz varsayımlara göre değişiklikler (boş alan = baz değer).
+model Scenario {
+  id                      String   @id @default(cuid())
+  projectId               String
+  name                    String
+  note                    String?
+  monthlyInflationPercent Decimal? @db.Decimal(6, 3)
+  fxChangePercent         Decimal? @db.Decimal(6, 2)
+  monthlyInterestPercent  Decimal? @db.Decimal(6, 3)
+  delayMonths             Int      @default(0)
+  salesPriceChangePercent Decimal  @default(0) @db.Decimal(6, 2)
+  /// Satış hızı (% — 100 baz hız)
+  salesSpeedPercent       Decimal  @default(100) @db.Decimal(6, 2)
+  /// Arsa sahibi payı (%); boşsa mevcut bölüm dağılımı
+  landownerSharePercent   Decimal? @db.Decimal(5, 2)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  adjustments ScenarioAdjustment[]
+
+  @@index([projectId])
+}
+
+/// Kalem bazında fiyat değişimi (kod öneki: "05.05" demir, "05" tüm kaba inşaat).
+model ScenarioAdjustment {
+  id            String  @id @default(cuid())
+  scenarioId    String
+  costItemCode  String
+  changePercent Decimal @db.Decimal(6, 2)
+
+  scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([scenarioId, costItemCode])
+}
+
+// ─── İş makineleri (makine parkı) ──────────────────────────────────────────────────
+
+enum MachineStatus {
+  ACTIVE
+  SOLD
+  SCRAPPED
+}
+
+enum MachineUsageUnit {
+  HOUR
+  DAY
+}
+
+enum MachineEntryType {
+  PURCHASE
+  FINANCING
+  FUEL
+  MAINTENANCE
+  REPAIR
+  INSURANCE
+  TAX
+  OPERATOR
+  TRANSPORT
+  OTHER_COST
+  RENT_INCOME
+  SALE
+  OTHER_INCOME
+}
+
+/// Şirketin iş makinesi (şirket geneli kayıt; projeye bağlı değildir).
+model Machine {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  name          String
+  /// Cinsi: ekskavatör, loder, kamyon, vinç …
+  category      String?
+  brand         String?
+  model         String?
+  plateOrSerial String?
+  year          Int?
+  status        MachineStatus    @default(ACTIVE)
+  usageUnit     MachineUsageUnit @default(HOUR)
+  /// İç kullanım birim ücreti (projeye yazılan, KDV hariç TL / saat veya gün)
+  internalRate  Decimal?         @db.Decimal(18, 2)
+  notes         String?
+  createdById   String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+
+  createdBy User           @relation("MachineCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  entries   MachineEntry[]
+  usages    MachineUsage[]
+}
+
+/// Makinenin nakit hareketi (TL, KDV dahil). Ödenmemiş hareket nakit akışında vadesine yazılır.
+model MachineEntry {
+  id           String           @id @default(cuid())
+  machineId    String
+  date         DateTime         @db.Date
+  type         MachineEntryType
+  description  String?
+  amount       Decimal          @db.Decimal(18, 2)
+  /// Bilgi: miktar (ör. 120 litre yakıt)
+  quantity     Decimal?         @db.Decimal(18, 4)
+  unit         String?
+  paid         Boolean          @default(true)
+  dueDate      DateTime?        @db.Date
+  /// Hareketin olduğu şantiye (bilgi)
+  projectId    String?
+  /// Tedarikçi / müşteri adı
+  counterparty String?
+  createdById  String
+  createdAt    DateTime         @default(now())
+  deletedAt    DateTime?
+
+  machine   Machine  @relation(fields: [machineId], references: [id], onDelete: Restrict)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdBy User     @relation("MachineEntryCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([machineId, date])
+}
+
+/// Puantaj: makinenin bir projede çalışması. Projeye iç maliyet (Expense, MACHINE) yazar.
+model MachineUsage {
+  id          String    @id @default(cuid())
+  machineId   String
+  projectId   String
+  date        DateTime  @db.Date
+  /// Saat veya gün (makinenin birimi)
+  quantity    Decimal   @db.Decimal(18, 2)
+  rate        Decimal   @db.Decimal(18, 2)
+  amount      Decimal   @db.Decimal(18, 2)
+  costItemId  String
+  description String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+
+  machine   Machine  @relation(fields: [machineId], references: [id], onDelete: Restrict)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  costItem  CostItem @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+  createdBy User     @relation("MachineUsageCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  expense   Expense?
+
+  @@index([machineId, date])
+  @@index([projectId])
+}

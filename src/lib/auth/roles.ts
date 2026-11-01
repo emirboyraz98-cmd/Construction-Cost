@@ -1,0 +1,187 @@
+// Roller ve yetenekler (PLAN.md Bölüm 2). Saf modül; hem sunucuda hem tarayıcıda kullanılır.
+import { Role } from "@/generated/prisma/enums";
+
+export { Role };
+
+export const ROLES = Object.values(Role) as Role[];
+
+export const ROLE_LABELS: Record<Role, string> = {
+  yonetici: "Yönetici",
+  teknik_ofis: "Teknik ofis",
+  santiye_sefi: "Şantiye şefi",
+  muhasebe: "Muhasebe",
+  satin_alma: "Satın alma",
+  satis: "Satış",
+  dis_muhasebeci: "Dış muhasebeci",
+};
+
+export const ROLE_DESCRIPTIONS: Record<Role, string> = {
+  yonetici: "Her şey; tüm projeleri görür, kullanıcıları yönetir",
+  teknik_ofis: "Bina bilgileri, metraj, birim fiyat, bütçe",
+  santiye_sefi: "Kendi projesine harcama girişi; fiyat/kâr bilgisini görmez",
+  muhasebe: "Harcama girişi ve onayı, ödemeler, tedarikçi cari",
+  satin_alma: "Malzeme bağlantıları, teklifler, tedarikçiler, teslimatlar",
+  satis: "Fiyat listesi, müşteri, satış, tahsilat; maliyet detayını görmez",
+  dis_muhasebeci: "Salt okunur; dönemsel Excel paketi",
+};
+
+/** Projeye özel yetki verilirken seçilebilen roller (yönetici zaten tüm projeleri görür). */
+export const PROJECT_ROLES: readonly Role[] = ROLES.filter((role) => role !== Role.yonetici);
+
+export type Capability =
+  | "project.create"
+  | "project.edit"
+  | "project.viewTeam"
+  | "blocks.edit"
+  | "costTree.view"
+  | "costTree.edit"
+  | "users.manage"
+  // Faz 1 – harcamalar
+  | "expense.create"
+  | "expense.viewAll"
+  | "expense.approve"
+  | "expense.manage"
+  | "supplier.view"
+  | "supplier.manage"
+  | "rates.manage"
+  | "parameters.manage"
+  | "accountant.export"
+  // Faz 2 – bağlantılar ve taşeron
+  | "connection.view"
+  | "connection.manage"
+  | "contract.view"
+  | "contract.viewAmounts"
+  | "contract.manage"
+  | "progress.prepare"
+  | "progress.approve"
+  | "transfer.create"
+  // İş makineleri
+  | "machine.view"
+  | "machine.manage"
+  // Faz 3 – bina ve bütçe
+  | "units.edit"
+  | "library.view"
+  | "library.manage"
+  | "budget.view"
+  | "budget.edit"
+  // Faz 5 – fiyatlandırma
+  | "pricing.view"
+  | "pricing.edit"
+  | "pricing.approve"
+  | "priceList.view"
+  // Faz 6 – satış ve tahsilat
+  | "sales.view"
+  | "sales.manage"
+  | "collection.manage"
+  // Faz 7 – nakit akışı ve senaryolar
+  | "cashflow.view"
+  | "cashflow.edit"
+  | "scenario.manage"
+  | "companyCash.view"
+  | "companyCash.manage"
+  // Yönetim
+  | "audit.view"
+  | "backup.manage";
+
+const CAPABILITIES: Record<Capability, readonly Role[]> = {
+  "project.create": [Role.yonetici, Role.teknik_ofis],
+  "project.edit": [Role.yonetici, Role.teknik_ofis],
+  "project.viewTeam": [Role.yonetici],
+  "blocks.edit": [Role.yonetici, Role.teknik_ofis],
+  "costTree.view": [
+    Role.yonetici,
+    Role.teknik_ofis,
+    Role.santiye_sefi,
+    Role.muhasebe,
+    Role.satin_alma,
+    Role.dis_muhasebeci,
+  ],
+  "costTree.edit": [Role.yonetici, Role.teknik_ofis],
+  "users.manage": [Role.yonetici],
+  /** Harcama girişi (mobil hızlı giriş, tablo modu) */
+  "expense.create": [Role.yonetici, Role.muhasebe, Role.santiye_sefi, Role.satin_alma],
+  /** Projedeki bütün harcamaları görmek; diğerleri yalnızca kendi girdiklerini görür */
+  "expense.viewAll": [
+    Role.yonetici,
+    Role.teknik_ofis,
+    Role.muhasebe,
+    Role.satin_alma,
+    Role.dis_muhasebeci,
+  ],
+  "expense.approve": [Role.yonetici, Role.muhasebe],
+  /** Başkasının kaydını düzeltme/silme, ödeme işaretleme, içe aktarma, fatura bölme */
+  "expense.manage": [Role.yonetici, Role.muhasebe],
+  "supplier.view": [
+    Role.yonetici,
+    Role.teknik_ofis,
+    Role.santiye_sefi,
+    Role.muhasebe,
+    Role.satin_alma,
+    Role.dis_muhasebeci,
+  ],
+  "supplier.manage": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  "rates.manage": [Role.yonetici, Role.muhasebe],
+  "parameters.manage": [Role.yonetici, Role.muhasebe],
+  "accountant.export": [Role.yonetici, Role.muhasebe, Role.dis_muhasebeci],
+  /** Malzeme bağlantıları (şirket geneli): liste, fiyatlar, bakiyeler */
+  "connection.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  /** Bağlantı açma/düzenleme, tahsis, ödeme planı, fatura eşleştirme */
+  "connection.manage": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  /** Makine parkı: makineler, nakit hareketleri, kümülatif nakit akışı */
+  "machine.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  /** Makine ekleme, nakit hareketi ve puantaj girişi (puantaj projeye maliyet yazar) */
+  "machine.manage": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  /** Taşeron sözleşmeleri ve hakedişler (proje bazında); şantiye şefi miktarları görür */
+  "contract.view": [
+    Role.yonetici,
+    Role.teknik_ofis,
+    Role.santiye_sefi,
+    Role.muhasebe,
+    Role.satin_alma,
+    Role.dis_muhasebeci,
+  ],
+  /** Birim fiyat ve tutarlar (şantiye şefi fiyat bilgisini görmez, PLAN.md Bölüm 2) */
+  "contract.viewAmounts": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  "contract.manage": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma],
+  /** Hakediş hazırlama (kümülatif miktarlar) ve onaya gönderme */
+  "progress.prepare": [Role.yonetici, Role.teknik_ofis, Role.santiye_sefi, Role.muhasebe],
+  "progress.approve": [Role.yonetici, Role.muhasebe],
+  /** Projeler arası malzeme transferi (iki projede de gerekir) */
+  "transfer.create": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  /** Bağımsız bölümler ve arsa sahipleri */
+  "units.edit": [Role.yonetici, Role.teknik_ofis],
+  /** Malzeme / fiyat kütüphanesi ve reçeteler (şirket geneli) */
+  "library.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  "library.manage": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma],
+  /** Bütçe ve metraj (fiyat içerir; şantiye şefi ve satış görmez) */
+  "budget.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  "budget.edit": [Role.yonetici, Role.teknik_ofis],
+  /** Fiyatlandırma hesabı: maliyet, kâr, katsayılar (satış ekibi maliyet detayını görmez) */
+  "pricing.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.dis_muhasebeci],
+  "pricing.edit": [Role.yonetici, Role.teknik_ofis],
+  /** Fiyat listesi onayı ve fiyat kilidi (PLAN.md Bölüm 2: yönetici) */
+  "pricing.approve": [Role.yonetici],
+  /** Onaylı bölüm fiyat listesi */
+  "priceList.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satis, Role.dis_muhasebeci],
+  /** Satışlar, müşteriler (kimlik bilgileri dahil — KVKK: yalnızca bu roller), ödeme planları, tahsilatlar */
+  "sales.view": [Role.yonetici, Role.muhasebe, Role.satis, Role.dis_muhasebeci],
+  /** Müşteri, rezervasyon, satış sözleşmesi, ödeme planı, teslim */
+  "sales.manage": [Role.yonetici, Role.muhasebe, Role.satis],
+  /** Tahsilat girişi, çek / senet durumu */
+  "collection.manage": [Role.yonetici, Role.muhasebe, Role.satis],
+  /** Proje nakit akışı, iş programı, senaryolar ve projeler arası karşılaştırma (maliyet ve kâr içerir) */
+  "cashflow.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.dis_muhasebeci],
+  /** İş programı ve nakit varsayımları */
+  "cashflow.edit": [Role.yonetici, Role.teknik_ofis, Role.muhasebe],
+  "scenario.manage": [Role.yonetici, Role.teknik_ofis],
+  /** Şirket geneli konsolide nakit */
+  "companyCash.view": [Role.yonetici, Role.muhasebe, Role.dis_muhasebeci],
+  "companyCash.manage": [Role.yonetici, Role.muhasebe],
+  /** Değişiklik geçmişi (kim neyi ne zaman değiştirdi) ve yedekler */
+  "audit.view": [Role.yonetici],
+  "backup.manage": [Role.yonetici],
+};
+
+export function hasCapability(role: Role | null | undefined, capability: Capability): boolean {
+  return role != null && CAPABILITIES[capability].includes(role);
+}
