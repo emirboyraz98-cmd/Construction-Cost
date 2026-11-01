@@ -614,7 +614,7 @@ export function ExpenseForm({
               disabled={locked || mode === "edit"}
               onChange={(e) => set({ kind: e.target.value as ExpenseFormValues["kind"] })}
             >
-              {Object.entries(EXPENSE_KIND_LABELS).map(([value, label]) => (
+              {Object.entries(EXPENSE_KIND_LABELS).filter(([value]) => value !== "MACHINE").map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>

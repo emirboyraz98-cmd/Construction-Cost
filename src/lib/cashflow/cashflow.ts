@@ -70,8 +70,8 @@ export function resolveSchedule(
 // Nakit akışı
 // ---------------------------------------------------------------------------
 
-export type OutKind = "expense" | "progress" | "connection" | "overhead";
-export type InKind = "collection" | "installment" | "cheque";
+export type OutKind = "expense" | "progress" | "connection" | "overhead" | "machineOut";
+export type InKind = "collection" | "installment" | "cheque" | "machineIn";
 
 /** Tarihli nakit hareketi (KDV dahil, TL). Gerçekleşmemiş ve vadesi geçmiş olanlar bu aya alınır. */
 export type CashEvent = {
@@ -137,6 +137,9 @@ export type CashRow = {
   outProgress: Decimal;
   outConnection: Decimal;
   outOverhead: Decimal;
+  /** İş makineleri (yalnızca şirket geneli akışta) */
+  outMachine: Decimal;
+  inMachine: Decimal;
   outPlanned: Decimal;
   outFinancing: Decimal;
   outTotal: Decimal;
@@ -206,6 +209,8 @@ export function buildCashFlow(input: {
     progress: new Map(),
     connection: new Map(),
     overhead: new Map(),
+    machineOut: new Map(),
+    machineIn: new Map(),
     collection: new Map(),
     installment: new Map(),
     cheque: new Map(),
@@ -291,12 +296,14 @@ export function buildCashFlow(input: {
     const outProgress = get("progress", m);
     const outConnection = get("connection", m);
     const outOverhead = get("overhead", m);
+    const outMachine = get("machineOut", m);
+    const inMachine = get("machineIn", m);
     const outPlanned = get("planned", m);
     const inCollected = get("collection", m);
     const inScheduled = get("installment", m).plus(get("cheque", m));
     const inSales = get("sales", m);
-    const outTotal = outExpense.plus(outProgress).plus(outConnection).plus(outOverhead).plus(outPlanned).plus(outFinancing);
-    const inTotal = inCollected.plus(inScheduled).plus(inSales);
+    const outTotal = outExpense.plus(outProgress).plus(outConnection).plus(outOverhead).plus(outMachine).plus(outPlanned).plus(outFinancing);
+    const inTotal = inCollected.plus(inScheduled).plus(inSales).plus(inMachine);
     const net = inTotal.minus(outTotal);
     balance = balance.plus(net);
     financingCost = financingCost.plus(outFinancing);
@@ -306,7 +313,7 @@ export function buildCashFlow(input: {
       lowestBalance = balance;
       lowestMonth = m;
     }
-    rows.push({ month: m, past: m < cur, outExpense, outProgress, outConnection, outOverhead, outPlanned, outFinancing, outTotal, inCollected, inScheduled, inSales, inTotal, net, balance });
+    rows.push({ month: m, past: m < cur, outExpense, outProgress, outConnection, outOverhead, outMachine, inMachine, outPlanned, outFinancing, outTotal, inCollected, inScheduled, inSales, inTotal, net, balance });
   }
   return { rows, totalIn, totalOut, financingCost, lowestBalance, lowestMonth, endBalance: balance, plannedNet: roundMoney(plannedNet), plannedNetByCode, salesNet: roundMoney(salesNet), firstMonth: first, lastMonth: last, truncated };
 }
@@ -314,12 +321,12 @@ export function buildCashFlow(input: {
 /** Birden fazla projenin nakit akışını takvim ayına göre toplar (şirket geneli). */
 export function consolidate(flows: readonly { rows: readonly CashRow[] }[], extra: readonly CashEvent[], openingCash: Decimal, currentMonth: number): CashRow[] {
   const byMonth = new Map<number, CashRow>();
-  const blank = (m: number): CashRow => ({ month: m, past: m < currentMonth, outExpense: zero(), outProgress: zero(), outConnection: zero(), outOverhead: zero(), outPlanned: zero(), outFinancing: zero(), outTotal: zero(), inCollected: zero(), inScheduled: zero(), inSales: zero(), inTotal: zero(), net: zero(), balance: zero() });
+  const blank = (m: number): CashRow => ({ month: m, past: m < currentMonth, outExpense: zero(), outProgress: zero(), outConnection: zero(), outOverhead: zero(), outMachine: zero(), inMachine: zero(), outPlanned: zero(), outFinancing: zero(), outTotal: zero(), inCollected: zero(), inScheduled: zero(), inSales: zero(), inTotal: zero(), net: zero(), balance: zero() });
   const row = (m: number) => byMonth.get(m) ?? byMonth.set(m, blank(m)).get(m)!;
   for (const f of flows) {
     for (const r of f.rows) {
       const t = row(r.month);
-      for (const k of ["outExpense", "outProgress", "outConnection", "outOverhead", "outPlanned", "outFinancing", "inCollected", "inScheduled", "inSales"] as const) t[k] = t[k].plus(r[k]);
+      for (const k of ["outExpense", "outProgress", "outConnection", "outOverhead", "outMachine", "inMachine", "outPlanned", "outFinancing", "inCollected", "inScheduled", "inSales"] as const) t[k] = t[k].plus(r[k]);
     }
   }
   for (const e of extra) {
@@ -327,6 +334,8 @@ export function consolidate(flows: readonly { rows: readonly CashRow[] }[], extr
     const t = row(month);
     if (e.kind === "connection") t.outConnection = t.outConnection.plus(e.amount);
     else if (e.kind === "overhead") t.outOverhead = t.outOverhead.plus(e.amount);
+    else if (e.kind === "machineOut") t.outMachine = t.outMachine.plus(e.amount);
+    else if (e.kind === "machineIn") t.inMachine = t.inMachine.plus(e.amount);
   }
   const months = [...byMonth.keys()].sort((x, y) => x - y);
   if (months.length === 0) return [];
@@ -334,8 +343,8 @@ export function consolidate(flows: readonly { rows: readonly CashRow[] }[], extr
   const result: CashRow[] = [];
   for (let m = months[0]; m <= months[months.length - 1]; m++) {
     const t = row(m);
-    t.outTotal = t.outExpense.plus(t.outProgress).plus(t.outConnection).plus(t.outOverhead).plus(t.outPlanned).plus(t.outFinancing);
-    t.inTotal = t.inCollected.plus(t.inScheduled).plus(t.inSales);
+    t.outTotal = t.outExpense.plus(t.outProgress).plus(t.outConnection).plus(t.outOverhead).plus(t.outMachine).plus(t.outPlanned).plus(t.outFinancing);
+    t.inTotal = t.inCollected.plus(t.inScheduled).plus(t.inSales).plus(t.inMachine);
     t.net = t.inTotal.minus(t.outTotal);
     balance = balance.plus(t.net);
     t.balance = balance;

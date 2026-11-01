@@ -13,7 +13,8 @@ import { optionalText } from "./fields";
 
 /** Harcama formundaki ham değerler (sayılar metin; "1.250,50" yazılabilir). */
 export const expenseFormSchema = z.object({
-  kind: z.enum(ExpenseKind),
+  // Makine çalışması yalnızca makine puantajından oluşur; elle girilemez.
+  kind: z.enum(ExpenseKind).refine((k) => k !== "MACHINE", "Makine çalışması Makineler ekranından girilir."),
   date: z.string(),
   costItemId: z.string().nullable(),
   blockId: z.string().nullable(),

@@ -26,6 +26,7 @@ export const EXPENSE_KIND_LABELS: Record<ExpenseKind, string> = {
   DELIVERY: "Bağlantı çekişi",
   PROGRESS: "Taşeron hakedişi",
   TRANSFER: "Malzeme transferi",
+  MACHINE: "Makine çalışması",
 };
 
 /** Listelerde kalem adı yerine kısa etiket (kalemi olmayan kayıtlar için). */
@@ -35,6 +36,7 @@ export const EXPENSE_KIND_SHORT: Record<ExpenseKind, string> = {
   DELIVERY: "Çekiş",
   PROGRESS: "Hakediş",
   TRANSFER: "Transfer",
+  MACHINE: "Makine",
 };
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {

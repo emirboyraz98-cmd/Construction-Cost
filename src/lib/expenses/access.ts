@@ -20,7 +20,7 @@ type ExpenseRef = { createdById: string; approvalStatus: ApprovalStatus; kind: E
  * transfer silinir); burada değiştirilemez.
  */
 export function canModifyExpense(role: Role | null, userId: string, expense: ExpenseRef): boolean {
-  if (expense.kind === "PROGRESS" || expense.kind === "TRANSFER") return false;
+  if (expense.kind === "PROGRESS" || expense.kind === "TRANSFER" || expense.kind === "MACHINE") return false;
   if (hasCapability(role, "expense.manage")) return true;
   return (
     hasCapability(role, "expense.create") &&

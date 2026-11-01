@@ -133,7 +133,7 @@ export async function spendSummaries() {
       where: { ...where, kind: { in: [...COST_KINDS] }, approvalStatus: "APPROVED" },
       _sum: { netAmountTry: true, totalAmountTry: true },
     }),
-    db.expense.groupBy({ by: ["projectId"], where: { ...where, kind: { notIn: ["PROGRESS", "TRANSFER"] }, approvalStatus: "PENDING" }, _count: true }),
+    db.expense.groupBy({ by: ["projectId"], where: { ...where, kind: { notIn: ["PROGRESS", "TRANSFER", "MACHINE"] }, approvalStatus: "PENDING" }, _count: true }),
     db.expense.groupBy({
       by: ["projectId"],
       where: { ...where, kind: { in: [...PAYABLE_KINDS] }, approvalStatus: { not: "REJECTED" }, paymentStatus: "UNPAID" },

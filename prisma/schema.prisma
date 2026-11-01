@@ -76,6 +76,9 @@ model User {
   progressBillings ProgressBilling[]     @relation("ProgressBillingCreatedBy")
   approvedBillings ProgressBilling[]     @relation("ProgressBillingApprovedBy")
   transfers        MaterialTransfer[]    @relation("TransferCreatedBy")
+  machines         Machine[]             @relation("MachineCreatedBy")
+  machineEntries   MachineEntry[]        @relation("MachineEntryCreatedBy")
+  machineUsages    MachineUsage[]        @relation("MachineUsageCreatedBy")
   pricingSettings  PricingSetting[]      @relation("PricingSettingUpdatedBy")
   priceLists       PriceList[]           @relation("PriceListApprovedBy")
   saleContracts    SaleContract[]        @relation("SaleContractCreatedBy")
@@ -152,6 +155,8 @@ model Project {
   progressBillings      ProgressBilling[]
   transfersOut          MaterialTransfer[]      @relation("TransferFrom")
   transfersIn           MaterialTransfer[]      @relation("TransferTo")
+  machineEntries        MachineEntry[]
+  machineUsages         MachineUsage[]
   pricingSetting        PricingSetting?
   pricingFactors        PricingFactor[]
   priceLists            PriceList[]
@@ -237,6 +242,7 @@ model CostItem {
   progressEstimates CostItemProgress[]
   template          CostItemTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
   expenses          Expense[]
+  machineUsages     MachineUsage[]
   scheduleEntries   ScheduleEntry[]
 
   @@unique([projectId, code])
@@ -374,6 +380,8 @@ enum ExpenseKind {
   DELIVERY
   PROGRESS
   TRANSFER
+  /// İş makinesinin projede çalışması (iç maliyet; nakit çıkışı makine hareketlerindedir)
+  MACHINE
 }
 
 enum DocumentType {
@@ -454,6 +462,8 @@ model Expense {
   contractId        String?
   progressBillingId String?
   transferId        String?
+  /// Makine puantajından gelen iç maliyet (MACHINE)
+  machineUsageId    String?        @unique
   /// Kütüphane malzemesi (fatura fiyatı kütüphaneye buradan yansır)
   resourceId        String?
   /// Silinen kayıt (kayıt tutulur, listelerde görünmez)
@@ -473,6 +483,7 @@ model Expense {
   contract        SubcontractContract? @relation(fields: [contractId], references: [id], onDelete: Restrict)
   progressBilling ProgressBilling?     @relation(fields: [progressBillingId], references: [id], onDelete: Restrict)
   transfer        MaterialTransfer?    @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  machineUsage    MachineUsage?        @relation(fields: [machineUsageId], references: [id], onDelete: Restrict)
   resource        Resource?            @relation(fields: [resourceId], references: [id], onDelete: SetNull)
   documents       Document[]
 
@@ -1507,4 +1518,113 @@ model ScenarioAdjustment {
   scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
 
   @@unique([scenarioId, costItemCode])
+}
+
+// ─── İş makineleri (makine parkı) ──────────────────────────────────────────────────
+
+enum MachineStatus {
+  ACTIVE
+  SOLD
+  SCRAPPED
+}
+
+enum MachineUsageUnit {
+  HOUR
+  DAY
+}
+
+enum MachineEntryType {
+  PURCHASE
+  FINANCING
+  FUEL
+  MAINTENANCE
+  REPAIR
+  INSURANCE
+  TAX
+  OPERATOR
+  TRANSPORT
+  OTHER_COST
+  RENT_INCOME
+  SALE
+  OTHER_INCOME
+}
+
+/// Şirketin iş makinesi (şirket geneli kayıt; projeye bağlı değildir).
+model Machine {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  name          String
+  /// Cinsi: ekskavatör, loder, kamyon, vinç …
+  category      String?
+  brand         String?
+  model         String?
+  plateOrSerial String?
+  year          Int?
+  status        MachineStatus    @default(ACTIVE)
+  usageUnit     MachineUsageUnit @default(HOUR)
+  /// İç kullanım birim ücreti (projeye yazılan, KDV hariç TL / saat veya gün)
+  internalRate  Decimal?         @db.Decimal(18, 2)
+  notes         String?
+  createdById   String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+
+  createdBy User           @relation("MachineCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  entries   MachineEntry[]
+  usages    MachineUsage[]
+}
+
+/// Makinenin nakit hareketi (TL, KDV dahil). Ödenmemiş hareket nakit akışında vadesine yazılır.
+model MachineEntry {
+  id           String           @id @default(cuid())
+  machineId    String
+  date         DateTime         @db.Date
+  type         MachineEntryType
+  description  String?
+  amount       Decimal          @db.Decimal(18, 2)
+  /// Bilgi: miktar (ör. 120 litre yakıt)
+  quantity     Decimal?         @db.Decimal(18, 4)
+  unit         String?
+  paid         Boolean          @default(true)
+  dueDate      DateTime?        @db.Date
+  /// Hareketin olduğu şantiye (bilgi)
+  projectId    String?
+  /// Tedarikçi / müşteri adı
+  counterparty String?
+  createdById  String
+  createdAt    DateTime         @default(now())
+  deletedAt    DateTime?
+
+  machine   Machine  @relation(fields: [machineId], references: [id], onDelete: Restrict)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdBy User     @relation("MachineEntryCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([machineId, date])
+}
+
+/// Puantaj: makinenin bir projede çalışması. Projeye iç maliyet (Expense, MACHINE) yazar.
+model MachineUsage {
+  id          String    @id @default(cuid())
+  machineId   String
+  projectId   String
+  date        DateTime  @db.Date
+  /// Saat veya gün (makinenin birimi)
+  quantity    Decimal   @db.Decimal(18, 2)
+  rate        Decimal   @db.Decimal(18, 2)
+  amount      Decimal   @db.Decimal(18, 2)
+  costItemId  String
+  description String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+
+  machine   Machine  @relation(fields: [machineId], references: [id], onDelete: Restrict)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  costItem  CostItem @relation(fields: [costItemId], references: [id], onDelete: Restrict)
+  createdBy User     @relation("MachineUsageCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  expense   Expense?
+
+  @@index([machineId, date])
+  @@index([projectId])
 }

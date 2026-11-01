@@ -5,7 +5,10 @@ import type { ExpenseKind } from "@/generated/prisma/enums";
  * Maliyete yazılan türler. Avans maliyet değildir; bağlantı malzemesinin maliyeti ödemede değil
  * çekişte (DELIVERY), taşeronun maliyeti hakediş onayında (PROGRESS) oluşur (PLAN.md 9.4, 8.2).
  */
-export const COST_KINDS: readonly ExpenseKind[] = ["EXPENSE", "DELIVERY", "PROGRESS", "TRANSFER"];
+export const COST_KINDS: readonly ExpenseKind[] = ["EXPENSE", "DELIVERY", "PROGRESS", "TRANSFER", "MACHINE"];
+
+/** Elle girilemeyen, başka bir kayıttan otomatik oluşan türler (hakediş, transfer, makine puantajı). */
+export const SYSTEM_KINDS: readonly ExpenseKind[] = ["PROGRESS", "TRANSFER", "MACHINE"];
 
 /**
  * Ödeme durumu izlenen (vade listesine giren) türler. Çekişin ödemesi bağlantının ödeme planında,
