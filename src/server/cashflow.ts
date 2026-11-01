@@ -27,6 +27,7 @@ import { ActionError, getAccess, requireGlobalCapability, requireProjectAccess, 
 import { diffFields, writeAudit } from "./audit";
 import { computeLines, loadLines } from "./budget";
 import { getBudgetControl } from "./control";
+import { machineCompanyEvents } from "./machines";
 import { db } from "./db";
 import { latestRates } from "./library";
 
@@ -491,11 +492,12 @@ export async function getCompanyCashFlow() {
   }
   const currentMonth = monthIndex(new Date());
   const unassigned = paymentEvents(await connectionShares(null));
-  const months = perProject.flatMap((p) => [p.flow.firstMonth, p.flow.lastMonth]).concat(unassigned.map((e) => e.month), [currentMonth]);
+  const machineEvents = await machineCompanyEvents();
+  const months = perProject.flatMap((p) => [p.flow.firstMonth, p.flow.lastMonth]).concat(unassigned.map((e) => e.month), machineEvents.map((e) => e.month), [currentMonth]);
   const last = Math.max(...months);
   const overhead = dec(setting?.monthlyOverhead);
   const overheadEvents: CashEvent[] = overhead.gt(0) ? Array.from({ length: last - currentMonth + 1 }, (_, i) => ({ month: currentMonth + i, amount: overhead, kind: "overhead" as const, done: false })) : [];
-  const rows = consolidate(perProject.map((p) => p.flow), [...unassigned, ...overheadEvents], dec(setting?.openingCash), currentMonth);
+  const rows = consolidate(perProject.map((p) => p.flow), [...unassigned, ...overheadEvents, ...machineEvents], dec(setting?.openingCash), currentMonth);
   const lowest = rows.reduce<{ balance: Decimal; month: number } | null>((m, r) => (!m || r.balance.lt(m.balance) ? { balance: r.balance, month: r.month } : m), null);
   return {
     canManage: hasCapability(user.role, "companyCash.manage"),

@@ -131,6 +131,13 @@ export const COMPANY_MODULES: readonly (ModuleDef & { href: string })[] = [
     description: "Tedarikçi ve taşeronlar, cari özetleri.",
   },
   {
+    key: "machines",
+    href: "/company/machines",
+    label: "Makineler",
+    capability: "machine.view",
+    description: "İş makinelerinin nakit hareketleri, projelerde çalışması (puantaj) ve kümülatif nakit akışı.",
+  },
+  {
     key: "payables",
     href: "/company/payables",
     label: "Vade listesi",
@@ -256,6 +263,12 @@ export const COMPANY_SECTIONS: readonly NavSection[] = [
       { key: "library", label: "Kütüphane", advanced: true },
       { key: "transfers", label: "Malzeme transferi", advanced: true },
     ],
+  },
+  {
+    id: "machines",
+    label: "Makineler",
+    description: "İş makineleri ve kümülatif nakit akışı.",
+    tabs: [{ key: "machines", label: "Makineler" }],
   },
   {
     id: "payments",

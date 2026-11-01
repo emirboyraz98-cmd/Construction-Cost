@@ -26,7 +26,14 @@ async function main() {
   if (!process.env.DATABASE_URL?.includes("insaat_demo")) {
     throw new Error("Örnek veri yalnızca insaat_demo veritabanına yüklenir (npm run demo).");
   }
-  if (await db.project.count({ where: { name: PROJECT_NAME } })) {
+  const existing = await db.project.findFirst({ where: { name: PROJECT_NAME }, select: { id: true } });
+  if (existing) {
+    if ((await db.machine.count()) === 0) {
+      const adminUser = await db.user.findFirstOrThrow({ where: { role: "yonetici" } });
+      const codes = new Map((await db.costItem.findMany({ where: { projectId: existing.id } })).map((i) => [i.code, i.id]));
+      await seedMachines(existing.id, adminUser.id, (code) => codes.get(code)!);
+      console.log("Örnek iş makineleri eklendi.");
+    }
     console.log("Örnek veri zaten yüklü.");
     return;
   }
@@ -531,12 +538,111 @@ async function main() {
   });
   await db.companyCashSetting.upsert({ where: { id: "default" }, update: {}, create: { id: "default", openingCash: d(2_000_000), monthlyOverhead: d(250_000) } });
 
+  await seedMachines(project.id, admin.id, item);
+
   // Sekme: yönetici açınca demo projesi sekmede görünsün
   const last = await db.userTab.aggregate({ where: { userId: admin.id }, _max: { position: true } });
   await db.userTab.create({ data: { userId: admin.id, projectId: project.id, position: (last._max.position ?? -1) + 1 } });
 
   console.log(`Örnek veri yüklendi: "${PROJECT_NAME}" (net ödenecek ilk hakediş ${progress.payableAmount.toFixed(2)} TL).`);
   console.log("Ek kullanıcılar (şifre Demo.2026): muhasebe@demo.local, sef@demo.local, satinalma@demo.local, satis@demo.local");
+}
+
+/** Örnek iş makineleri (demo zaten yüklüyse ve makine yoksa da eklenir). */
+async function seedMachines(projectId: string, adminId: string, item: (code: string) => string) {
+  // İş makineleri: nakit hareketleri, puantaj (projeye iç maliyet) ve kümülatif nakit akışı
+  const daysAhead = (n: number) => new Date(today.getTime() + n * DAY);
+  const eks = await db.machine.create({
+    data: {
+      code: "EKS-01",
+      name: "Paletli ekskavatör 21 ton",
+      category: "Ekskavatör",
+      brand: "Örnek",
+      year: 2022,
+      usageUnit: "HOUR",
+      internalRate: d(1800),
+      notes: "Örnek veri",
+      createdById: adminId,
+      entries: {
+        create: [
+          { date: daysAgo(140), type: "PURCHASE", amount: d(4_800_000), description: "İkinci el alım", counterparty: "Örnek Makine A.Ş.", createdById: adminId },
+          { date: daysAgo(135), type: "INSURANCE", amount: d(85_000), description: "Kasko", createdById: adminId },
+          ...[110, 80, 50].map((ago, i) => ({ date: daysAgo(ago), type: "FINANCING" as const, amount: d(350_000), description: `Kredi taksiti ${i + 1}/6`, createdById: adminId })),
+          ...[10, 40, 70].map((ahead, i) => ({ date: daysAhead(ahead), dueDate: daysAhead(ahead), paid: false, type: "FINANCING" as const, amount: d(350_000), description: `Kredi taksiti ${i + 4}/6`, createdById: adminId })),
+          ...[
+            [100, 95_000],
+            [70, 120_000],
+            [40, 110_000],
+            [10, 105_000],
+          ].map(([ago, amount]) => ({ date: daysAgo(ago), type: "FUEL" as const, amount: d(amount), quantity: d(Math.round(amount / 48)), unit: "litre", projectId: projectId, createdById: adminId })),
+          ...[100, 70, 40, 10].map((ago) => ({ date: daysAgo(ago), type: "OPERATOR" as const, amount: d(65_000), description: "Operatör maaşı", createdById: adminId })),
+          { date: daysAgo(60), type: "MAINTENANCE", amount: d(45_000), description: "500 saat bakımı", createdById: adminId },
+          { date: daysAgo(20), type: "REPAIR", amount: d(68_000), description: "Hidrolik hortum ve conta", createdById: adminId },
+        ],
+      },
+    },
+  });
+  const kam = await db.machine.create({
+    data: {
+      code: "KAM-01",
+      name: "Damperli kamyon 6x4",
+      category: "Damperli kamyon",
+      year: 2019,
+      usageUnit: "DAY",
+      internalRate: d(9000),
+      createdById: adminId,
+      entries: {
+        create: [
+          { date: daysAgo(200), type: "PURCHASE", amount: d(2_600_000), createdById: adminId },
+          { date: daysAgo(90), type: "FUEL", amount: d(72_000), createdById: adminId },
+          { date: daysAgo(45), type: "FUEL", amount: d(64_000), createdById: adminId },
+          { date: daysAgo(35), type: "RENT_INCOME", amount: d(180_000), description: "Komşu şantiyeye 15 gün kiralama", counterparty: "Komşu inşaat", createdById: adminId },
+          { date: daysAgo(15), type: "TAX", amount: d(28_000), description: "MTV ve muayene", createdById: adminId },
+        ],
+      },
+    },
+  });
+  const usages: [typeof eks, number, string, number][] = [
+    [eks, 105, "04.01", 160],
+    [eks, 75, "04.01", 180],
+    [eks, 45, "04.01", 120],
+    [eks, 12, "04.01", 90],
+    [kam, 100, "04.01", 12],
+    [kam, 40, "04.01", 10],
+  ];
+  for (const [machine, ago, code, qty] of usages) {
+    const rate = d(machine.internalRate!.toString());
+    const amount = rate.times(qty);
+    const unit = machine.usageUnit === "DAY" ? "gün" : "saat";
+    const usage = await db.machineUsage.create({ data: { machineId: machine.id, projectId: projectId, date: daysAgo(ago), quantity: d(qty), rate, amount, costItemId: item(code), createdById: adminId } });
+    await db.expense.create({
+      data: {
+        projectId: projectId,
+        kind: "MACHINE",
+        date: daysAgo(ago),
+        costItemId: item(code),
+        description: `${machine.code} ${machine.name} – ${qty} ${unit}`,
+        quantity: d(qty),
+        unit,
+        unitPrice: rate,
+        currency: "TRY",
+        exchangeRate: d(1),
+        vatRate: d(0),
+        netAmount: amount,
+        vatAmount: d(0),
+        totalAmount: amount,
+        netAmountTry: amount,
+        vatAmountTry: d(0),
+        totalAmountTry: amount,
+        documentType: "NONE",
+        machineUsageId: usage.id,
+        approvalStatus: "APPROVED",
+        approvedById: adminId,
+        approvedAt: daysAgo(ago),
+        createdById: adminId,
+      },
+    });
+  }
 }
 
 main()

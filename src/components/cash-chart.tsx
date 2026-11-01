@@ -4,9 +4,17 @@ import { useState } from "react";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export type CashChartRow = { key: string; label: string; inflow: number; outflow: number; balance: number; past: boolean };
+export type CashChartRow = { key: string; label: string; inflow: number; outflow: number; balance: number; past: boolean; balance2?: number };
 
-const COLORS = { inflow: "#2a78d6", outflow: "#eb6834", balance: "#1baf7a" } as const;
+export type CashChartLabels = { inflow: string; outflow: string; balance: string; balance2?: string };
+
+const DEFAULT_LABELS: CashChartLabels = {
+  inflow: "Giriş (tahsilat, taksit, satış)",
+  outflow: "Çıkış (harcama, hakediş, bağlantı, plan, finansman)",
+  balance: "Kümülatif bakiye",
+};
+
+const COLORS = { inflow: "#2a78d6", outflow: "#eb6834", balance: "#1baf7a", balance2: "#6b6a65" } as const;
 const H = 260;
 const PAD = { top: 12, right: 12, bottom: 28, left: 64 };
 const COL = 26;
@@ -26,11 +34,12 @@ function niceStep(range: number) {
 }
 
 /** Aylık nakit girişi (yukarı), çıkışı (aşağı) ve kümülatif bakiye çizgisi; tek TL ekseni. */
-export function CashChart({ rows, currentKey }: { rows: CashChartRow[]; currentKey: string }) {
+export function CashChart({ rows, currentKey, labels = DEFAULT_LABELS }: { rows: CashChartRow[]; currentKey: string; labels?: CashChartLabels }) {
   const [hover, setHover] = useState<number | null>(null);
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">Gösterilecek nakit hareketi yok.</p>;
-  const max = Math.max(0, ...rows.map((r) => Math.max(r.inflow, r.balance)));
-  const min = Math.min(0, ...rows.map((r) => Math.min(-r.outflow, r.balance)));
+  const second = rows.some((r) => r.balance2 != null);
+  const max = Math.max(0, ...rows.map((r) => Math.max(r.inflow, r.balance, r.balance2 ?? -Infinity)));
+  const min = Math.min(0, ...rows.map((r) => Math.min(-r.outflow, r.balance, r.balance2 ?? Infinity)));
   const step = niceStep(max - min);
   const top = Math.ceil(max / step) * step || step;
   const bottom = Math.floor(min / step) * step;
@@ -43,6 +52,7 @@ export function CashChart({ rows, currentKey }: { rows: CashChartRow[]; currentK
   const bar = 9;
   const labelEvery = Math.max(1, Math.ceil(rows.length / 18));
   const line = rows.map((r, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(r.balance)}`).join(" ");
+  const line2 = second ? rows.map((r, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(r.balance2 ?? r.balance)}`).join(" ") : "";
   const currentIndex = rows.findIndex((r) => r.key === currentKey);
   const h = hover != null ? rows[hover] : null;
 
@@ -50,14 +60,19 @@ export function CashChart({ rows, currentKey }: { rows: CashChartRow[]; currentK
     <div className="grid grid-cols-1 gap-2">
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Lejant">
         <li className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm" style={{ background: COLORS.inflow }} /> Giriş (tahsilat, taksit, satış)
+          <span className="size-2.5 rounded-sm" style={{ background: COLORS.inflow }} /> {labels.inflow}
         </li>
         <li className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm" style={{ background: COLORS.outflow }} /> Çıkış (harcama, hakediş, bağlantı, plan, finansman)
+          <span className="size-2.5 rounded-sm" style={{ background: COLORS.outflow }} /> {labels.outflow}
         </li>
         <li className="flex items-center gap-1.5">
-          <span className="h-0.5 w-3 rounded" style={{ background: COLORS.balance }} /> Kümülatif bakiye
+          <span className="h-0.5 w-3 rounded" style={{ background: COLORS.balance }} /> {labels.balance}
         </li>
+        {second && labels.balance2 && (
+          <li className="flex items-center gap-1.5">
+            <span className="w-3 border-t-2 border-dashed" style={{ borderColor: COLORS.balance2 }} /> {labels.balance2}
+          </li>
+        )}
       </ul>
       <div className="relative overflow-x-auto">
         <svg width={width} height={H} role="img" aria-label="Aylık nakit akışı grafiği" className="block" onMouseLeave={() => setHover(null)}>
@@ -90,6 +105,7 @@ export function CashChart({ rows, currentKey }: { rows: CashChartRow[]; currentK
               <rect x={x(i) - COL / 2} y={PAD.top} width={COL} height={plotH} fill="transparent" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} tabIndex={0} aria-label={`${r.label}: giriş ${formatMoney(r.inflow)}, çıkış ${formatMoney(r.outflow)}, bakiye ${formatMoney(r.balance)}`} />
             </g>
           ))}
+          {second && <path d={line2} fill="none" stroke={COLORS.balance2} strokeWidth={2} strokeDasharray="5 4" pointerEvents="none" />}
           <path d={line} fill="none" stroke={COLORS.balance} strokeWidth={2} pointerEvents="none" />
           {h && <circle cx={x(hover!)} cy={y(h.balance)} r={4} fill={COLORS.balance} stroke="#fcfcfb" strokeWidth={2} pointerEvents="none" />}
         </svg>
@@ -110,9 +126,15 @@ export function CashChart({ rows, currentKey }: { rows: CashChartRow[]; currentK
               <span className="tabular-nums">{formatMoney(h.outflow)}</span>
             </p>
             <p className="flex justify-between gap-2 border-t pt-1">
-              <span>Kümülatif bakiye</span>
+              <span>{labels.balance}</span>
               <span className={cn("tabular-nums", h.balance < 0 && "text-destructive")}>{formatMoney(h.balance)}</span>
             </p>
+            {h.balance2 != null && labels.balance2 && (
+              <p className="flex justify-between gap-2">
+                <span>{labels.balance2}</span>
+                <span className={cn("tabular-nums", h.balance2 < 0 && "text-destructive")}>{formatMoney(h.balance2)}</span>
+              </p>
+            )}
           </div>
         )}
       </div>

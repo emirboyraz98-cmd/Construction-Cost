@@ -13,6 +13,7 @@ import {
   type LucideIcon,
   ReceiptTextIcon,
   SettingsIcon,
+  TractorIcon,
   TrendingUpIcon,
   WalletIcon,
 } from "lucide-react";
@@ -35,6 +36,7 @@ const PROJECT_ICONS: Record<string, LucideIcon> = {
 const COMPANY_ICONS: Record<string, LucideIcon> = {
   portfolio: LayoutGridIcon,
   purchasing: HandshakeIcon,
+  machines: TractorIcon,
   payments: CalendarClockIcon,
   reports: TrendingUpIcon,
   settings: SettingsIcon,

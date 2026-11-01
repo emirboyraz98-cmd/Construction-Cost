@@ -112,6 +112,14 @@ export default async function ExpenseDetailPage({ params }: PageProps<"/projects
             </AlertDescription>
           </Alert>
         )}
+        {expense.machineUsage && (
+          <Alert>
+            <AlertTitle>Makine çalışması (puantaj)</AlertTitle>
+            <AlertDescription>
+              {expense.machineUsage.machine.code} {expense.machineUsage.machine.name}. İç maliyettir; ödeme oluşturmaz. Makineler ekranındaki puantajdan silinir.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <ExpenseActions
           editable={isManualKind(expense.kind)}

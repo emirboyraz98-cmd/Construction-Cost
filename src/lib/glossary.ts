@@ -152,6 +152,25 @@ const G: Record<string, GlossaryEntry> = {
   "taksit sayısı": { t: "Peşinattan (ve anahtar teslim / krediden) sonra kalan tutarın bölüneceği taksit sayısı." },
   "kâra en çok etki eden kalemler": { t: "Fiyatı %10 değişince kârı en çok oynatan kalemler.", w: "En çok bunların fiyatını takip edin ve bağlantı yapmayı düşünün." },
 
+  // ── İş makineleri ──────────────────────────────────────────────────
+  makineler: { t: "Şirketin iş makineleri (ekskavatör, loder, kamyon, vinç …): her birinin nakit giriş ve çıkışları, projelerde çalışması ve kümülatif nakit akışı.", w: "Makinenin kendini ne zaman amorti ettiğini ve saat başı size kaça mal olduğunu gösterir." },
+  "kümülatif nakit akışı": { t: "Her ayın net nakdinin (giren − çıkan) baştan itibaren üst üste toplanması. Çizginin sıfırın altında olduğu dönemde makine henüz kendini ödememiştir.", w: "Yatırımın ne zaman geri döndüğünü (amortisman) bir bakışta gösterir." },
+  "kümülatif net nakit": { t: "Makine için bugüne kadar (ve planlı taksitlerle) kasaya giren eksi çıkan para. Satın alma bedeli dahil olduğu için başta eksidir." },
+  "filo net nakit": { t: "Tüm makinelerin kümülatif net nakdi (giren − çıkan)." },
+  "iç kullanım dahil": { t: "Kümülatif nakde, makinenin kendi projelerinizde çalışmasının değeri (çalışma × iç kullanım ücreti) eklenmiş hali.", w: "Makine kendi işinizde çalışınca dışarıdan kiralamak zorunda kalmazsınız; bu tasarruf da getiridir. Gerçek geri dönüş süresi bu çizgiyle görülür." },
+  "iç kullanım değeri": { t: "Makinenin projelerinizdeki çalışmasının toplam değeri (puantaj tutarları). Nakit değildir; projelerin maliyetine yazılır." },
+  "iç kullanım ücreti": { t: "Makine kendi projenizde çalıştığında projeye yazılacak birim ücret (TL / saat veya gün, KDV hariç). Genelde piyasa kira bedeline yakın seçilir.", w: "Projelerin gerçek maliyetini gösterir; makine bedava çalışıyormuş gibi görünmez." },
+  puantaj: { t: "Makinenin hangi gün, hangi projede kaç saat (veya gün) çalıştığının kaydı. Her puantaj projeye “Makine çalışması” maliyeti olarak yazılır.", e: "8 saat × 1.500 TL = 12.000 TL, 04.01 Kazı kalemine." },
+  "toplam çalışma": { t: "Makinenin puantajla girilmiş toplam çalışması (saat veya gün)." },
+  "bu ay çalışma": { t: "Aktif makinelerin bu ayki toplam çalışması." },
+  "saat başı işletme maliyeti": { t: "Satın alma, kredi taksiti ve satış hariç giderler (yakıt, bakım, onarım, operatör, sigorta …) ÷ toplam çalışma.", w: "Makineyi çalıştırmanın gerçek saat maliyeti; iç kullanım ücretinin bunun üstünde olması gerekir.", e: "180.000 TL gider ÷ 450 saat = 400 TL/saat." },
+  "işletme maliyeti": { t: "Satın alma, finansman ve satış hariç makine giderleri: yakıt, bakım, onarım, operatör, sigorta, vergi, nakliye." },
+  "planlı çıkış": { t: "Henüz ödenmemiş, vadesi gelecek hareketler (ör. kredi taksitleri). Nakit akışında vade ayına yazılır." },
+  "nakit girişi": { t: "Kasaya giren para: dışarıya kira geliri, makine satışı, diğer gelirler." },
+  "nakit çıkışı": { t: "Kasadan çıkan para: satın alma, kredi taksiti, yakıt, bakım, onarım, sigorta, vergi, operatör, nakliye." },
+  "nakit hareketleri": { t: "Makineyle ilgili her para giriş ve çıkışı (KDV dahil). Ödenmemiş hareket vadesiyle girilir." },
+  "aktif makine": { t: "Durumu “Aktif” olan makineler (satılan ve hurdaya ayrılanlar hariç)." },
+
   // ── Satın alma, taşeron ────────────────────────────────────────────
   "kalemler ve proje tahsisi": { t: "Bağlantıdaki malzemeler ve miktarın projelere dağılımı. Dağıtılmayan kısım şirket genelinde bekler." },
   tahsis: { t: "Bağlantı miktarının hangi projeye ne kadar ayrıldığı." },

@@ -55,6 +55,9 @@ export type Capability =
   | "progress.prepare"
   | "progress.approve"
   | "transfer.create"
+  // İş makineleri
+  | "machine.view"
+  | "machine.manage"
   // Faz 3 – bina ve bütçe
   | "units.edit"
   | "library.view"
@@ -124,6 +127,10 @@ const CAPABILITIES: Record<Capability, readonly Role[]> = {
   "connection.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
   /** Bağlantı açma/düzenleme, tahsis, ödeme planı, fatura eşleştirme */
   "connection.manage": [Role.yonetici, Role.muhasebe, Role.satin_alma],
+  /** Makine parkı: makineler, nakit hareketleri, kümülatif nakit akışı */
+  "machine.view": [Role.yonetici, Role.teknik_ofis, Role.muhasebe, Role.satin_alma, Role.dis_muhasebeci],
+  /** Makine ekleme, nakit hareketi ve puantaj girişi (puantaj projeye maliyet yazar) */
+  "machine.manage": [Role.yonetici, Role.muhasebe, Role.satin_alma],
   /** Taşeron sözleşmeleri ve hakedişler (proje bazında); şantiye şefi miktarları görür */
   "contract.view": [
     Role.yonetici,

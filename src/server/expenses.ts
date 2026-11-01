@@ -154,6 +154,7 @@ export async function getExpense(projectId: string, expenseId: string) {
       contract: { select: { id: true, no: true, title: true } },
       progressBilling: { select: { id: true, seq: true, contractId: true } },
       transfer: { select: { id: true, fromProject: { select: { name: true } }, toProject: { select: { name: true } } } },
+      machineUsage: { select: { machine: { select: { id: true, code: true, name: true } } } },
     },
   });
   if (!expense) return null;
@@ -167,7 +168,8 @@ export async function getExpense(projectId: string, expenseId: string) {
     expense,
     role,
     canModify: canModifyExpense(role, user.id, expense),
-    canApprove: hasCapability(role, "expense.approve"),
+    // Hakediş, transfer ve makine satırları kendi ekranlarında yönetilir (onay / red burada yok).
+    canApprove: hasCapability(role, "expense.approve") && ["EXPENSE", "ADVANCE", "DELIVERY"].includes(expense.kind),
     canManage: hasCapability(role, "expense.manage"),
     // Diğer projelerin adları yalnızca o projeleri görebilen kullanıcıya gösterilir.
     siblings: siblings.map((s) => ({ ...s, visible: projectRole(scope, s.projectId) !== null })),
