@@ -25,7 +25,7 @@ export const GUIDE_TOC: {
     ],
   },
   { id: "gunluk", title: "4. İnşaat sürerken: günlük işler" },
-  { id: "satinalma", title: "5. Satın alma: bağlantı, taşeron, hakediş" },
+  { id: "satinalma", title: "5. Satın alma, taşeron ve iş makineleri" },
   { id: "satis", title: "6. Satış ve tahsilat" },
   { id: "takip", title: "7. Takip: bütçe, nakit, senaryo" },
   { id: "aysonu", title: "8. Ay sonu ve güvenlik" },
@@ -489,7 +489,7 @@ export function GuideContent({ print = false }: { print?: boolean }) {
       </GuideSection>
 
       {/* 5 */}
-      <GuideSection id="satinalma" title="5. Satın alma: bağlantı, taşeron, hakediş">
+      <GuideSection id="satinalma" title="5. Satın alma, taşeron ve iş makineleri">
         <GuideStep n="1" title="Malzeme bağlantısı (ön alım)">
           <p>Tedarikçiyle önceden miktar ve fiyat sabitlediyseniz (ör. 1.400 m³ beton, 3.150 TL/m³):</p>
           <ol>
@@ -540,6 +540,33 @@ export function GuideContent({ print = false }: { print?: boolean }) {
             1. hakediş 400 m²: brüt 560.000 + KDV 112.000 − tevkifat 44.800 − teminat 28.000 = net <b>599.200 TL</b>.
           </Tip>
           <Tip tone="warn">Tevkifat ve teminat oranlarını muhasebecinizle teyit edin; program sabit oran kullanmaz.</Tip>
+        </GuideStep>
+
+        <GuideStep n="4" title="İş makineleri ve kümülatif nakit akışı">
+          <p>
+            Şirketin kendi iş makineleri (ekskavatör, loder, kamyon …) <Nav>Makineler</Nav> başlığında izlenir. Her makinenin parası iki yoldan girilir:
+          </p>
+          <ol>
+            <li>
+              <b>Makine ekle:</b> kod, ad, cinsi, çalışma birimi (saat / gün) ve <b>iç kullanım ücreti</b> (makine kendi projenizde çalışınca projeye yazılacak TL / saat).
+            </li>
+            <li>
+              <b>Nakit hareketleri</b> (<Nav>Hareket ekle</Nav>): satın alma bedeli, kredi / leasing taksitleri, yakıt, bakım, onarım, sigorta, vergi, operatör, nakliye; gelir olarak
+              dışarıya kira ve satış. Gelecek taksitleri “Ödendi” işaretini kaldırıp vadesiyle girin; nakit akışında o aya yazılır, ödeyince <Nav>Ödendi</Nav>.
+            </li>
+            <li>
+              <b>Puantaj</b> (<Nav>Çalışma gir</Nav>): tarih, proje, maliyet kalemi (ör. 04.01 Kazı) ve kaç saat çalıştığı. Çalışma × iç kullanım ücreti projeye “Makine çalışması”
+              maliyeti olarak yazılır; projenin bütçe kontrolünde görünür. Şirket kasasından ayrıca para çıkmaz.
+            </li>
+          </ol>
+          <Shot eager={print} src="45-makineler" alt="Makineler listesi ve filo kümülatif nakit akışı" />
+          <Shot eager={print} src="46-makine" alt="Makine sayfası: özet ve kümülatif nakit akışı" caption="Yeşil çizgi gerçek kümülatif nakit; kesikli çizgi makinenin kendi işlerinizdeki çalışmasının değerini de ekler. Kesikli çizgi sıfırı geçtiği ay makine kendini ödemiş sayılır (geri dönüş)." />
+          <Shot eager={print} src="47-puantaj" alt="Puantaj girişi" />
+          <Tip tone="calc">
+            Örnek ekskavatör: nakit çıkışı 7,79 milyon (4,8 milyon alım + taksitler + yakıt, bakım, operatör), 550 saat × 1.800 TL = 990.000 TL iç kullanım değeri. Saat başı işletme maliyeti =
+            satın alma ve kredi hariç giderler ÷ çalışma saati. İç kullanım ücretinin bu maliyetin üstünde olması gerekir.
+          </Tip>
+          <Tip>Makine giderleri ve kira gelirleri şirket geneli <Nav>Şirket raporları → Konsolide nakit</Nav> tablosunda da “Makine gideri / geliri” sütunlarında görünür.</Tip>
         </GuideStep>
       </GuideSection>
 

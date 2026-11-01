@@ -364,6 +364,19 @@ program yine tarayıcıdan kullanılır.
   ortak fatura ve formlardaki formül / reçete / döviz seçenekleri açılır (tarayıcı başına hatırlanır).
 - **Proje paneli beş soru:** Ne harcadık? Bütçe ne durumda? Ne sattık? Kasada ne var, ne lazım? Bu hafta ne ödenecek?
 - **Hızlı bütçe:** Bütçe → Hızlı bütçe (m² ile): ana gruplara m² başına veya götürü tutar; ayrıntılı metraj sonra eklenir.
+
+### İş makineleri (Makineler)
+
+- **Makine kartı:** kod, ad, cinsi, çalışma birimi (saat / gün), iç kullanım ücreti (TL / birim, KDV hariç).
+- **Nakit hareketleri (KDV dahil):** satın alma, kredi / leasing taksiti, yakıt, bakım, onarım, sigorta, vergi, operatör, nakliye;
+  gelir: dışarıya kira, satış. Ödenmemiş hareket vadesiyle girilir ve nakit akışında o aya yazılır.
+- **Puantaj:** makinenin projede çalışması (proje, maliyet kalemi, saat / gün × birim ücret). Projeye “Makine çalışması”
+  türünde iç maliyet olarak yazılır (onaylı, borç oluşturmaz, muhasebeci paketine girmez). Puantaj silinince projedeki kayıt da silinir.
+- **Kümülatif nakit akışı:** makine ve filo için ay ay giriş, çıkış, kümülatif nakit ve iç kullanım değeri dahil kümülatif
+  (geri dönüş ayı). Saat başı işletme maliyeti = satın alma, kredi ve satış hariç giderler ÷ çalışma.
+- Makine nakit hareketleri şirket geneli konsolide nakit akışına “Makine gideri / geliri” olarak eklenir; iç kullanım eklenmez
+  (projeye yazılan maliyetle çift sayılmasın diye).
+- Yetki: görüntüleme yönetici, teknik ofis, muhasebe, satın alma, dış muhasebeci; giriş yönetici, muhasebe, satın alma.
 - Giriş sonrası: şantiye şefi doğrudan **harcama girişine**, satış ekibi **satışlara** gelir (tek projesi varsa).
 - Proje panelinin üstünde role göre büyük düğmeler (Harcama gir, Malzeme geldi, Onay bekleyen, Satış
   yap, Tahsilat gir) ve yeni projede **“Proje kurulumu”** adım listesi.

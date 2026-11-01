@@ -18,6 +18,8 @@ const COLORS = { inflow: "#2a78d6", outflow: "#eb6834", balance: "#1baf7a", bala
 const H = 260;
 const PAD = { top: 12, right: 12, bottom: 28, left: 64 };
 const COL = 26;
+/** Ay etiketinin yaklaşık genişliği ("Ağu 2026", 10px yazı) */
+const LABEL_W = 52;
 
 /** Kısa TL gösterimi (eksen): 12,5 M / 850 B */
 function short(v: number) {
@@ -43,14 +45,16 @@ export function CashChart({ rows, currentKey, labels = DEFAULT_LABELS }: { rows:
   const step = niceStep(max - min);
   const top = Math.ceil(max / step) * step || step;
   const bottom = Math.floor(min / step) * step;
-  const width = PAD.left + PAD.right + rows.length * COL;
+  // Az ay varken sütunlar genişler (etiketler sığsın), çok ay varken etiketler seyreltilir.
+  const col = Math.max(COL, Math.min(64, Math.floor(720 / rows.length)));
+  const width = PAD.left + PAD.right + rows.length * col;
   const plotH = H - PAD.top - PAD.bottom;
   const y = (v: number) => PAD.top + ((top - v) / (top - bottom)) * plotH;
-  const x = (i: number) => PAD.left + i * COL + COL / 2;
+  const x = (i: number) => PAD.left + i * col + col / 2;
   const ticks: number[] = [];
   for (let v = bottom; v <= top + step / 2; v += step) ticks.push(v);
   const bar = 9;
-  const labelEvery = Math.max(1, Math.ceil(rows.length / 18));
+  const labelEvery = Math.max(1, Math.ceil(LABEL_W / col));
   const line = rows.map((r, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(r.balance)}`).join(" ");
   const line2 = second ? rows.map((r, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(r.balance2 ?? r.balance)}`).join(" ") : "";
   const currentIndex = rows.findIndex((r) => r.key === currentKey);
@@ -86,15 +90,15 @@ export function CashChart({ rows, currentKey, labels = DEFAULT_LABELS }: { rows:
           ))}
           {currentIndex >= 0 && (
             <g>
-              <line x1={x(currentIndex) - COL / 2} x2={x(currentIndex) - COL / 2} y1={PAD.top} y2={H - PAD.bottom} stroke="#a1a09a" strokeDasharray="3 3" />
-              <text x={x(currentIndex) - COL / 2 + 3} y={PAD.top + 8} className="fill-muted-foreground text-[10px]">
+              <line x1={x(currentIndex) - col / 2} x2={x(currentIndex) - col / 2} y1={PAD.top} y2={H - PAD.bottom} stroke="#a1a09a" strokeDasharray="3 3" />
+              <text x={x(currentIndex) - col / 2 + 3} y={PAD.top + 8} className="fill-muted-foreground text-[10px]">
                 bugün
               </text>
             </g>
           )}
           {rows.map((r, i) => (
             <g key={r.key}>
-              {hover === i && <rect x={x(i) - COL / 2} y={PAD.top} width={COL} height={plotH} fill="#f0efec" />}
+              {hover === i && <rect x={x(i) - col / 2} y={PAD.top} width={col} height={plotH} fill="#f0efec" />}
               {r.inflow > 0 && <path d={roundedUp(x(i) - bar - 1, y(r.inflow), bar, y(0) - y(r.inflow))} fill={COLORS.inflow} opacity={r.past ? 0.55 : 1} />}
               {r.outflow > 0 && <path d={roundedDown(x(i) + 1, y(0), bar, y(-r.outflow) - y(0))} fill={COLORS.outflow} opacity={r.past ? 0.55 : 1} />}
               {(i % labelEvery === 0 || (i === rows.length - 1 && i % labelEvery >= Math.max(2, labelEvery / 2))) && (
@@ -102,7 +106,7 @@ export function CashChart({ rows, currentKey, labels = DEFAULT_LABELS }: { rows:
                   {r.label}
                 </text>
               )}
-              <rect x={x(i) - COL / 2} y={PAD.top} width={COL} height={plotH} fill="transparent" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} tabIndex={0} aria-label={`${r.label}: giriş ${formatMoney(r.inflow)}, çıkış ${formatMoney(r.outflow)}, bakiye ${formatMoney(r.balance)}`} />
+              <rect x={x(i) - col / 2} y={PAD.top} width={col} height={plotH} fill="transparent" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} tabIndex={0} aria-label={`${r.label}: giriş ${formatMoney(r.inflow)}, çıkış ${formatMoney(r.outflow)}, bakiye ${formatMoney(r.balance)}`} />
             </g>
           ))}
           {second && <path d={line2} fill="none" stroke={COLORS.balance2} strokeWidth={2} strokeDasharray="5 4" pointerEvents="none" />}
